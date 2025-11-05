@@ -1,18 +1,15 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { createClient } from '@supabase/supabase-js'
 
-const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY
-const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || 'adzzat-submissions'
+const SUPABASE_URL = process.env.SUPABASE_URL || ''
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || ''
+const BUCKET_NAME = 'submissions'
 
-export const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID || '',
-    secretAccessKey: R2_SECRET_ACCESS_KEY || '',
-  },
+// Create Supabase client with service role key for server-side operations
+export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
 })
 
 export async function uploadFileToR2(
@@ -20,36 +17,36 @@ export async function uploadFileToR2(
   fileName: string,
   contentType: string
 ): Promise<string> {
-  const key = `submissions/${Date.now()}-${fileName}`
+  const key = `${Date.now()}-${fileName}`
 
-  const command = new PutObjectCommand({
-    Bucket: R2_BUCKET_NAME,
-    Key: key,
-    Body: file,
-    ContentType: contentType,
-  })
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET_NAME)
+    .upload(key, file, {
+      contentType,
+      upsert: false,
+    })
 
-  await r2Client.send(command)
+  if (error) {
+    console.error('Supabase upload error:', error)
+    throw new Error(`Failed to upload file: ${error.message}`)
+  }
 
-  // Return the public URL or key
-  return key
+  // Return the path/key
+  return data.path
 }
 
 export async function getFileUrl(key: string): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: R2_BUCKET_NAME,
-    Key: key,
-  })
+  const { data } = supabaseAdmin.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(key)
 
-  // Generate a signed URL valid for 1 hour
-  const signedUrl = await getSignedUrl(r2Client, command, { expiresIn: 3600 })
-  return signedUrl
+  return data.publicUrl
 }
 
 export function getPublicUrl(key: string): string {
-  const publicUrl = process.env.R2_PUBLIC_URL
-  if (publicUrl) {
-    return `${publicUrl}/${key}`
-  }
-  return key
+  const { data } = supabaseAdmin.storage
+    .from(BUCKET_NAME)
+    .getPublicUrl(key)
+
+  return data.publicUrl
 }

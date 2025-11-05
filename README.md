@@ -22,7 +22,7 @@ A scalable web platform for task submission and review, supporting up to 500+ us
 - **Backend**: Next.js API Routes (Serverless)
 - **Database**: PostgreSQL (via Neon - free tier)
 - **ORM**: Prisma
-- **File Storage**: Cloudflare R2 (10GB free)
+- **File Storage**: Supabase Storage (1GB free - NO CREDIT CARD REQUIRED!)
 - **Authentication**: JWT + HTTP-only cookies
 - **Deployment**: Vercel
 
@@ -30,7 +30,7 @@ A scalable web platform for task submission and review, supporting up to 500+ us
 
 - Node.js 18+ and npm
 - A Neon PostgreSQL database (free at [neon.tech](https://neon.tech))
-- Cloudflare R2 storage (free at [cloudflare.com](https://dash.cloudflare.com))
+- Supabase Storage (free at [supabase.com](https://supabase.com) - no credit card needed!)
 
 ## Setup Instructions
 
@@ -48,18 +48,23 @@ npm install
 2. Create a new project
 3. Copy your connection string (looks like: `postgresql://username:password@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require`)
 
-### 3. Cloudflare R2 Setup
+### 3. Supabase Storage Setup (NO CREDIT CARD NEEDED!)
 
-1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com)
-2. Navigate to R2 Object Storage
-3. Create a new bucket (e.g., `adzzat-submissions`)
-4. Go to "Manage R2 API Tokens" and create a new API token
-5. Copy:
-   - Account ID
-   - Access Key ID
-   - Secret Access Key
-   - Your bucket name
-   - Public URL (if you set up a public domain)
+1. Go to [supabase.com](https://supabase.com) and sign up with GitHub (fastest)
+2. Create a new project:
+   - Project name: `AdzzatXperts`
+   - Database password: Create a strong password (save it!)
+   - Region: Choose closest to you
+   - Plan: **Free** (default)
+3. Wait 2-3 minutes for project setup
+4. Click **"Storage"** in left sidebar
+5. Click **"Create a new bucket"**:
+   - Name: `submissions`
+   - Public bucket: **OFF** (keep private)
+6. Go to **Settings** (gear icon) → **API**
+7. Copy these values:
+   - **Project URL**: `https://xxxxx.supabase.co`
+   - **service_role key** (the secret one, NOT anon public): `eyJhbGc...`
 
 ### 4. Environment Variables
 
@@ -69,25 +74,24 @@ Copy `.env.example` to `.env` and fill in your values:
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env.local` (or create it from `.env.example`):
 
 ```env
 # Database (from Neon)
 DATABASE_URL="postgresql://username:password@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require"
 
-# JWT Secret (generate a random string)
+# JWT Secret (generate a random string - at least 32 characters)
 JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
 
-# Cloudflare R2 Storage
-R2_ACCOUNT_ID="your-cloudflare-account-id"
-R2_ACCESS_KEY_ID="your-r2-access-key"
-R2_SECRET_ACCESS_KEY="your-r2-secret-key"
-R2_BUCKET_NAME="adzzat-submissions"
-R2_PUBLIC_URL="https://your-bucket.r2.dev"  # Optional
+# Supabase Storage (from Supabase Project Settings -> API)
+SUPABASE_URL="https://xxxxx.supabase.co"
+SUPABASE_SERVICE_KEY="your-service-role-key-here"
 
 # App URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
+
+**IMPORTANT**: Use the `service_role` key (secret), NOT the `anon` public key!
 
 ### 5. Database Migration
 
@@ -167,14 +171,11 @@ git push origin main
 1. Go to [vercel.com](https://vercel.com)
 2. Import your GitHub repository
 3. Add environment variables in Vercel dashboard:
-   - `DATABASE_URL`
-   - `JWT_SECRET`
-   - `R2_ACCOUNT_ID`
-   - `R2_ACCESS_KEY_ID`
-   - `R2_SECRET_ACCESS_KEY`
-   - `R2_BUCKET_NAME`
-   - `R2_PUBLIC_URL`
-   - `NEXT_PUBLIC_APP_URL` (your Vercel URL)
+   - `DATABASE_URL` (from Neon)
+   - `JWT_SECRET` (generate a new long random string)
+   - `SUPABASE_URL` (from Supabase project)
+   - `SUPABASE_SERVICE_KEY` (from Supabase project)
+   - `NEXT_PUBLIC_APP_URL` (your Vercel URL, e.g., `https://your-app.vercel.app`)
 4. Deploy!
 
 ### 3. Run Database Migration on Production
@@ -263,11 +264,13 @@ APPROVED (Green)
 
 ## Free Tier Limits
 
-- **Neon PostgreSQL**: 10GB storage, 1 project
-- **Cloudflare R2**: 10GB storage, 10 million read requests/month
+- **Neon PostgreSQL**: 10GB storage, 1 project - NO CREDIT CARD
+- **Supabase Storage**: 1GB storage, 2GB bandwidth/month - NO CREDIT CARD
 - **Vercel**: 100GB bandwidth, unlimited deployments
 
-This setup easily handles 500+ users!
+**This setup easily handles 500+ users without any payment!**
+
+For growth beyond 500 users, you can upgrade Supabase Storage to 100GB for just $25/month.
 
 ## Troubleshooting
 
@@ -276,9 +279,11 @@ This setup easily handles 500+ users!
 - Ensure your IP is allowed in Neon dashboard
 
 ### File Upload Issues
-- Check R2 credentials are correct
-- Verify bucket name matches
-- Ensure CORS is configured in R2 if needed
+- Check `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are correct in `.env.local`
+- Verify you're using the `service_role` key, NOT the `anon` public key
+- Ensure bucket name is `submissions` (lowercase)
+- Check bucket exists in Supabase Storage dashboard
+- Verify Supabase project is active (not paused)
 
 ### Build Errors
 - Run `npm run postinstall` to generate Prisma client
