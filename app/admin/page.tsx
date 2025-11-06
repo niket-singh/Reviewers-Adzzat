@@ -79,11 +79,15 @@ export default function AdminDashboard() {
   const fetchUserData = async () => {
     try {
       const res = await fetch('/api/auth/me')
-      if (!res.ok || (await res.json()).user.role !== 'ADMIN') {
+      if (!res.ok) {
         router.push('/')
         return
       }
       const data = await res.json()
+      if (data.user.role !== 'ADMIN') {
+        router.push('/')
+        return
+      }
       setUserName(data.user.name)
     } catch (err) {
       router.push('/')
