@@ -36,17 +36,37 @@ export async function uploadFileToR2(
 }
 
 export async function getFileUrl(key: string): Promise<string> {
-  const { data } = supabaseAdmin.storage
+  // For private buckets, we need signed URLs with expiration
+  const { data, error } = await supabaseAdmin.storage
     .from(BUCKET_NAME)
-    .getPublicUrl(key)
+    .createSignedUrl(key, 60) // 60 seconds expiration
 
-  return data.publicUrl
+  if (error) {
+    console.error('Supabase getFileUrl error:', error)
+    throw new Error(`Failed to get file URL: ${error.message}`)
+  }
+
+  if (!data || !data.signedUrl) {
+    throw new Error('Failed to generate signed URL')
+  }
+
+  return data.signedUrl
 }
 
-export function getPublicUrl(key: string): string {
-  const { data } = supabaseAdmin.storage
+export async function getPublicUrl(key: string): Promise<string> {
+  // For private buckets, use signed URLs
+  const { data, error } = await supabaseAdmin.storage
     .from(BUCKET_NAME)
-    .getPublicUrl(key)
+    .createSignedUrl(key, 60) // 60 seconds expiration
 
-  return data.publicUrl
+  if (error) {
+    console.error('Supabase getPublicUrl error:', error)
+    throw new Error(`Failed to get file URL: ${error.message}`)
+  }
+
+  if (!data || !data.signedUrl) {
+    throw new Error('Failed to generate signed URL')
+  }
+
+  return data.signedUrl
 }
