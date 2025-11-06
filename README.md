@@ -10,11 +10,18 @@ A scalable web platform for task submission and review, supporting up to 500+ us
 - **Admins**: Approve reviewers, approve eligible tasks, manage users, view leaderboard
 
 ### Key Functionality
-- **File Upload**: Contributors can upload ZIP files with domain and language metadata
-- **Review System**: Reviewers can claim and review tasks
+- **File Upload**: Contributors can upload ZIP files with domain and language selection (dropdowns + custom input)
+- **Download System**: Reviewers and admins can download submission files
+- **Review System**: Reviewers can claim and review tasks with feedback and optional account field
+- **Admin Reviews**: Admins can now claim and review tasks (in addition to approving)
+- **Fair Task Distribution**: Tasks are distributed evenly among reviewers
 - **Status Tracking**: Visual color-coded status system (Pending → Claimed → Eligible/Blue → Approved/Green)
+- **Status Tabs**: Filter submissions by status (All/Pending/Claimed/Eligible/Approved)
+- **Profile Pages**: All users can view stats and edit name/password
+- **Account Tracking**: Reviewers can specify where content was posted (visible only to admins)
 - **Leaderboard**: Track top contributors by eligible and approved tasks
 - **User Management**: Admin panel for managing users and approvals
+- **Modern UI**: Beautiful gradient backgrounds and smooth transitions
 
 ## Tech Stack
 
@@ -123,6 +130,43 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Migrating Existing Installations
+
+⚠️ **If you have an existing installation** and are updating to the latest version, you need to migrate your database.
+
+The latest updates add new features:
+- **Download functionality** for reviewers and admins
+- **Account field** in feedback (visible only to admins)
+- **Admin review capability** (admins can now claim and review tasks)
+- **Fair task distribution** (tracks which reviewer claimed each task)
+
+### Quick Migration
+
+```bash
+# Pull latest changes
+git pull
+
+# Run Prisma migration
+npx prisma migrate dev --name add_claimed_and_account_fields
+
+# Or for production
+npx prisma migrate deploy
+
+# Restart your dev server
+npm run dev
+```
+
+### Full Migration Guide
+
+See [DATABASE-MIGRATION.md](./DATABASE-MIGRATION.md) for:
+- Detailed migration steps
+- Manual SQL migration (if needed)
+- Troubleshooting common issues
+- Production deployment guidance
+- Rollback procedures
+
+**New installations can skip this section** - the setup instructions above will create the correct schema automatically.
+
 ## Usage Guide
 
 ### For Contributors
@@ -132,29 +176,48 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 3. Click "Upload New Task"
 4. Fill in:
    - Task title
-   - Domain (e.g., "Web Development")
-   - Language (e.g., "JavaScript")
-   - Upload ZIP file
-5. View submissions and feedback on homepage
-6. Blue background = Eligible for admin approval
-7. Green background = Approved by admin
+   - **Domain**: Select from dropdown (Bug Fixes, DevOps/Security, etc.)
+   - **Language**: Select from dropdown (Python, JavaScript, etc.) or choose "Other" to specify
+   - Upload ZIP file (max 10MB)
+5. **View submissions by status**: Use tabs (All/Pending/Claimed/Eligible/Approved)
+6. **Profile**: View your total submissions, eligible tasks, and approved tasks
+7. Color coding:
+   - Gray = Pending
+   - Yellow = Claimed by reviewer
+   - Blue = Eligible for admin approval
+   - Green = Approved by admin
 
 ### For Reviewers
 
 1. Sign up with role "Reviewer"
 2. Wait for admin approval
-3. After approval, sign in
-4. See all pending and claimed tasks
-5. Click "Claim Task" to review
-6. Provide feedback
-7. Check "Mark as Eligible" to send to admin for approval
+3. After approval, sign in to reviewer dashboard
+4. **Browse tasks**: Use tabs (Pending/Claimed/Eligible)
+5. **Claim a task**: Click "Claim Task" on pending submissions
+6. **Download files**: Click download button to review ZIP files
+7. **Provide feedback**:
+   - Enter detailed feedback in the form
+   - (Optional) Specify "Account Posted In" - e.g., GitHub, LinkedIn (visible only to admins)
+   - Check "Mark as Eligible" to recommend for admin approval
+8. **Profile**: View total reviews, tasks claimed, and eligible tasks marked
 
 ### For Admins
 
 1. Sign in with admin credentials
-2. **Submissions Tab**: View and approve eligible (blue) tasks
-3. **Users Tab**: Approve pending reviewers
-4. **Leaderboard Tab**: View top contributors
+2. **Submissions Tab**:
+   - Filter by status (Eligible/All/Pending/Claimed/Approved)
+   - Download submission files
+   - Approve eligible (blue) tasks to turn them green
+   - View "Account Posted In" field from reviewer feedback
+3. **Review Tab** (NEW):
+   - Admins can now claim and review tasks like reviewers
+   - Provide feedback and mark as eligible
+4. **Users Tab**:
+   - Approve pending reviewers
+   - View all user accounts
+5. **Leaderboard Tab**:
+   - View top contributors by eligible and approved tasks
+6. **Profile**: View total reviews, tasks claimed, and eligible tasks marked
 
 ## Deployment to Vercel
 
@@ -229,10 +292,16 @@ AdzzatXperts/
 
 ### Submissions
 - `POST /api/submissions/upload` - Upload task (Contributor)
-- `GET /api/submissions/list` - List submissions (role-based)
-- `POST /api/submissions/claim` - Claim task (Reviewer)
-- `POST /api/submissions/feedback` - Submit feedback (Reviewer)
+- `GET /api/submissions/list` - List submissions with status filtering (role-based)
+- `POST /api/submissions/claim` - Claim task (Reviewer/Admin)
+- `POST /api/submissions/feedback` - Submit feedback with optional account field (Reviewer/Admin)
 - `POST /api/submissions/approve` - Approve task (Admin)
+- `GET /api/submissions/download` - Download submission file (Reviewer/Admin) (NEW)
+- `GET /api/submissions/next-task` - Get next task for fair distribution (Reviewer/Admin) (NEW)
+
+### Profile
+- `GET /api/profile` - Get user profile with role-based statistics (NEW)
+- `POST /api/profile/update` - Update name and password (NEW)
 
 ### Admin
 - `GET /api/admin/users` - List all users
@@ -243,12 +312,15 @@ AdzzatXperts/
 
 ### User
 - id, email, password, name, role, isApproved, timestamps
+- Relations: submissions (contributor), claimedSubmissions (reviewer), reviews
 
 ### Submission
-- id, title, domain, language, fileUrl, fileName, status, contributorId, timestamps
+- id, title, domain, language, fileUrl, fileName, status, contributorId, claimedById, timestamps
+- **claimedById**: Tracks which reviewer/admin claimed the task (NEW)
 
 ### Review
-- id, feedback, submissionId, reviewerId, timestamps
+- id, feedback, accountPostedIn, submissionId, reviewerId, timestamps
+- **accountPostedIn**: Optional field for where content was posted, visible only to admins (NEW)
 
 ## Status Flow
 
