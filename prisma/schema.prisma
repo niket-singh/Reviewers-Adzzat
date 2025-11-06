@@ -25,18 +25,18 @@ enum TaskStatus {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  email         String      @unique
-  password      String      // Hashed
-  name          String
-  role          UserRole    @default(CONTRIBUTOR)
-  isApproved    Boolean     @default(false) // For reviewers waiting admin approval
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id                String       @id @default(cuid())
+  email             String       @unique
+  password          String
+  name              String
+  role              UserRole     @default(CONTRIBUTOR)
+  isApproved        Boolean      @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  // Relations
-  submissions   Submission[]
-  reviews       Review[]
+  submissions       Submission[] @relation("ContributorSubmissions")
+  claimedSubmissions Submission[] @relation("ClaimedSubmissions")
+  reviews           Review[]
 
   @@index([email])
   @@index([role])
@@ -45,36 +45,38 @@ model User {
 model Submission {
   id            String      @id @default(cuid())
   title         String
-  domain        String      // Text field for task domain
-  language      String      // Text field for programming language
-  fileUrl       String      // R2 storage URL
-  fileName      String      // Original file name
+  domain        String
+  language      String
+  fileUrl       String
+  fileName      String
   status        TaskStatus  @default(PENDING)
+  claimedById   String?
+  claimedBy     User?       @relation("ClaimedSubmissions", fields: [claimedById], references: [id])
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
-  // Relations
   contributorId String
-  contributor   User        @relation(fields: [contributorId], references: [id])
+  contributor   User        @relation("ContributorSubmissions", fields: [contributorId], references: [id])
   reviews       Review[]
 
   @@index([contributorId])
   @@index([status])
   @@index([createdAt])
+  @@index([claimedById])
 }
 
 model Review {
-  id            String      @id @default(cuid())
-  feedback      String      @db.Text
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              String      @id @default(cuid())
+  feedback        String      @db.Text
+  accountPostedIn String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  // Relations
-  submissionId  String
-  submission    Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  submissionId    String
+  submission      Submission  @relation(fields: [submissionId], references: [id], onDelete: Cascade)
 
-  reviewerId    String
-  reviewer      User        @relation(fields: [reviewerId], references: [id])
+  reviewerId      String
+  reviewer        User        @relation(fields: [reviewerId], references: [id])
 
   @@index([submissionId])
   @@index([reviewerId])

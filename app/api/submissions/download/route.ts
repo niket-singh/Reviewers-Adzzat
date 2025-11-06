@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { TaskStatus } from '@prisma/client'
+import { getFileUrl } from '@/lib/r2'
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser()
 
@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
-    const body = await request.json()
-    const { submissionId } = body
+    const { searchParams } = new URL(request.url)
+    const submissionId = searchParams.get('id')
 
     if (!submissionId) {
       return NextResponse.json({ error: 'Missing submission ID' }, { status: 400 })
@@ -26,29 +26,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    if (submission.status !== TaskStatus.PENDING) {
-      return NextResponse.json({ error: 'Submission already claimed or processed' }, { status: 400 })
-    }
-
-    const updatedSubmission = await prisma.submission.update({
-      where: { id: submissionId },
-      data: {
-        status: TaskStatus.CLAIMED,
-        claimedById: currentUser.userId,
-      },
-      include: {
-        contributor: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-    })
+    const fileUrl = await getFileUrl(submission.fileUrl)
 
     return NextResponse.json({
-      message: 'Submission claimed successfully',
-      submission: updatedSubmission,
+      downloadUrl: fileUrl,
+      fileName: submission.fileName,
     })
   } catch (error) {
-    console.error('Claim submission error:', error)
+    console.error('Download error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -7,42 +7,34 @@ export async function POST(request: NextRequest) {
   try {
     const currentUser = await getCurrentUser()
 
-    if (!currentUser || currentUser.role !== 'REVIEWER') {
+    if (!currentUser || (currentUser.role !== 'REVIEWER' && currentUser.role !== 'ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
     }
 
     const body = await request.json()
-    const { submissionId, feedback, isEligible } = body
+    const { submissionId, feedback, isEligible, accountPostedIn } = body
 
     if (!submissionId || !feedback) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Check if submission exists
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
     })
 
     if (!submission) {
-      return NextResponse.json(
-        { error: 'Submission not found' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Submission not found' }, { status: 404 })
     }
 
-    // Create review and update submission status
     const review = await prisma.review.create({
       data: {
         submissionId,
         reviewerId: currentUser.userId,
         feedback,
+        accountPostedIn: accountPostedIn || null,
       },
     })
 
-    // Update submission status if marked as eligible
     if (isEligible) {
       await prisma.submission.update({
         where: { id: submissionId },
@@ -56,9 +48,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Submit feedback error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
