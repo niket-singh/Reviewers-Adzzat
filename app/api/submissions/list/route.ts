@@ -13,9 +13,19 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const statusFilter = searchParams.get('status')
+    const searchQuery = searchParams.get('search')
     const role = currentUser.role
 
     let where: any = {}
+
+    // Add search filter if provided
+    if (searchQuery) {
+      where.OR = [
+        { title: { contains: searchQuery, mode: 'insensitive' } },
+        { domain: { contains: searchQuery, mode: 'insensitive' } },
+        { language: { contains: searchQuery, mode: 'insensitive' } },
+      ]
+    }
 
     if (role === 'CONTRIBUTOR') {
       where.contributorId = currentUser.userId
@@ -23,13 +33,10 @@ export async function GET(request: NextRequest) {
         where.status = statusFilter.toUpperCase() as TaskStatus
       }
     } else if (role === 'REVIEWER') {
-      if (!statusFilter || statusFilter === 'pending') {
-        where.status = { in: [TaskStatus.PENDING, TaskStatus.CLAIMED] }
-      } else if (statusFilter === 'eligible') {
-        where.claimedById = currentUser.userId
-        where.status = TaskStatus.ELIGIBLE
-      } else if (statusFilter === 'all') {
-        where.claimedById = currentUser.userId
+      // Reviewers only see tasks assigned to them
+      where.claimedById = currentUser.userId
+      if (statusFilter && statusFilter !== 'all') {
+        where.status = statusFilter.toUpperCase() as TaskStatus
       }
     } else if (role === 'ADMIN') {
       if (statusFilter && statusFilter !== 'all') {
