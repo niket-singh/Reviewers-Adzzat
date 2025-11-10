@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { uploadFileToR2 } from '@/lib/r2'
+import { logActivity } from '@/lib/activity-log'
+import { autoAssignSubmission } from '@/lib/auto-assign'
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,9 +53,32 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Log the activity
+    await logActivity({
+      action: 'UPLOAD',
+      description: `Contributor uploaded task "${title}"`,
+      userId: currentUser.userId,
+      userName: currentUser.email,
+      userRole: currentUser.role,
+      targetId: submission.id,
+      targetType: 'submission',
+      metadata: {
+        title,
+        domain,
+        language,
+        fileName: file.name,
+      },
+    })
+
+    // Auto-assign to a reviewer
+    const reviewerId = await autoAssignSubmission(submission.id)
+
     return NextResponse.json({
-      message: 'File uploaded successfully',
+      message: reviewerId
+        ? 'File uploaded and assigned to reviewer successfully'
+        : 'File uploaded successfully (no reviewers available)',
       submission,
+      assigned: !!reviewerId,
     })
   } catch (error) {
     console.error('Upload error:', error)

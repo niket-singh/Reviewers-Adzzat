@@ -52,6 +52,7 @@ model Submission {
   status        TaskStatus  @default(PENDING)
   claimedById   String?
   claimedBy     User?       @relation("ClaimedSubmissions", fields: [claimedById], references: [id])
+  assignedAt    DateTime?   // When task was auto-assigned to reviewer
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
@@ -80,4 +81,21 @@ model Review {
 
   @@index([submissionId])
   @@index([reviewerId])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  action      String   // UPLOAD, REVIEW, APPROVE, DELETE, ASSIGN, etc.
+  description String   // Human-readable description
+  userId      String?  // Who performed the action
+  userName    String?  // Cached user name
+  userRole    String?  // Cached user role
+  targetId    String?  // Submission ID or User ID affected
+  targetType  String?  // "submission", "user", "review"
+  metadata    String?  @db.Text // Additional JSON data
+  createdAt   DateTime @default(now())
+
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
 }
