@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { apiClient } from '@/lib/api-client'
 import { DOMAINS, LANGUAGES } from '@/lib/constants/options'
 
 interface Submission {
@@ -28,6 +30,7 @@ export default function ContributorDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([])
   const [activeTab, setActiveTab] = useState<StatusFilter>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [showUpload, setShowUpload] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -38,49 +41,61 @@ export default function ContributorDashboard() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [userName, setUserName] = useState('')
   const router = useRouter()
+  const { user, loading: authLoading, logout } = useAuth()
 
+  // Redirect if not authenticated or not a contributor
   useEffect(() => {
-    fetchUserData()
+    if (!authLoading && !user) {
+      router.push('/')
+    } else if (user && user.role !== 'CONTRIBUTOR') {
+      router.push('/')
+    }
+  }, [user, authLoading, router])
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
     fetchSubmissions()
+    const interval = setInterval(() => {
+      fetchSubmissions()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
     filterSubmissions()
-  }, [submissions, activeTab])
-
-  const fetchUserData = async () => {
-    try {
-      const res = await fetch('/api/auth/me')
-      if (!res.ok) {
-        router.push('/')
-        return
-      }
-      const data = await res.json()
-      setUserName(data.user.name)
-    } catch (err) {
-      router.push('/')
-    }
-  }
+  }, [submissions, activeTab, searchQuery])
 
   const fetchSubmissions = async () => {
     try {
-      const res = await fetch('/api/submissions/list')
-      const data = await res.json()
-      setSubmissions(data.submissions || [])
+      const data = await apiClient.getSubmissions()
+      setSubmissions(data || [])
     } catch (err) {
       console.error('Error fetching submissions:', err)
     }
   }
 
   const filterSubmissions = () => {
-    if (activeTab === 'all') {
-      setFilteredSubmissions(submissions)
-    } else {
-      const filtered = submissions.filter(s => s.status.toLowerCase() === activeTab)
-      setFilteredSubmissions(filtered)
+    let filtered = submissions
+
+    // Filter by status tab
+    if (activeTab !== 'all') {
+      filtered = filtered.filter(s => s.status.toLowerCase() === activeTab)
     }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        s =>
+          s.title.toLowerCase().includes(query) ||
+          s.domain.toLowerCase().includes(query) ||
+          s.language.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredSubmissions(filtered)
   }
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -115,32 +130,34 @@ export default function ContributorDashboard() {
       uploadFormData.append('domain', formData.domain)
       uploadFormData.append('language', formData.language === 'Other' ? formData.customLanguage : formData.language)
 
-      const res = await fetch('/api/submissions/upload', {
-        method: 'POST',
-        body: uploadFormData,
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Upload failed')
-        setLoading(false)
-        return
-      }
+      await apiClient.uploadSubmission(uploadFormData)
 
       setShowUpload(false)
       setFormData({ title: '', domain: '', language: '', customLanguage: '' })
       setFile(null)
       fetchSubmissions()
-    } catch (err) {
-      setError('Network error. Please try again.')
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Upload failed')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      await apiClient.deleteSubmission(id)
+      fetchSubmissions()
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Failed to delete submission')
+    }
+  }
+
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' })
+    await logout()
     router.push('/')
   }
 
@@ -171,13 +188,21 @@ export default function ContributorDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-lg text-gray-600">Loading...</div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Contributor Dashboard</h1>
-            <p className="text-sm text-gray-600">Welcome, {userName}</p>
+            <p className="text-sm text-gray-600">Welcome, {user.name}</p>
           </div>
           <div className="flex gap-2">
             <button
@@ -197,6 +222,17 @@ export default function ContributorDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search by title, domain, or language..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white shadow-sm"
+          />
+        </div>
+
         <div className="flex justify-between items-center mb-6">
           <div className="flex gap-2 bg-white rounded-lg shadow-sm p-1">
             {(['all', 'pending', 'claimed', 'eligible', 'approved'] as StatusFilter[]).map((tab) => (
@@ -346,7 +382,9 @@ export default function ContributorDashboard() {
             <div className="bg-white rounded-xl shadow-md p-12 text-center">
               <div className="text-gray-400 text-6xl mb-4">📋</div>
               <p className="text-gray-500 text-lg">
-                {activeTab === 'all'
+                {searchQuery
+                  ? 'No submissions match your search.'
+                  : activeTab === 'all'
                   ? 'No submissions yet. Upload your first task to get started!'
                   : `No ${activeTab} submissions.`}
               </p>
@@ -374,13 +412,23 @@ export default function ContributorDashboard() {
                       Submitted: {new Date(submission.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <span
-                    className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${getStatusClass(
-                      submission.status
-                    )}`}
-                  >
-                    {submission.status}
-                  </span>
+                  <div className="flex flex-col gap-2 items-end">
+                    <span
+                      className={`px-4 py-2 rounded-full text-sm font-bold border-2 ${getStatusClass(
+                        submission.status
+                      )}`}
+                    >
+                      {submission.status}
+                    </span>
+                    {submission.status === 'PENDING' && (
+                      <button
+                        onClick={() => handleDelete(submission.id, submission.title)}
+                        className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {submission.reviews.length > 0 && (

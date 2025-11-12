@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
 
 export default function Home() {
   const [isSignUp, setIsSignUp] = useState(false)
@@ -13,41 +14,14 @@ export default function Home() {
   })
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const router = useRouter()
+  const { user, loading: authLoading, login, signup } = useAuth()
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-    setMessage('')
-    setLoading(true)
-
-    try {
-      const endpoint = isSignUp ? '/api/auth/signup' : '/api/auth/signin'
-      const body = isSignUp ? formData : { email: formData.email, password: formData.password }
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Something went wrong')
-        setLoading(false)
-        return
-      }
-
-      if (data.needsApproval) {
-        setMessage(data.message)
-        setLoading(false)
-        return
-      }
-
-      // Redirect based on role
-      const role = data.user.role
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      const role = user.role
       if (role === 'CONTRIBUTOR') {
         router.push('/contributor')
       } else if (role === 'REVIEWER') {
@@ -55,9 +29,34 @@ export default function Home() {
       } else if (role === 'ADMIN') {
         router.push('/admin')
       }
-    } catch (err) {
-      setError('Network error. Please try again.')
-      setLoading(false)
+    }
+  }, [user, authLoading, router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setMessage('')
+    setSubmitting(true)
+
+    try {
+      if (isSignUp) {
+        await signup(formData.email, formData.password, formData.name, formData.role)
+
+        // Check if reviewer - they need approval
+        if (formData.role === 'REVIEWER') {
+          setMessage('Account created! Waiting for admin approval.')
+          setSubmitting(false)
+          return
+        }
+      } else {
+        await login(formData.email, formData.password)
+      }
+
+      // The useEffect will handle redirect
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.error || err.message || 'Something went wrong'
+      setError(errorMessage)
+      setSubmitting(false)
     }
   }
 
@@ -171,10 +170,10 @@ export default function Home() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting || authLoading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Sign In'}
+            {submitting || authLoading ? 'Please wait...' : isSignUp ? 'Sign Up' : 'Sign In'}
           </button>
         </form>
       </div>

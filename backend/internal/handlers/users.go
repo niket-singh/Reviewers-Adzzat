@@ -1,0 +1,374 @@
+package handlers
+
+import (
+	"net/http"
+
+	"github.com/adzzatxperts/backend/internal/database"
+	"github.com/adzzatxperts/backend/internal/models"
+	"github.com/adzzatxperts/backend/internal/services"
+	"github.com/adzzatxperts/backend/internal/storage"
+	"github.com/adzzatxperts/backend/internal/utils"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+)
+
+// GetUsers returns all users (admin only)
+func GetUsers(c *gin.Context) {
+	var users []models.User
+	if err := database.DB.Order("created_at DESC").Find(&users).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+		return
+	}
+
+	// Remove password hashes
+	var response []gin.H
+	for _, user := range users {
+		response = append(response, gin.H{
+			"id":         user.ID,
+			"email":      user.Email,
+			"name":       user.Name,
+			"role":       user.Role,
+			"isApproved": user.IsApproved,
+			"createdAt":  user.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"users": response})
+}
+
+// ApproveReviewer approves a reviewer
+func ApproveReviewer(c *gin.Context) {
+	userID := c.Param("id")
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.Role != models.RoleReviewer {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a reviewer"})
+		return
+	}
+
+	user.IsApproved = true
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve reviewer"})
+		return
+	}
+
+	// Log activity
+	currentUserID, _ := c.Get("userId")
+	currentUserName, _ := c.Get("userEmail")
+	currentUserRole, _ := c.Get("userRole")
+	uid2, _ := uuid.Parse(currentUserID.(string))
+	userName := currentUserName.(string)
+	userRole := currentUserRole.(string)
+	targetType := "user"
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "APPROVE_REVIEWER",
+		Description: "Admin approved reviewer: " + user.Name,
+		UserID:      &uid2,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &uid,
+		TargetType:  &targetType,
+	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Reviewer approved successfully"})
+}
+
+// SwitchUserRole changes a user's role (NEW FEATURE)
+func SwitchUserRole(c *gin.Context) {
+	userID := c.Param("id")
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var req struct {
+		NewRole string `json:"newRole" binding:"required,oneof=CONTRIBUTOR REVIEWER ADMIN"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	oldRole := string(user.Role)
+	newRole := req.NewRole
+
+	// Update role
+	user.Role = models.UserRole(newRole)
+
+	// Auto-approve if switching to contributor
+	if user.Role == models.RoleContributor {
+		user.IsApproved = true
+	}
+
+	// Reset approval if switching to reviewer
+	if user.Role == models.RoleReviewer && oldRole != string(models.RoleReviewer) {
+		user.IsApproved = false
+	}
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to switch role"})
+		return
+	}
+
+	// Log activity
+	currentUserID, _ := c.Get("userId")
+	currentUserName, _ := c.Get("userEmail")
+	currentUserRole, _ := c.Get("userRole")
+	uid2, _ := uuid.Parse(currentUserID.(string))
+	userName := currentUserName.(string)
+	userRole := currentUserRole.(string)
+	targetType := "user"
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "SWITCH_ROLE",
+		Description: "Admin switched " + user.Name + "'s role from " + oldRole + " to " + newRole,
+		UserID:      &uid2,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &uid,
+		TargetType:  &targetType,
+		Metadata: map[string]interface{}{
+			"oldRole": oldRole,
+			"newRole": newRole,
+		},
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Role switched successfully",
+		"user": gin.H{
+			"id":         user.ID,
+			"email":      user.Email,
+			"name":       user.Name,
+			"role":       user.Role,
+			"isApproved": user.IsApproved,
+		},
+	})
+}
+
+// DeleteUser deletes a user account
+func DeleteUser(c *gin.Context) {
+	userID := c.Param("id")
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	currentUserID, _ := c.Get("userId")
+	if currentUserID.(string) == userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete your own account"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Preload("Submissions").Preload("ClaimedSubmissions").Preload("Reviews").First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.Role == models.RoleAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Cannot delete admin users"})
+		return
+	}
+
+	deletionSummary := gin.H{
+		"userName":             user.Name,
+		"userEmail":            user.Email,
+		"userRole":             user.Role,
+		"submissionsDeleted":   0,
+		"filesDeleted":         0,
+		"reviewsDeleted":       0,
+		"assignmentsUnassigned": 0,
+	}
+
+	// Handle contributor deletion
+	if user.Role == models.RoleContributor {
+		for _, submission := range user.Submissions {
+			storage.DeleteFile(submission.FileURL)
+			deletionSummary["filesDeleted"] = deletionSummary["filesDeleted"].(int) + 1
+		}
+		database.DB.Where("contributor_id = ?", uid).Delete(&models.Submission{})
+		deletionSummary["submissionsDeleted"] = len(user.Submissions)
+	}
+
+	// Handle reviewer deletion
+	if user.Role == models.RoleReviewer {
+		// Unassign tasks
+		database.DB.Model(&models.Submission{}).
+			Where("claimed_by_id = ?", uid).
+			Updates(map[string]interface{}{
+				"claimed_by_id": nil,
+				"assigned_at":   nil,
+				"status":        models.StatusPending,
+			})
+		deletionSummary["assignmentsUnassigned"] = len(user.ClaimedSubmissions)
+
+		// Delete reviews
+		database.DB.Where("reviewer_id = ?", uid).Delete(&models.Review{})
+		deletionSummary["reviewsDeleted"] = len(user.Reviews)
+	}
+
+	// Delete user
+	if err := database.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+		return
+	}
+
+	// Log activity
+	currentUserName, _ := c.Get("userEmail")
+	currentUserRole, _ := c.Get("userRole")
+	uid2, _ := uuid.Parse(currentUserID.(string))
+	userName := currentUserName.(string)
+	userRole := currentUserRole.(string)
+	targetType := "user"
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "DELETE_USER",
+		Description: "Admin deleted " + string(user.Role) + " account: " + user.Name,
+		UserID:      &uid2,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &uid,
+		TargetType:  &targetType,
+		Metadata:    deletionSummary,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":         "User deleted successfully",
+		"deletionSummary": deletionSummary,
+	})
+}
+
+// UpdateProfile updates user profile
+func UpdateProfile(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	uid, _ := uuid.Parse(userID.(string))
+
+	var req struct {
+		Name            string `json:"name"`
+		CurrentPassword string `json:"currentPassword"`
+		NewPassword     string `json:"newPassword"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Update name if provided
+	if req.Name != "" {
+		user.Name = req.Name
+	}
+
+	// Update password if provided
+	if req.NewPassword != "" {
+		if req.CurrentPassword == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Current password required"})
+			return
+		}
+
+		if !utils.CheckPassword(req.CurrentPassword, user.PasswordHash) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Current password is incorrect"})
+			return
+		}
+
+		hashedPassword, err := utils.HashPassword(req.NewPassword)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
+			return
+		}
+		user.PasswordHash = hashedPassword
+	}
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update profile"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Profile updated successfully",
+		"user": gin.H{
+			"id":         user.ID,
+			"email":      user.Email,
+			"name":       user.Name,
+			"role":       user.Role,
+			"isApproved": user.IsApproved,
+		},
+	})
+}
+
+// GetProfile returns user profile with stats
+func GetProfile(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	uid, _ := uuid.Parse(userID.(string))
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	stats := gin.H{}
+
+	if user.Role == models.RoleContributor {
+		var total, pending, claimed, eligible, approved int64
+		database.DB.Model(&models.Submission{}).Where("contributor_id = ?", uid).Count(&total)
+		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", uid, models.StatusPending).Count(&pending)
+		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", uid, models.StatusClaimed).Count(&claimed)
+		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", uid, models.StatusEligible).Count(&eligible)
+		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", uid, models.StatusApproved).Count(&approved)
+
+		stats = gin.H{
+			"totalSubmissions":    total,
+			"pending":             pending,
+			"claimed":             claimed,
+			"eligibleSubmissions": eligible,
+			"approvedSubmissions": approved,
+		}
+	} else if user.Role == models.RoleReviewer || user.Role == models.RoleAdmin {
+		var reviewsCount, claimedTasks, eligibleMarked int64
+		database.DB.Model(&models.Review{}).Where("reviewer_id = ?", uid).Count(&reviewsCount)
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ?", uid).Count(&claimedTasks)
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", uid, models.StatusEligible).Count(&eligibleMarked)
+
+		stats = gin.H{
+			"totalReviews":  reviewsCount,
+			"tasksClaimed":  claimedTasks,
+			"eligibleMarked": eligibleMarked,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"user": gin.H{
+			"id":         user.ID,
+			"email":      user.Email,
+			"name":       user.Name,
+			"role":       user.Role,
+			"isApproved": user.IsApproved,
+		},
+		"stats": stats,
+	})
+}
