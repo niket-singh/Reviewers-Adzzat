@@ -1,374 +1,390 @@
 # AdzzatXperts - Task Submission & Review Platform
 
-A scalable web platform for task submission and review, supporting up to 500+ users with three user types: Admin, Reviewer, and Contributor.
-
-## Features
-
-### User Roles
-- **Contributors**: Upload tasks, view submissions, and receive feedback
-- **Reviewers**: Review tasks, provide feedback, mark eligible submissions (requires admin approval)
-- **Admins**: Approve reviewers, approve eligible tasks, manage users, view leaderboard
-
-### Key Functionality
-- **File Upload**: Contributors can upload ZIP files with domain and language selection (dropdowns + custom input)
-- **Download System**: Reviewers and admins can download submission files
-- **Review System**: Reviewers can claim and review tasks with feedback and optional account field
-- **Admin Reviews**: Admins can now claim and review tasks (in addition to approving)
-- **Fair Task Distribution**: Tasks are distributed evenly among reviewers
-- **Status Tracking**: Visual color-coded status system (Pending → Claimed → Eligible/Blue → Approved/Green)
-- **Status Tabs**: Filter submissions by status (All/Pending/Claimed/Eligible/Approved)
-- **Profile Pages**: All users can view stats and edit name/password
-- **Account Tracking**: Reviewers can specify where content was posted (visible only to admins)
-- **Leaderboard**: Track top contributors by eligible and approved tasks
-- **User Management**: Admin panel for managing users and approvals
-- **Modern UI**: Beautiful gradient backgrounds and smooth transitions
-
-## Tech Stack
-
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes (Serverless)
-- **Database**: PostgreSQL (via Neon - free tier)
-- **ORM**: Prisma
-- **File Storage**: Supabase Storage (1GB free - NO CREDIT CARD REQUIRED!)
-- **Authentication**: JWT + HTTP-only cookies
-- **Deployment**: Vercel
-
-## Prerequisites
-
-- Node.js 18+ and npm
-- A Neon PostgreSQL database (free at [neon.tech](https://neon.tech))
-- Supabase Storage (free at [supabase.com](https://supabase.com) - no credit card needed!)
-
-## Setup Instructions
-
-### 1. Clone and Install
-
-```bash
-git clone <your-repo-url>
-cd AdzzatXperts
-npm install
-```
-
-### 2. Database Setup (Neon PostgreSQL)
-
-1. Go to [neon.tech](https://neon.tech) and create a free account
-2. Create a new project
-3. Copy your connection string (looks like: `postgresql://username:password@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require`)
-
-### 3. Supabase Storage Setup (NO CREDIT CARD NEEDED!)
-
-1. Go to [supabase.com](https://supabase.com) and sign up with GitHub (fastest)
-2. Create a new project:
-   - Project name: `AdzzatXperts`
-   - Database password: Create a strong password (save it!)
-   - Region: Choose closest to you
-   - Plan: **Free** (default)
-3. Wait 2-3 minutes for project setup
-4. Click **"Storage"** in left sidebar
-5. Click **"Create a new bucket"**:
-   - Name: `submissions`
-   - Public bucket: **OFF** (keep private)
-6. Go to **Settings** (gear icon) → **API**
-7. Copy these values:
-   - **Project URL**: `https://xxxxx.supabase.co`
-   - **service_role key** (the secret one, NOT anon public): `eyJhbGc...`
-
-### 4. Environment Variables
-
-Copy `.env.example` to `.env` and fill in your values:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env.local` (or create it from `.env.example`):
-
-```env
-# Database (from Neon)
-DATABASE_URL="postgresql://username:password@ep-xxx.us-east-2.aws.neon.tech/dbname?sslmode=require"
-
-# JWT Secret (generate a random string - at least 32 characters)
-JWT_SECRET="your-super-secret-jwt-key-change-this-in-production"
-
-# Supabase Storage (from Supabase Project Settings -> API)
-SUPABASE_URL="https://xxxxx.supabase.co"
-SUPABASE_SERVICE_KEY="your-service-role-key-here"
-
-# App URL
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
-
-**IMPORTANT**: Use the `service_role` key (secret), NOT the `anon` public key!
-
-### 5. Database Migration
-
-Push the schema to your database:
-
-```bash
-npm run db:push
-```
-
-### 6. Seed Admin User
-
-Create the default admin account:
-
-```bash
-npm run db:seed
-```
-
-This creates an admin user:
-- Email: `admin@adzzat.com`
-- Password: `admin123`
-
-**Important**: Change this password after first login!
-
-### 7. Run Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Migrating Existing Installations
-
-⚠️ **If you have an existing installation** and are updating to the latest version, you need to migrate your database.
-
-The latest updates add new features:
-- **Download functionality** for reviewers and admins
-- **Account field** in feedback (visible only to admins)
-- **Admin review capability** (admins can now claim and review tasks)
-- **Fair task distribution** (tracks which reviewer claimed each task)
-
-### Quick Migration
-
-```bash
-# Pull latest changes
-git pull
-
-# Run Prisma migration
-npx prisma migrate dev --name add_claimed_and_account_fields
-
-# Or for production
-npx prisma migrate deploy
-
-# Restart your dev server
-npm run dev
-```
-
-### Full Migration Guide
-
-See [DATABASE-MIGRATION.md](./DATABASE-MIGRATION.md) for:
-- Detailed migration steps
-- Manual SQL migration (if needed)
-- Troubleshooting common issues
-- Production deployment guidance
-- Rollback procedures
-
-**New installations can skip this section** - the setup instructions above will create the correct schema automatically.
-
-## Usage Guide
-
-### For Contributors
-
-1. Sign up with role "Contributor"
-2. Automatically approved and redirected to dashboard
-3. Click "Upload New Task"
-4. Fill in:
-   - Task title
-   - **Domain**: Select from dropdown (Bug Fixes, DevOps/Security, etc.)
-   - **Language**: Select from dropdown (Python, JavaScript, etc.) or choose "Other" to specify
-   - Upload ZIP file (max 10MB)
-5. **View submissions by status**: Use tabs (All/Pending/Claimed/Eligible/Approved)
-6. **Profile**: View your total submissions, eligible tasks, and approved tasks
-7. Color coding:
-   - Gray = Pending
-   - Yellow = Claimed by reviewer
-   - Blue = Eligible for admin approval
-   - Green = Approved by admin
-
-### For Reviewers
-
-1. Sign up with role "Reviewer"
-2. Wait for admin approval
-3. After approval, sign in to reviewer dashboard
-4. **Browse tasks**: Use tabs (Pending/Claimed/Eligible)
-5. **Claim a task**: Click "Claim Task" on pending submissions
-6. **Download files**: Click download button to review ZIP files
-7. **Provide feedback**:
-   - Enter detailed feedback in the form
-   - (Optional) Specify "Account Posted In" - e.g., GitHub, LinkedIn (visible only to admins)
-   - Check "Mark as Eligible" to recommend for admin approval
-8. **Profile**: View total reviews, tasks claimed, and eligible tasks marked
-
-### For Admins
-
-1. Sign in with admin credentials
-2. **Submissions Tab**:
-   - Filter by status (Eligible/All/Pending/Claimed/Approved)
-   - Download submission files
-   - Approve eligible (blue) tasks to turn them green
-   - View "Account Posted In" field from reviewer feedback
-3. **Review Tab** (NEW):
-   - Admins can now claim and review tasks like reviewers
-   - Provide feedback and mark as eligible
-4. **Users Tab**:
-   - Approve pending reviewers
-   - View all user accounts
-5. **Leaderboard Tab**:
-   - View top contributors by eligible and approved tasks
-6. **Profile**: View total reviews, tasks claimed, and eligible tasks marked
-
-## Deployment to Vercel
-
-### 1. Push to GitHub
-
-```bash
-git add .
-git commit -m "Initial commit"
-git push origin main
-```
-
-### 2. Deploy to Vercel
-
-1. Go to [vercel.com](https://vercel.com)
-2. Import your GitHub repository
-3. Add environment variables in Vercel dashboard:
-   - `DATABASE_URL` (from Neon)
-   - `JWT_SECRET` (generate a new long random string)
-   - `SUPABASE_URL` (from Supabase project)
-   - `SUPABASE_SERVICE_KEY` (from Supabase project)
-   - `NEXT_PUBLIC_APP_URL` (your Vercel URL, e.g., `https://your-app.vercel.app`)
-4. Deploy!
-
-### 3. Run Database Migration on Production
-
-After deployment, run:
-
-```bash
-npx prisma db push
-```
-
-Then seed the admin user:
-
-```bash
-npm run db:seed
-```
-
-## Project Structure
-
-```
-AdzzatXperts/
-├── app/                      # Next.js app directory
-│   ├── api/                  # API routes
-│   │   ├── auth/            # Authentication endpoints
-│   │   ├── submissions/     # Submission management
-│   │   └── admin/           # Admin endpoints
-│   ├── contributor/         # Contributor dashboard
-│   ├── reviewer/            # Reviewer dashboard
-│   ├── admin/               # Admin dashboard
-│   ├── layout.tsx           # Root layout
-│   ├── page.tsx             # Landing/auth page
-│   └── globals.css          # Global styles
-├── lib/                     # Utility libraries
-│   ├── prisma.ts           # Prisma client
-│   ├── auth.ts             # Auth utilities
-│   └── r2.ts               # R2 storage utilities
-├── prisma/
-│   ├── schema.prisma       # Database schema
-│   └── seed.ts             # Seed script
-├── types/                   # TypeScript types
-├── middleware.ts           # Next.js middleware
-└── package.json
-```
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/signup` - Register new user
-- `POST /api/auth/signin` - Sign in
-- `POST /api/auth/logout` - Logout
-- `GET /api/auth/me` - Get current user
-
-### Submissions
-- `POST /api/submissions/upload` - Upload task (Contributor)
-- `GET /api/submissions/list` - List submissions with status filtering (role-based)
-- `POST /api/submissions/claim` - Claim task (Reviewer/Admin)
-- `POST /api/submissions/feedback` - Submit feedback with optional account field (Reviewer/Admin)
-- `POST /api/submissions/approve` - Approve task (Admin)
-- `GET /api/submissions/download` - Download submission file (Reviewer/Admin) (NEW)
-- `GET /api/submissions/next-task` - Get next task for fair distribution (Reviewer/Admin) (NEW)
-
-### Profile
-- `GET /api/profile` - Get user profile with role-based statistics (NEW)
-- `POST /api/profile/update` - Update name and password (NEW)
-
-### Admin
-- `GET /api/admin/users` - List all users
-- `POST /api/admin/approve-reviewer` - Approve reviewer
-- `GET /api/admin/leaderboard` - Get leaderboard
-
-## Database Schema
-
-### User
-- id, email, password, name, role, isApproved, timestamps
-- Relations: submissions (contributor), claimedSubmissions (reviewer), reviews
-
-### Submission
-- id, title, domain, language, fileUrl, fileName, status, contributorId, claimedById, timestamps
-- **claimedById**: Tracks which reviewer/admin claimed the task (NEW)
-
-### Review
-- id, feedback, accountPostedIn, submissionId, reviewerId, timestamps
-- **accountPostedIn**: Optional field for where content was posted, visible only to admins (NEW)
-
-## Status Flow
-
-```
-PENDING (Gray)
-   ↓ (Reviewer claims)
-CLAIMED (Yellow)
-   ↓ (Reviewer marks eligible)
-ELIGIBLE (Blue)
-   ↓ (Admin approves)
-APPROVED (Green)
-```
-
-## Free Tier Limits
-
-- **Neon PostgreSQL**: 10GB storage, 1 project - NO CREDIT CARD
-- **Supabase Storage**: 1GB storage, 2GB bandwidth/month - NO CREDIT CARD
-- **Vercel**: 100GB bandwidth, unlimited deployments
-
-**This setup easily handles 500+ users without any payment!**
-
-For growth beyond 500 users, you can upgrade Supabase Storage to 100GB for just $25/month.
-
-## Troubleshooting
-
-### Database Connection Issues
-- Verify your `DATABASE_URL` in `.env`
-- Ensure your IP is allowed in Neon dashboard
-
-### File Upload Issues
-- Check `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` are correct in `.env.local`
-- Verify you're using the `service_role` key, NOT the `anon` public key
-- Ensure bucket name is `submissions` (lowercase)
-- Check bucket exists in Supabase Storage dashboard
-- Verify Supabase project is active (not paused)
-
-### Build Errors
-- Run `npm run postinstall` to generate Prisma client
-- Clear `.next` folder and rebuild
-
-## License
-
-ISC
-
-## Support
-
-For issues, please create a GitHub issue or contact the development team.
+A scalable web platform for managing task submissions and reviews with three user roles: Contributors, Reviewers, and Admins.
+
+## 🏗️ Architecture
+
+**Frontend**: Next.js 14 (React, TypeScript, Tailwind CSS)
+**Backend**: Go (Gin framework, GORM)
+**Database**: PostgreSQL (Neon)
+**Storage**: Supabase Storage
+**Authentication**: JWT tokens
 
 ---
 
-Built with ❤️ for AdzzatXperts
+## ✨ Features
+
+### For Contributors
+- ✅ Upload ZIP files with domain and language selection
+- ✅ Track submission status (Pending → Claimed → Eligible → Approved)
+- ✅ View reviewer feedback
+- ✅ Delete pending submissions
+- ✅ Search submissions by title, domain, or language
+- ✅ Auto-refresh dashboard every 30 seconds
+- ✅ View submission statistics
+
+### For Reviewers
+- ✅ **Auto-assigned tasks** (fair distribution algorithm)
+- ✅ Download submission files
+- ✅ Submit detailed feedback
+- ✅ Mark submissions as eligible
+- ✅ Search tasks
+- ✅ Auto-refresh dashboard
+- ✅ View review statistics
+- ✅ **Requires admin approval** to start reviewing
+
+### For Admins
+- ✅ **5 comprehensive dashboard tabs**:
+  - **Submissions**: View, approve, delete any submission
+  - **Users**: Manage users, approve reviewers, **switch roles**, delete accounts
+  - **Stats**: Platform overview, contributor stats, reviewer workload
+  - **Logs**: Activity log viewer (recent 50 actions)
+  - **Leaderboard**: Top contributors ranking
+- ✅ Search functionality across all tabs
+- ✅ Delete users with cascade warnings
+- ✅ **Role switching** capability
+- ✅ Comprehensive statistics and analytics
+- ✅ Auto-refresh
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Node.js** 18+ (for frontend)
+- **Go** 1.21+ (for backend)
+- **PostgreSQL** database (Neon recommended)
+- **Supabase** account (for file storage)
+
+### 1. Clone Repository
+```bash
+git clone https://github.com/your-username/AdzzatXperts.git
+cd AdzzatXperts
+```
+
+### 2. Setup Backend
+```bash
+cd backend
+
+# Create .env file
+cp .env.example .env
+
+# Edit .env with your credentials:
+# - DATABASE_URL (PostgreSQL connection string)
+# - JWT_SECRET (min 32 characters)
+# - SUPABASE_URL and SUPABASE_SERVICE_KEY
+# - PORT=8080
+# - CORS_ORIGINS=http://localhost:3000
+
+# Install dependencies
+go mod download
+
+# Run backend
+go run cmd/api/main.go
+```
+
+Backend will start on `http://localhost:8080`
+
+### 3. Setup Frontend
+```bash
+# In root directory
+npm install
+
+# Create .env.local
+cp .env.local.example .env.local
+
+# Edit .env.local:
+# NEXT_PUBLIC_API_URL=http://localhost:8080/api
+
+# Run frontend
+npm run dev
+```
+
+Frontend will start on `http://localhost:3000`
+
+### 4. Create Supabase Bucket
+1. Go to your Supabase project
+2. Navigate to Storage
+3. Create a bucket named `submissions`
+4. Set bucket to public or configure policies
+
+### 5. Test the Application
+1. Open `http://localhost:3000`
+2. Sign up as a contributor
+3. Sign up as a reviewer (will need approval)
+4. Sign up as an admin (first user can be made admin via database)
+
+---
+
+## 📁 Project Structure
+
+```
+AdzzatXperts/
+├── app/                    # Next.js pages (frontend)
+│   ├── admin/             # Admin dashboard
+│   ├── contributor/       # Contributor dashboard
+│   ├── reviewer/          # Reviewer dashboard
+│   ├── profile/           # User profile page
+│   ├── page.tsx           # Landing/auth page
+│   └── layout.tsx         # Root layout
+├── lib/                   # Frontend utilities
+│   ├── api-client.ts      # Axios API client
+│   ├── auth-context.tsx   # Auth provider
+│   └── constants/         # App constants
+├── backend/               # Go backend
+│   ├── cmd/api/          # Main entry point
+│   ├── internal/
+│   │   ├── handlers/     # HTTP handlers
+│   │   ├── services/     # Business logic
+│   │   ├── models/       # Database models
+│   │   ├── middleware/   # Auth & CORS
+│   │   ├── database/     # DB connection
+│   │   ├── utils/        # JWT & password utilities
+│   │   └── storage/      # File storage
+│   ├── go.mod            # Go dependencies
+│   ├── Dockerfile        # Container build
+│   └── README.md         # Backend documentation
+├── components/            # Reusable React components
+├── types/                 # TypeScript type definitions
+├── .env.local.example     # Frontend environment template
+└── README.md              # This file
+```
+
+---
+
+## 🔌 API Endpoints
+
+### Authentication
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/signin` - Login
+- `POST /api/auth/logout` - Logout
+- `GET /api/auth/me` - Get current user
+
+### Profile
+- `GET /api/profile` - Get user profile with stats
+- `PUT /api/profile` - Update name/password
+
+### Submissions
+- `POST /api/submissions` - Upload submission (FormData)
+- `GET /api/submissions` - List submissions (with search/filter)
+- `GET /api/submissions/:id` - Get single submission
+- `DELETE /api/submissions/:id` - Delete submission
+- `GET /api/submissions/:id/download` - Get download URL
+- `POST /api/submissions/:id/feedback` - Submit review
+- `PUT /api/submissions/:id/approve` - Approve (admin only)
+
+### Admin
+- `GET /api/users` - List all users
+- `PUT /api/users/:id/approve` - Approve reviewer
+- `PUT /api/users/:id/role` - Switch user role ⭐
+- `DELETE /api/users/:id` - Delete user
+- `GET /api/logs` - Get activity logs ⭐
+- `GET /api/stats` - Get platform statistics ⭐
+- `GET /api/leaderboard` - Get top contributors
+
+**Full API documentation**: See `backend/README.md`
+
+---
+
+## 🎨 Tech Stack
+
+### Frontend
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Axios** - HTTP client
+- **React Hooks** - State management
+
+### Backend
+- **Go 1.21+** - Programming language
+- **Gin** - Web framework
+- **GORM** - ORM for PostgreSQL
+- **golang-jwt/jwt/v5** - JWT authentication
+- **bcrypt** - Password hashing
+- **Supabase Storage Go** - File storage client
+
+### Database & Storage
+- **PostgreSQL** - Main database (Neon)
+- **Supabase Storage** - File storage for ZIP uploads
+
+---
+
+## 🔒 Security Features
+
+- **JWT Authentication** - Secure token-based auth
+- **Password Hashing** - Bcrypt with cost factor 14
+- **Role-Based Access Control** - Middleware enforces permissions
+- **CORS Protection** - Configurable allowed origins
+- **SQL Injection Prevention** - GORM parameterized queries
+- **XSS Protection** - React auto-escaping
+- **File Upload Validation** - ZIP files only
+
+---
+
+## 📊 Key Features
+
+### Auto-Assignment System
+Tasks are automatically assigned to the reviewer with the fewest active tasks, ensuring fair workload distribution.
+
+### Activity Logging
+All platform actions are logged for admin oversight:
+- User signups
+- Submissions uploaded
+- Reviews submitted
+- Approvals granted
+- Role changes
+- Deletions
+
+### Comprehensive Statistics
+Admins can view:
+- Platform overview (total users, submissions, pending reviews)
+- Contributor stats (approval rates, totals)
+- Reviewer stats (workload, tasks reviewed)
+
+### Role Switching
+Admins can dynamically change user roles:
+- CONTRIBUTOR ↔ REVIEWER ↔ ADMIN
+- Auto-approval logic for contributors
+- Reset approval when switching to reviewer
+
+---
+
+## 🚀 Deployment
+
+### Backend Deployment (Railway/Render)
+
+**Railway**:
+```bash
+# Install Railway CLI
+npm install -g @railway/cli
+
+# Login and deploy
+railway login
+railway init
+railway up
+```
+
+**Render**:
+1. Create new Web Service
+2. Connect GitHub repository
+3. Set build command: `go build -o server cmd/api/main.go`
+4. Set start command: `./server`
+5. Add environment variables
+
+### Frontend Deployment (Vercel/Netlify)
+
+**Vercel**:
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel
+```
+
+**Netlify**:
+```bash
+# Install Netlify CLI
+npm install -g netlify-cli
+
+# Deploy
+netlify deploy
+```
+
+**Important**: Set `NEXT_PUBLIC_API_URL` to your backend URL
+
+---
+
+## 📝 Environment Variables
+
+### Frontend (`.env.local`)
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
+```
+
+### Backend (`backend/.env`)
+```env
+DATABASE_URL=postgresql://user:pass@host:5432/dbname
+JWT_SECRET=your-secret-key-min-32-characters
+SUPABASE_URL=https://xxxxx.supabase.co
+SUPABASE_SERVICE_KEY=your-service-role-key
+PORT=8080
+CORS_ORIGINS=http://localhost:3000
+```
+
+---
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+- [ ] Sign up as contributor
+- [ ] Upload submission
+- [ ] Sign up as reviewer
+- [ ] Admin approves reviewer
+- [ ] Reviewer sees auto-assigned task
+- [ ] Reviewer submits feedback
+- [ ] Reviewer marks as eligible
+- [ ] Admin approves submission
+- [ ] Test search functionality
+- [ ] Test delete functionality
+- [ ] Test role switching (admin)
+- [ ] View activity logs (admin)
+- [ ] View statistics (admin)
+
+---
+
+## 📚 Documentation
+
+- **`backend/README.md`** - Complete backend documentation
+- **`FRONTEND-INTEGRATION-COMPLETE.md`** - Frontend integration details
+- **`FRONTEND-INTEGRATION-GUIDE.md`** - Integration guide
+- **`SESSION-SUMMARY.md`** - Development session summary
+- **`REBUILD-ARCHITECTURE.md`** - Architecture decisions
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## 👥 Support
+
+For issues or questions:
+- Open an issue on GitHub
+- Check existing documentation
+- Review activity logs for errors
+
+---
+
+## 🎯 Roadmap
+
+### Future Enhancements
+- [ ] Email notifications
+- [ ] Password reset flow
+- [ ] User avatars
+- [ ] File preview
+- [ ] Advanced filtering and sorting
+- [ ] Data export (CSV/PDF)
+- [ ] Mobile app
+- [ ] Real-time notifications (WebSocket)
+- [ ] Bulk operations
+- [ ] Advanced analytics dashboard
+
+---
+
+**Built with ❤️ using Go, Next.js, and modern web technologies**
+
+**Version**: 2.0.0 (Complete Rebuild)
+**Last Updated**: November 2025
