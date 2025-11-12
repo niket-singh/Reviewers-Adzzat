@@ -27,6 +27,7 @@
     "@aws-sdk/s3-request-presigner": "^3.922.0",
     "@prisma/client": "^6.19.0",
     "@supabase/supabase-js": "^2.79.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "jsonwebtoken": "^9.0.2",
     "next": "^14.2.33",
