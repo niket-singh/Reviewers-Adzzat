@@ -1,43 +1,35 @@
 {
   "name": "adzzatxperts",
-  "version": "1.0.0",
-  "description": "Scalable web platform for task submission and review",
+  "version": "2.0.0",
+  "description": "Scalable web platform for task submission and review - Built with Next.js + Go",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "lint": "next lint"
   },
   "repository": {
     "type": "git",
     "url": "http://local_proxy@127.0.0.1:54190/git/niket-singh/AdzzatXperts"
   },
-  "keywords": [],
+  "keywords": [
+    "nextjs",
+    "go",
+    "golang",
+    "task-management",
+    "review-platform",
+    "postgresql"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.922.0",
-    "@aws-sdk/s3-request-presigner": "^3.922.0",
-    "@prisma/client": "^6.19.0",
     "@supabase/supabase-js": "^2.79.0",
     "axios": "^1.13.2",
-    "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.2",
     "next": "^14.2.33",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "zod": "^4.1.12"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
@@ -45,9 +37,7 @@
     "eslint": "^9.39.1",
     "eslint-config-next": "^16.0.1",
     "postcss": "^8.5.6",
-    "prisma": "^6.19.0",
     "tailwindcss": "^3.4.1",
-    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }
