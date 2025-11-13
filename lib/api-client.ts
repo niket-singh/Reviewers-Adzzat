@@ -73,7 +73,7 @@ class ApiClient {
   // Profile
   async getProfile() {
     const response = await this.client.get('/profile')
-    return response.data.profile
+    return response.data
   }
 
   async updateProfile(data: { name?: string; password?: string }) {

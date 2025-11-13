@@ -263,9 +263,8 @@ func UpdateProfile(c *gin.Context) {
 	uid, _ := uuid.Parse(userID.(string))
 
 	var req struct {
-		Name            string `json:"name"`
-		CurrentPassword string `json:"currentPassword"`
-		NewPassword     string `json:"newPassword"`
+		Name     string `json:"name"`
+		Password string `json:"password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -284,18 +283,13 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	// Update password if provided
-	if req.NewPassword != "" {
-		if req.CurrentPassword == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Current password required"})
+	if req.Password != "" {
+		if len(req.Password) < 6 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters"})
 			return
 		}
 
-		if !utils.CheckPassword(req.CurrentPassword, user.PasswordHash) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Current password is incorrect"})
-			return
-		}
-
-		hashedPassword, err := utils.HashPassword(req.NewPassword)
+		hashedPassword, err := utils.HashPassword(req.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
 			return
@@ -368,6 +362,7 @@ func GetProfile(c *gin.Context) {
 			"name":       user.Name,
 			"role":       user.Role,
 			"isApproved": user.IsApproved,
+			"createdAt":  user.CreatedAt,
 		},
 		"stats": stats,
 	})
