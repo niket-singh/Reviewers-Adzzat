@@ -5,8 +5,6 @@ const nextConfig = {
       bodySizeLimit: '50mb', // Allows larger file uploads
     },
   },
-  // For Vercel deployment
-  output: 'standalone',
 }
 
 module.exports = nextConfig
