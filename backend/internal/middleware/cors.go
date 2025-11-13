@@ -20,14 +20,20 @@ func CORSMiddleware() gin.HandlerFunc {
 		// Check if origin is allowed
 		allowed := false
 		for _, allowedOrigin := range allowedOrigins {
-			if strings.TrimSpace(allowedOrigin) == origin {
+			trimmedOrigin := strings.TrimSpace(allowedOrigin)
+			if trimmedOrigin == origin {
 				allowed = true
 				break
 			}
 		}
 
+		// Set CORS headers
 		if allowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			// Log which origin was rejected for debugging
+			println("CORS: Origin not allowed:", origin)
+			println("CORS: Allowed origins:", strings.Join(allowedOrigins, ", "))
 		}
 
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
