@@ -59,7 +59,7 @@ interface LeaderboardEntry {
 }
 
 interface Stats {
-  contributors: {
+  contributors?: {
     userId: string
     name: string
     totalSubmissions: number
@@ -67,7 +67,7 @@ interface Stats {
     approvedCount: number
     approvalRate: number
   }[]
-  reviewers: {
+  reviewers?: {
     userId: string
     name: string
     tasksInStack: number
@@ -587,15 +587,23 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {stats.contributors.map((contributor) => (
-                      <tr key={contributor.userId}>
-                        <td className="px-4 py-3 text-sm text-gray-800">{contributor.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.totalSubmissions}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.eligibleCount}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvedCount}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvalRate}%</td>
+                    {stats.contributors && stats.contributors.length > 0 ? (
+                      stats.contributors.map((contributor) => (
+                        <tr key={contributor.userId}>
+                          <td className="px-4 py-3 text-sm text-gray-800">{contributor.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.totalSubmissions}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.eligibleCount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvedCount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvalRate.toFixed(1)}%</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
+                          No contributors found
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -615,22 +623,30 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {stats.reviewers.map((reviewer) => (
-                      <tr key={reviewer.userId}>
-                        <td className="px-4 py-3 text-sm text-gray-800">{reviewer.name}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.tasksInStack}</td>
-                        <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.reviewedCount}</td>
-                        <td className="px-4 py-3 text-sm text-right">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                            reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
-                            reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-green-100 text-green-800'
-                          }`}>
-                            {reviewer.currentWorkload} active
-                          </span>
+                    {stats.reviewers && stats.reviewers.length > 0 ? (
+                      stats.reviewers.map((reviewer) => (
+                        <tr key={reviewer.userId}>
+                          <td className="px-4 py-3 text-sm text-gray-800">{reviewer.name}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.tasksInStack}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.reviewedCount}</td>
+                          <td className="px-4 py-3 text-sm text-right">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                              reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
+                              reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {reviewer.currentWorkload} active
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
+                          No reviewers found
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
