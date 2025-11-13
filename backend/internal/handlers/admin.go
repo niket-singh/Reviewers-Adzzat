@@ -45,23 +45,22 @@ func GetStats(c *gin.Context) {
 		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", contributor.ID, models.StatusEligible).Count(&eligible)
 		database.DB.Model(&models.Submission{}).Where("contributor_id = ? AND status = ?", contributor.ID, models.StatusApproved).Count(&approved)
 
-		approvalRate := "0"
+		approvalRate := 0.0
 		if total > 0 {
-			rate := float64(approved) / float64(total) * 100
-			approvalRate = strconv.FormatFloat(rate, 'f', 1, 64)
+			approvalRate = float64(approved) / float64(total) * 100
 		}
 
 		contributorStats = append(contributorStats, gin.H{
-			"id":           contributor.ID,
-			"name":         contributor.Name,
-			"email":        contributor.Email,
-			"joinedAt":     contributor.CreatedAt,
-			"total":        total,
-			"pending":      pending,
-			"claimed":      claimed,
-			"eligible":     eligible,
-			"approved":     approved,
-			"approvalRate": approvalRate,
+			"userId":           contributor.ID,
+			"name":             contributor.Name,
+			"email":            contributor.Email,
+			"joinedAt":         contributor.CreatedAt,
+			"totalSubmissions": total,
+			"pending":          pending,
+			"claimed":          claimed,
+			"eligibleCount":    eligible,
+			"approvedCount":    approved,
+			"approvalRate":     approvalRate,
 		})
 	}
 
@@ -88,29 +87,32 @@ func GetStats(c *gin.Context) {
 			Find(&tasks)
 
 		reviewerStats = append(reviewerStats, gin.H{
-			"id":             reviewer.ID,
-			"name":           reviewer.Name,
-			"email":          reviewer.Email,
-			"isApproved":     reviewer.IsApproved,
-			"joinedAt":       reviewer.CreatedAt,
-			"assignedTasks":  assignedTasks,
-			"pendingReview":  pendingReview,
-			"eligible":       eligible,
-			"approved":       approved,
-			"reviewed":       reviewed,
+			"userId":          reviewer.ID,
+			"name":            reviewer.Name,
+			"email":           reviewer.Email,
+			"isApproved":      reviewer.IsApproved,
+			"joinedAt":        reviewer.CreatedAt,
+			"tasksInStack":    assignedTasks,
+			"pendingReview":   pendingReview,
+			"eligible":        eligible,
+			"approved":        approved,
+			"reviewedCount":   reviewed,
 			"currentWorkload": pendingReview,
-			"tasks":          tasks,
+			"tasks":           tasks,
 		})
 	}
 
 	// Overall platform stats
-	var totalUsers, totalContributors, totalReviewers, approvedReviewers, pendingReviewers, totalSubmissions int64
+	var totalUsers, totalContributors, totalReviewers, approvedReviewers, pendingReviewers, totalSubmissions, pendingReviews int64
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleContributor).Count(&totalContributors)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleReviewer).Count(&totalReviewers)
 	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, true).Count(&approvedReviewers)
 	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, false).Count(&pendingReviewers)
 	database.DB.Model(&models.Submission{}).Count(&totalSubmissions)
+	database.DB.Model(&models.Submission{}).Where("status IN ?", []string{
+		string(models.StatusPending), string(models.StatusClaimed),
+	}).Count(&pendingReviews)
 
 	// Submissions by status
 	var statusCounts []struct {
@@ -135,6 +137,7 @@ func GetStats(c *gin.Context) {
 			"approvedReviewers": approvedReviewers,
 			"pendingReviewers":  pendingReviewers,
 			"totalSubmissions":  totalSubmissions,
+			"pendingReviews":    pendingReviews,
 			"statusCounts":      statusCountsMap,
 		},
 		"contributors": contributorStats,
