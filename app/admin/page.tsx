@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
 import { DOMAINS, LANGUAGES } from '@/lib/constants/options'
+import { useToast } from '@/components/ToastContainer'
 
 interface Submission {
   id: string
@@ -113,6 +114,7 @@ export default function AdminDashboard() {
   const [uploadError, setUploadError] = useState('')
   const router = useRouter()
   const { user, loading: authLoading, logout } = useAuth()
+  const { showToast } = useToast()
 
   // Redirect if not authenticated or not admin
   useEffect(() => {
@@ -202,7 +204,7 @@ export default function AdminDashboard() {
       await apiClient.approveReviewer(userId)
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to approve reviewer')
+      showToast(err.response?.data?.error || 'Failed to approve reviewer', 'error')
     }
   }
 
@@ -219,7 +221,7 @@ export default function AdminDashboard() {
       }
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to toggle green light')
+      showToast(err.response?.data?.error || 'Failed to toggle green light', 'error')
     }
   }
 
@@ -241,7 +243,7 @@ export default function AdminDashboard() {
       await apiClient.switchUserRole(userId, newRole)
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to switch role')
+      showToast(err.response?.data?.error || 'Failed to switch role', 'error')
     }
   }
 
@@ -254,7 +256,7 @@ export default function AdminDashboard() {
       await apiClient.deleteUser(userId)
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete user')
+      showToast(err.response?.data?.error || 'Failed to delete user', 'error')
     }
   }
 
@@ -267,7 +269,7 @@ export default function AdminDashboard() {
       await apiClient.deleteSubmission(submissionId)
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to delete submission')
+      showToast(err.response?.data?.error || 'Failed to delete submission', 'error')
     }
   }
 
@@ -280,7 +282,7 @@ export default function AdminDashboard() {
       await apiClient.approveSubmission(submissionId)
       fetchData()
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Failed to approve submission')
+      showToast(err.response?.data?.error || 'Failed to approve submission', 'error')
     }
   }
 
@@ -298,7 +300,7 @@ export default function AdminDashboard() {
         document.body.removeChild(link)
       }
     } catch (err: any) {
-      alert(err.response?.data?.error || 'Download error')
+      showToast(err.response?.data?.error || 'Download error', 'error')
     }
   }
 
@@ -340,7 +342,7 @@ export default function AdminDashboard() {
       setFormData({ title: '', domain: '', language: '', customLanguage: '' })
       setFile(null)
       fetchData()
-      alert('Task uploaded successfully!')
+      showToast('✨ Task uploaded successfully!', 'success')
     } catch (err: any) {
       setUploadError(err.response?.data?.error || 'Upload failed')
     } finally {
@@ -355,10 +357,10 @@ export default function AdminDashboard() {
 
   const getStatusClass = (status: string) => {
     const statusMap: Record<string, string> = {
-      PENDING: 'bg-gray-100 text-gray-800',
-      CLAIMED: 'bg-yellow-100 text-yellow-800',
-      ELIGIBLE: 'bg-blue-500 text-white',
-      APPROVED: 'bg-green-500 text-white',
+      PENDING: 'bg-gradient-to-r from-gray-400 to-gray-500 text-white',
+      CLAIMED: 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white',
+      ELIGIBLE: 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow',
+      APPROVED: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green',
     }
     return statusMap[status] || 'bg-gray-100 text-gray-800'
   }
@@ -379,48 +381,70 @@ export default function AdminDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100 flex items-center justify-center">
-        <div className="text-lg text-gray-600">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-semibold text-gray-700">Loading admin dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-100">
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600">Welcome, {user.name}</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push('/profile')}
-              className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Profile
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              Logout
-            </button>
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 relative overflow-hidden">
+      {/* Animated Background Circles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-300 rounded-full blur-3xl opacity-20 floating"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      {/* Header */}
+      <nav className="backdrop-blur-xl bg-white/80 border-b border-white/50 shadow-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 animate-slide-in-left">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 via-orange-600 to-pink-600 flex items-center justify-center shadow-xl animate-pulse-glow">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-2xl font-black bg-gradient-to-r from-red-600 via-orange-600 to-pink-600 bg-clip-text text-transparent">
+                  Admin Control Panel
+                </h1>
+                <p className="text-sm font-medium text-gray-600">Welcome, {user.name}! 👑</p>
+              </div>
+            </div>
+            <div className="flex gap-3 animate-slide-in-right">
+              <button
+                onClick={() => router.push('/profile')}
+                className="px-5 py-2.5 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-200"
+              >
+                👤 Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
+              >
+                🚪 Logout
+              </button>
+            </div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Main Tabs */}
-        <div className="flex gap-2 bg-white rounded-lg shadow-sm p-1 mb-6 overflow-x-auto">
+        <div className="flex gap-2 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-white/50 animate-slide-up">
           {(['submissions', 'users', 'stats', 'logs', 'leaderboard'] as MainTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+              className={`px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap ${
                 activeTab === tab
-                  ? 'bg-red-600 text-white shadow-md'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg scale-105'
+                  : 'text-gray-700 hover:bg-white/50'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -430,14 +454,19 @@ export default function AdminDashboard() {
 
         {/* Search Bar */}
         {(activeTab === 'submissions' || activeTab === 'users') && (
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder={`Search ${activeTab}...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white shadow-sm"
-            />
+          <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={`🔍 Search ${activeTab}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-6 py-4 pl-14 border-2 border-white/50 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-gray-900 placeholder-gray-500 font-medium"
+              />
+              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
           </div>
         )}
 
