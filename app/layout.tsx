@@ -3,7 +3,7 @@ import './globals.css'
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
-  title: 'AdzzatXperts - Task Submission Platform',
+  title: 'Reviewers-Adzzat - Task Submission Platform',
   description: 'Scalable platform for task submission and review',
 }
 

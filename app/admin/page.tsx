@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
+import { DOMAINS, LANGUAGES } from '@/lib/constants/options'
 
 interface Submission {
   id: string
@@ -101,6 +102,15 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showUpload, setShowUpload] = useState(false)
+  const [formData, setFormData] = useState({
+    title: '',
+    domain: '',
+    language: '',
+    customLanguage: '',
+  })
+  const [file, setFile] = useState<File | null>(null)
+  const [uploadError, setUploadError] = useState('')
   const router = useRouter()
   const { user, loading: authLoading, logout } = useAuth()
 
@@ -292,6 +302,52 @@ export default function AdminDashboard() {
     }
   }
 
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!file) {
+      setUploadError('Please select a file')
+      return
+    }
+
+    if (!formData.domain) {
+      setUploadError('Please select a domain')
+      return
+    }
+
+    if (!formData.language) {
+      setUploadError('Please select a language')
+      return
+    }
+
+    if (formData.language === 'Other' && !formData.customLanguage.trim()) {
+      setUploadError('Please specify the language')
+      return
+    }
+
+    setLoading(true)
+    setUploadError('')
+
+    try {
+      const uploadFormData = new FormData()
+      uploadFormData.append('file', file)
+      uploadFormData.append('title', formData.title)
+      uploadFormData.append('domain', formData.domain)
+      uploadFormData.append('language', formData.language === 'Other' ? formData.customLanguage : formData.language)
+
+      await apiClient.uploadSubmission(uploadFormData)
+
+      setShowUpload(false)
+      setFormData({ title: '', domain: '', language: '', customLanguage: '' })
+      setFile(null)
+      fetchData()
+      alert('Task uploaded successfully!')
+    } catch (err: any) {
+      setUploadError(err.response?.data?.error || 'Upload failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleLogout = async () => {
     await logout()
     router.push('/')
@@ -388,20 +444,157 @@ export default function AdminDashboard() {
         {/* Submissions Tab */}
         {activeTab === 'submissions' && (
           <>
-            <div className="flex gap-2 bg-white rounded-lg shadow-sm p-1 mb-6 overflow-x-auto">
-              {(['all', 'pending', 'claimed', 'eligible', 'approved'] as SubmissionFilter[]).map((filter) => (
-                <button
-                  key={filter}
-                  onClick={() => setSubmissionFilter(filter)}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
-                    submissionFilter === filter
-                      ? 'bg-red-600 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)} ({getTabCount(filter)})
-                </button>
-              ))}
+            {/* Upload Form */}
+            {showUpload && (
+              <div className="bg-white rounded-xl shadow-lg p-8 mb-6 border border-gray-200">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">Upload New Task (as Admin)</h3>
+                  <button
+                    onClick={() => setShowUpload(false)}
+                    className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    ✕ Cancel
+                  </button>
+                </div>
+                <form onSubmit={handleUpload} className="space-y-5">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Task Title *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                      placeholder="Enter a descriptive title for your task"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Domain *
+                    </label>
+                    <select
+                      required
+                      value={formData.domain}
+                      onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-white"
+                    >
+                      <option value="">Select a domain...</option>
+                      {DOMAINS.map((domain) => (
+                        <option key={domain} value={domain}>
+                          {domain}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Language *
+                    </label>
+                    <select
+                      required
+                      value={formData.language}
+                      onChange={(e) => setFormData({ ...formData, language: e.target.value, customLanguage: '' })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-white"
+                    >
+                      <option value="">Select a language...</option>
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {lang}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {formData.language === 'Other' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Specify Language *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.customLanguage}
+                        onChange={(e) => setFormData({ ...formData, customLanguage: e.target.value })}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                        placeholder="e.g., Ruby, Swift, Kotlin"
+                      />
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Upload ZIP File *
+                    </label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-red-400 transition-colors">
+                      <div className="space-y-1 text-center">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                          <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        <div className="flex text-sm text-gray-600">
+                          <label className="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500">
+                            <span>Upload a file</span>
+                            <input
+                              type="file"
+                              accept=".zip"
+                              required
+                              onChange={(e) => setFile(e.target.files?.[0] || null)}
+                              className="sr-only"
+                            />
+                          </label>
+                          <p className="pl-1">or drag and drop</p>
+                        </div>
+                        <p className="text-xs text-gray-500">ZIP files only</p>
+                        {file && (
+                          <p className="text-sm text-green-600 font-medium mt-2">✓ {file.name}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {uploadError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                      {uploadError}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                  >
+                    {loading ? 'Uploading...' : 'Upload Task'}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex gap-2 bg-white rounded-lg shadow-sm p-1 overflow-x-auto">
+                {(['all', 'pending', 'claimed', 'eligible', 'approved'] as SubmissionFilter[]).map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setSubmissionFilter(filter)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
+                      submissionFilter === filter
+                        ? 'bg-red-600 text-white shadow-md'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)} ({getTabCount(filter)})
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowUpload(!showUpload)}
+                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-md hover:shadow-lg font-medium whitespace-nowrap ml-4"
+              >
+                {showUpload ? '✕ Cancel Upload' : '+ Upload Task'}
+              </button>
             </div>
 
             <div className="space-y-4">
