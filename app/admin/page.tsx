@@ -381,26 +381,26 @@ export default function AdminDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-lg font-semibold text-gray-700">Loading admin dashboard...</p>
+          <p className="text-lg font-semibold text-gray-300">Loading admin dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
       {/* Animated Background Circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-300 rounded-full blur-3xl opacity-20 floating"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
       {/* Header */}
-      <nav className="backdrop-blur-xl bg-white/80 border-b border-white/50 shadow-lg sticky top-0 z-40">
+      <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
@@ -410,16 +410,16 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-red-600 via-orange-600 to-pink-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
                   Admin Control Panel
                 </h1>
-                <p className="text-sm font-medium text-gray-600">Welcome, {user.name}! 👑</p>
+                <p className="text-sm font-medium text-gray-400">Welcome, {user.name}! 👑</p>
               </div>
             </div>
             <div className="flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
-                className="px-5 py-2.5 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-200"
+                className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
               >
                 👤 Profile
               </button>
@@ -436,15 +436,15 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
         {/* Main Tabs */}
-        <div className="flex gap-2 bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-white/50 animate-slide-up">
+        <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-gray-700/50 animate-slide-up">
           {(['submissions', 'users', 'stats', 'logs', 'leaderboard'] as MainTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap ${
                 activeTab === tab
-                  ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg scale-105'
-                  : 'text-gray-700 hover:bg-white/50'
+                  ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg scale-105 glow'
+                  : 'text-gray-300 hover:bg-gray-700/50'
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -461,9 +461,9 @@ export default function AdminDashboard() {
                 placeholder={`🔍 Search ${activeTab}...`}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-6 py-4 pl-14 border-2 border-white/50 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-gray-900 placeholder-gray-500 font-medium"
+                className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
               />
-              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </div>

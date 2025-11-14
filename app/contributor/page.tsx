@@ -195,26 +195,26 @@ export default function ContributorDashboard() {
 
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-lg font-semibold text-gray-700">Loading amazing content...</p>
+          <p className="text-lg font-semibold text-gray-300">Loading amazing content...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
       {/* Animated Background Circles */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-300 rounded-full blur-3xl opacity-20 floating"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-300 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
       {/* Header */}
-      <nav className="backdrop-blur-xl bg-white/80 border-b border-white/50 shadow-lg sticky top-0 z-40">
+      <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
@@ -224,16 +224,16 @@ export default function ContributorDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   Contributor Hub
                 </h1>
-                <p className="text-sm font-medium text-gray-600">Welcome back, {user.name}! ✨</p>
+                <p className="text-sm font-medium text-gray-400">Welcome back, {user.name}! ✨</p>
               </div>
             </div>
             <div className="flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
-                className="px-5 py-2.5 bg-white/80 backdrop-blur-sm text-gray-700 rounded-xl hover:bg-white hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-200"
+                className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
               >
                 👤 Profile
               </button>
@@ -257,9 +257,9 @@ export default function ContributorDashboard() {
               placeholder="🔍 Search by title, domain, or language..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-6 py-4 pl-14 border-2 border-white/50 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white/80 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-gray-900 placeholder-gray-500 font-medium"
+              className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
             />
-            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -268,15 +268,15 @@ export default function ContributorDashboard() {
         {/* Action Bar */}
         <div className="flex flex-wrap gap-4 justify-between items-center mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           {/* Status Filters */}
-          <div className="flex gap-2 bg-white/80 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-white/50">
+          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50">
             {(['all', 'pending', 'claimed', 'eligible', 'approved'] as StatusFilter[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
                   activeTab === tab
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105'
-                    : 'text-gray-700 hover:bg-white/50'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105 glow'
+                    : 'text-gray-300 hover:bg-gray-700/50'
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)} ({getTabCount(tab)})
@@ -299,13 +299,13 @@ export default function ContributorDashboard() {
 
         {/* Upload Form */}
         {showUpload && (
-          <div className="mb-8 bg-white/60 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-white/50 animate-scale-in hover-lift">
-            <h3 className="text-2xl font-black mb-6 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          <div className="mb-8 bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in hover-lift">
+            <h3 className="text-2xl font-black mb-6 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
               ✨ Upload New Task
             </h3>
             <form onSubmit={handleUpload} className="space-y-5">
               <div>
-                <label className="block text-sm font-bold mb-2.5 text-gray-700">
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">
                   Task Title *
                 </label>
                 <input
@@ -313,21 +313,21 @@ export default function ContributorDashboard() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 transition-all duration-300 focus:scale-[1.02] bg-white/80 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
+                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
                   placeholder="Enter a descriptive title"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-bold mb-2.5 text-gray-700">
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">
                     Domain *
                   </label>
                   <select
                     required
                     value={formData.domain}
                     onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 transition-all duration-300 focus:scale-[1.02] bg-white/80 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
                   >
                     <option value="">Select domain...</option>
                     {DOMAINS.map((domain) => (
@@ -339,14 +339,14 @@ export default function ContributorDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold mb-2.5 text-gray-700">
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">
                     Language *
                   </label>
                   <select
                     required
                     value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value, customLanguage: '' })}
-                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 transition-all duration-300 focus:scale-[1.02] bg-white/80 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
                   >
                     <option value="">Select language...</option>
                     {LANGUAGES.map((lang) => (
@@ -360,7 +360,7 @@ export default function ContributorDashboard() {
 
               {formData.language === 'Other' && (
                 <div className="animate-slide-up">
-                  <label className="block text-sm font-bold mb-2.5 text-gray-700">
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">
                     Specify Language *
                   </label>
                   <input
@@ -368,23 +368,23 @@ export default function ContributorDashboard() {
                     required
                     value={formData.customLanguage}
                     onChange={(e) => setFormData({ ...formData, customLanguage: e.target.value })}
-                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 transition-all duration-300 focus:scale-[1.02] bg-white/80 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 font-medium"
                     placeholder="e.g., Ruby, Swift, Kotlin"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-bold mb-2.5 text-gray-700">
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">
                   Upload ZIP File *
                 </label>
-                <div className="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-300 rounded-2xl hover:border-blue-400 transition-all duration-300 bg-white/50 hover:bg-white/80">
+                <div className="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-600 rounded-2xl hover:border-blue-400 transition-all duration-300 bg-gray-900/30 hover:bg-gray-900/50">
                   <div className="space-y-2 text-center">
-                    <svg className="mx-auto h-16 w-16 text-blue-500 animate-bounce-subtle" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                    <svg className="mx-auto h-16 w-16 text-blue-400 animate-bounce-subtle" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                       <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
-                    <div className="flex text-sm text-gray-600 justify-center">
-                      <label className="relative cursor-pointer bg-white rounded-xl px-4 py-2 font-bold text-blue-600 hover:text-blue-700 hover:scale-105 transition-all duration-300">
+                    <div className="flex text-sm text-gray-400 justify-center">
+                      <label className="relative cursor-pointer bg-gray-700 rounded-xl px-4 py-2 font-bold text-blue-400 hover:text-blue-300 hover:scale-105 transition-all duration-300">
                         <span>Choose file</span>
                         <input
                           type="file"
@@ -398,7 +398,7 @@ export default function ContributorDashboard() {
                     </div>
                     <p className="text-xs text-gray-500 font-medium">ZIP files only, max 50MB</p>
                     {file && (
-                      <p className="text-sm text-green-600 font-bold mt-3 flex items-center justify-center gap-2 animate-slide-up">
+                      <p className="text-sm text-green-400 font-bold mt-3 flex items-center justify-center gap-2 animate-slide-up">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
@@ -433,16 +433,16 @@ export default function ContributorDashboard() {
         {/* Submissions Grid */}
         <div className="space-y-6">
           {filteredSubmissions.length === 0 ? (
-            <div className="bg-white/60 backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border-2 border-white/50 animate-scale-in">
+            <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border-2 border-gray-700/50 animate-scale-in">
               <div className="text-8xl mb-6 animate-bounce-subtle">📋</div>
-              <p className="text-xl font-bold text-gray-700 mb-2">
+              <p className="text-xl font-bold text-gray-200 mb-2">
                 {searchQuery
                   ? 'No submissions match your search'
                   : activeTab === 'all'
                   ? 'No submissions yet'
                   : `No ${activeTab} submissions`}
               </p>
-              <p className="text-gray-500 font-medium">
+              <p className="text-gray-400 font-medium">
                 {searchQuery ? 'Try a different search term' : 'Upload your first task to get started!'}
               </p>
             </div>
@@ -450,30 +450,30 @@ export default function ContributorDashboard() {
             filteredSubmissions.map((submission, index) => (
               <div
                 key={submission.id}
-                className="bg-white/60 backdrop-blur-xl rounded-3xl shadow-xl p-6 border-2 border-white/50 interactive-card animate-slide-up"
+                className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-xl p-6 border-2 border-gray-700/50 interactive-card animate-slide-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                   <div className="flex-1">
                     <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0 glow">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
                       <div className="flex-1">
-                        <h3 className="text-xl font-black text-gray-800 mb-3">
+                        <h3 className="text-xl font-black text-white mb-3">
                           {submission.title}
                         </h3>
                         <div className="flex flex-wrap gap-2">
-                          <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl text-sm font-bold shadow-md">
+                          <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-sm font-bold shadow-md glow">
                             {submission.domain}
                           </span>
-                          <span className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-blue-500 text-white rounded-xl text-sm font-bold shadow-md">
+                          <span className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl text-sm font-bold shadow-md glow">
                             {submission.language}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-600 mt-3 font-medium">
+                        <p className="text-sm text-gray-400 mt-3 font-medium">
                           📅 {new Date(submission.createdAt).toLocaleDateString()} at {new Date(submission.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
@@ -508,15 +508,15 @@ export default function ContributorDashboard() {
 
                 {/* Reviews Section */}
                 {submission.reviews && submission.reviews.length > 0 && (
-                  <div className="mt-6 pt-6 border-t-2 border-gray-200">
-                    <h4 className="text-sm font-black text-gray-700 mb-4 flex items-center gap-2">
+                  <div className="mt-6 pt-6 border-t-2 border-gray-700">
+                    <h4 className="text-sm font-black text-gray-200 mb-4 flex items-center gap-2">
                       <span className="text-2xl">💬</span> Reviewer Feedback
                     </h4>
                     <div className="space-y-3">
                       {submission.reviews.map((review) => (
-                        <div key={review.id} className="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border-2 border-white/50 shadow-md hover-lift">
-                          <p className="text-sm text-gray-800 mb-3 font-medium leading-relaxed">{review.feedback}</p>
-                          <p className="text-xs text-gray-500 font-bold flex items-center gap-2">
+                        <div key={review.id} className="bg-gray-900/50 backdrop-blur-sm p-5 rounded-2xl border-2 border-gray-700/50 shadow-md hover-lift">
+                          <p className="text-sm text-gray-200 mb-3 font-medium leading-relaxed">{review.feedback}</p>
+                          <p className="text-xs text-gray-400 font-bold flex items-center gap-2">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
