@@ -3,6 +3,7 @@ package handlers
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log"
 	"net/http"
 	"time"
 
@@ -75,6 +76,11 @@ func Signup(c *gin.Context) {
 		TargetID:    &user.ID,
 		TargetType:  &targetType,
 	})
+
+	// Send welcome email
+	if services.Email != nil {
+		go services.Email.SendWelcomeEmail(user.Email, user.Name, userRole)
+	}
 
 	// Generate JWT
 	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
@@ -232,14 +238,17 @@ func ForgotPassword(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	// TODO: Send email with reset link (implement email service)
-	// For now, return the token in response (in production, only send via email)
-	// resetURL := fmt.Sprintf("%s/reset-password?token=%s", os.Getenv("FRONTEND_URL"), token)
+	// Send password reset email
+	if services.Email != nil {
+		err := services.Email.SendPasswordResetEmail(user.Email, user.Name, token)
+		if err != nil {
+			// Log error but don't reveal to user for security
+			log.Printf("Failed to send password reset email to %s: %v", user.Email, err)
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "If an account exists, a password reset link has been sent",
-		// Remove 'token' field in production - only for development/testing
-		"token": token,
 	})
 }
 

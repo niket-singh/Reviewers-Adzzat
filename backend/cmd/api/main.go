@@ -7,6 +7,7 @@ import (
 	"github.com/adzzatxperts/backend/internal/database"
 	"github.com/adzzatxperts/backend/internal/handlers"
 	"github.com/adzzatxperts/backend/internal/middleware"
+	"github.com/adzzatxperts/backend/internal/services"
 	"github.com/adzzatxperts/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -32,6 +33,10 @@ func main() {
 	if err := storage.InitStorage(); err != nil {
 		log.Fatal("Failed to initialize storage:", err)
 	}
+
+	// Initialize services
+	services.InitEmailService()
+	handlers.InitWebSocket()
 
 	// Setup router
 	router := setupRouter()
@@ -77,6 +82,9 @@ func setupRouter() *gin.Engine {
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
 		{
+			// WebSocket route
+			protected.GET("/ws", handlers.HandleWebSocket)
+
 			// Profile routes
 			protected.GET("/profile", handlers.GetProfile)
 			protected.PUT("/profile", handlers.UpdateProfile)

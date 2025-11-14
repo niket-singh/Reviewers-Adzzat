@@ -8,7 +8,9 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/google/uuid v1.5.0
+	github.com/gorilla/websocket v1.5.1
 	github.com/joho/godotenv v1.5.1
+	github.com/sendgrid/sendgrid-go v3.14.0+incompatible
 	github.com/supabase-community/storage-go v0.7.0
 	golang.org/x/crypto v0.17.0
 	gorm.io/driver/postgres v1.5.4
