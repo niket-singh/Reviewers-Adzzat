@@ -6,6 +6,11 @@ import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
 import { DOMAINS, LANGUAGES } from '@/lib/constants/options'
 import { useToast } from '@/components/ToastContainer'
+import Breadcrumb from '@/components/Breadcrumb'
+import Pagination from '@/components/Pagination'
+import FileUpload from '@/components/FileUpload'
+import CopyToClipboard from '@/components/CopyToClipboard'
+import Tooltip from '@/components/Tooltip'
 
 interface Submission {
   id: string
@@ -41,6 +46,11 @@ export default function ContributorDashboard() {
   })
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const router = useRouter()
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
@@ -66,6 +76,7 @@ export default function ContributorDashboard() {
 
   useEffect(() => {
     filterSubmissions()
+    setCurrentPage(1) // Reset to first page when filters change
   }, [submissions, activeTab, searchQuery])
 
   const fetchSubmissions = async () => {
@@ -193,6 +204,13 @@ export default function ContributorDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
+  const paginatedSubmissions = filteredSubmissions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
@@ -215,7 +233,7 @@ export default function ContributorDashboard() {
 
       {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center shadow-xl animate-pulse-glow">
@@ -224,31 +242,74 @@ export default function ContributorDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   Contributor Hub
                 </h1>
-                <p className="text-sm font-medium text-gray-400">Welcome back, {user.name}! ✨</p>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Welcome back, {user.name}!</p>
               </div>
             </div>
-            <div className="flex gap-3 animate-slide-in-right">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
               >
-                👤 Profile
+                Profile
               </button>
               <button
                 onClick={handleLogout}
                 className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
               >
-                🚪 Logout
+                Logout
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <button
+                onClick={() => {
+                  router.push('/profile')
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb />
+
         {/* Search Bar */}
         <div className="mb-8 animate-slide-up">
           <div className="relative">
@@ -266,14 +327,14 @@ export default function ContributorDashboard() {
         </div>
 
         {/* Action Bar */}
-        <div className="flex flex-wrap gap-4 justify-between items-center mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           {/* Status Filters */}
-          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50">
+          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50 overflow-x-auto">
             {(['all', 'pending', 'claimed', 'eligible', 'approved'] as StatusFilter[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 ${
+                className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap ${
                   activeTab === tab
                     ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105 glow'
                     : 'text-gray-300 hover:bg-gray-700/50'
@@ -287,13 +348,13 @@ export default function ContributorDashboard() {
           {/* Upload Button */}
           <button
             onClick={() => setShowUpload(!showUpload)}
-            className={`px-6 py-3 rounded-2xl font-black text-sm transition-all duration-300 shadow-xl hover:scale-105 ${
+            className={`px-6 py-3 rounded-2xl font-black text-sm transition-all duration-300 shadow-xl hover:scale-105 whitespace-nowrap ${
               showUpload
                 ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600'
                 : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 animate-pulse-glow'
             }`}
           >
-            {showUpload ? '✕ Cancel' : '✨ Upload New Task'}
+            {showUpload ? 'Cancel' : 'Upload New Task'}
           </button>
         </div>
 
@@ -374,40 +435,14 @@ export default function ContributorDashboard() {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-bold mb-2.5 text-gray-200">
-                  Upload ZIP File *
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-8 pb-8 border-2 border-dashed border-gray-600 rounded-2xl hover:border-blue-400 transition-all duration-300 bg-gray-900/30 hover:bg-gray-900/50">
-                  <div className="space-y-2 text-center">
-                    <svg className="mx-auto h-16 w-16 text-blue-400 animate-bounce-subtle" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <div className="flex text-sm text-gray-400 justify-center">
-                      <label className="relative cursor-pointer bg-gray-700 rounded-xl px-4 py-2 font-bold text-blue-400 hover:text-blue-300 hover:scale-105 transition-all duration-300">
-                        <span>Choose file</span>
-                        <input
-                          type="file"
-                          accept=".zip"
-                          required
-                          onChange={(e) => setFile(e.target.files?.[0] || null)}
-                          className="sr-only"
-                        />
-                      </label>
-                      <p className="pl-2 pt-2">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500 font-medium">ZIP files only, max 50MB</p>
-                    {file && (
-                      <p className="text-sm text-green-400 font-bold mt-3 flex items-center justify-center gap-2 animate-slide-up">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {file.name}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <FileUpload
+                label="Upload ZIP File *"
+                accept=".zip"
+                maxSize={50 * 1024 * 1024} // 50MB
+                onFileSelect={(selectedFile) => setFile(selectedFile)}
+                uploadProgress={uploadProgress}
+                isUploading={isUploading}
+              />
 
               <button
                 type="submit"
@@ -447,60 +482,74 @@ export default function ContributorDashboard() {
               </p>
             </div>
           ) : (
-            filteredSubmissions.map((submission, index) => (
+            <>
+              {paginatedSubmissions.map((submission, index) => (
               <div
                 key={submission.id}
-                className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-xl p-6 border-2 border-gray-700/50 interactive-card animate-slide-up"
+                className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-xl p-4 md:p-6 border-2 border-gray-700/50 interactive-card animate-slide-up"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
                   <div className="flex-1">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0 glow">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start gap-3 md:gap-4 mb-4">
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg flex-shrink-0 glow">
+                        <svg className="w-5 h-5 md:w-6 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-xl font-black text-white mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg md:text-xl font-black text-white mb-2 break-words">
                           {submission.title}
                         </h3>
+                        <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                          <span>ID:</span>
+                          <CopyToClipboard text={submission.id}>
+                            <span className="font-mono text-gray-400">{submission.id.slice(0, 8)}...</span>
+                          </CopyToClipboard>
+                        </div>
                         <div className="flex flex-wrap gap-2">
-                          <span className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-sm font-bold shadow-md glow">
+                          <span className="px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl text-xs md:text-sm font-bold shadow-md glow">
                             {submission.domain}
                           </span>
-                          <span className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl text-sm font-bold shadow-md glow">
+                          <span className="px-3 md:px-4 py-1.5 md:py-2 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-xl text-xs md:text-sm font-bold shadow-md glow">
                             {submission.language}
                           </span>
                         </div>
-                        <p className="text-sm text-gray-400 mt-3 font-medium">
-                          📅 {new Date(submission.createdAt).toLocaleDateString()} at {new Date(submission.createdAt).toLocaleTimeString()}
+                        <p className="text-xs md:text-sm text-gray-400 mt-3 font-medium">
+                          {new Date(submission.createdAt).toLocaleDateString()} at {new Date(submission.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-3 lg:items-end">
-                    <span className={`px-5 py-2.5 rounded-xl text-sm font-black shadow-lg ${getStatusClass(submission.status)}`}>
+                    <span className={`px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-xs md:text-sm font-black shadow-lg text-center ${getStatusClass(submission.status)}`}>
                       {submission.status}
                     </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDownload(submission.id, submission.fileName)}
-                        className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 font-bold text-sm shadow-md hover:shadow-xl hover:scale-105 flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download
-                      </button>
-                      {submission.status === 'PENDING' && (
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Tooltip text="Download submission file">
                         <button
-                          onClick={() => handleDelete(submission.id, submission.title)}
-                          className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-bold text-sm shadow-md hover:shadow-xl hover:scale-105"
+                          onClick={() => handleDownload(submission.id, submission.fileName)}
+                          className="px-4 py-2.5 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:from-blue-600 hover:to-cyan-600 transition-all duration-300 font-bold text-sm shadow-md hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
                         >
-                          🗑️ Delete
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          <span className="hidden sm:inline">Download</span>
                         </button>
+                      </Tooltip>
+                      {submission.status === 'PENDING' && (
+                        <Tooltip text="Delete this submission">
+                          <button
+                            onClick={() => handleDelete(submission.id, submission.title)}
+                            className="px-4 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-bold text-sm shadow-md hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="hidden sm:inline">Delete</span>
+                          </button>
+                        </Tooltip>
                       )}
                     </div>
                   </div>
@@ -528,7 +577,17 @@ export default function ContributorDashboard() {
                   </div>
                 )}
               </div>
-            ))
+            ))}
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredSubmissions.length}
+              />
+            </>
           )}
         </div>
       </div>

@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/ToastContainer'
 import { apiClient } from '@/lib/api-client'
+import Breadcrumb from '@/components/Breadcrumb'
+import Pagination from '@/components/Pagination'
+import CopyToClipboard from '@/components/CopyToClipboard'
+import Tooltip from '@/components/Tooltip'
 
 interface Submission {
   id: string
@@ -41,6 +45,9 @@ export default function ReviewerDashboard() {
   const [accountPostedIn, setAccountPostedIn] = useState('')
   const [isEligible, setIsEligible] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const router = useRouter()
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
@@ -68,6 +75,7 @@ export default function ReviewerDashboard() {
 
   useEffect(() => {
     filterSubmissions()
+    setCurrentPage(1) // Reset to first page when filters change
   }, [submissions, activeTab, searchQuery])
 
   const fetchSubmissions = async () => {
@@ -159,6 +167,13 @@ export default function ReviewerDashboard() {
     return 0
   }
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
+  const paginatedSubmissions = filteredSubmissions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
@@ -214,40 +229,85 @@ export default function ReviewerDashboard() {
 
       {/* Glassmorphic Header */}
       <nav className="sticky top-0 z-40 backdrop-blur-xl border-b shadow-lg bg-gray-800/40 border-gray-700/50">
-        <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl animate-pulse-glow bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
-              <svg className="w-7 h-7 text-white animate-bounce-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-2xl animate-pulse-glow bg-gradient-to-br from-purple-600 via-indigo-600 to-blue-600">
+                <svg className="w-7 h-7 text-white animate-bounce-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400">
+                  Reviewer Hub
+                </h1>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">
+                  Welcome back, {user.name}
+                </p>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-2">
+              <button
+                onClick={() => router.push('/profile')}
+                className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gray-700/50 text-gray-200 hover:bg-gray-600/60 backdrop-blur-lg"
+              >
+                Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 text-gray-300 hover:bg-gray-700/50 backdrop-blur-lg"
+              >
+                Logout
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
               </svg>
-            </div>
-            <div>
-              <h1 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400">
-                Reviewer Hub
-              </h1>
-              <p className="text-sm font-medium text-gray-400">
-                Welcome back, {user.name}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => router.push('/profile')}
-              className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gray-700/50 text-gray-200 hover:bg-gray-600/60 backdrop-blur-lg"
-            >
-              Profile
-            </button>
-            <button
-              onClick={handleLogout}
-              className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 text-gray-300 hover:bg-gray-700/50 backdrop-blur-lg"
-            >
-              Logout
             </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <button
+                onClick={() => {
+                  router.push('/profile')
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg bg-gray-700/50 text-gray-200 hover:bg-gray-600/60 backdrop-blur-lg"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 text-gray-300 hover:bg-gray-700/50 backdrop-blur-lg"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb />
+
         {/* Modern Search Bar */}
         <div className="mb-6 animate-slide-up">
           <div className="relative">
@@ -292,45 +352,62 @@ export default function ReviewerDashboard() {
               </p>
             </div>
           ) : (
-            filteredSubmissions.map((submission, index) => (
+            <>
+              {paginatedSubmissions.map((submission, index) => (
               <div
                 key={submission.id}
-                className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl interactive-card hover-lift border-2 animate-slide-up bg-gray-800/40 border-gray-700/50"
+                className="rounded-3xl shadow-xl p-4 md:p-6 backdrop-blur-2xl interactive-card hover-lift border-2 animate-slide-up bg-gray-800/40 border-gray-700/50"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-black mb-3 text-white">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg md:text-xl font-black mb-2 text-white break-words">
                       {submission.title}
                     </h3>
+                    <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                      <span>ID:</span>
+                      <CopyToClipboard text={submission.id}>
+                        <span className="font-mono text-gray-400">{submission.id.slice(0, 8)}...</span>
+                      </CopyToClipboard>
+                    </div>
                     <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="px-4 py-1.5 rounded-full text-sm font-bold shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow">
+                      <span className="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow">
                         {submission.domain}
                       </span>
-                      <span className="px-4 py-1.5 rounded-full text-sm font-bold shadow-lg bg-gradient-to-r from-pink-600 to-purple-600 text-white glow">
+                      <span className="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow-lg bg-gradient-to-r from-pink-600 to-purple-600 text-white glow">
                         {submission.language}
                       </span>
-                      <span className="px-4 py-1.5 rounded-full text-sm font-bold shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white glow">
+                      <span className="px-3 md:px-4 py-1.5 rounded-full text-xs md:text-sm font-bold shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white glow">
                         by {submission.contributor.name}
                       </span>
                     </div>
-                    <p className="text-sm font-medium text-gray-400">
+                    <p className="text-xs md:text-sm font-medium text-gray-400">
                       Submitted: {new Date(submission.createdAt).toLocaleString()}
                     </p>
                   </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleDownload(submission.id, submission.fileName)}
-                      className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white glow"
-                    >
-                      Download
-                    </button>
-                    <button
-                      onClick={() => setSelectedSubmission(submission.id)}
-                      className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white glow"
-                    >
-                      Review
-                    </button>
+                  <div className="flex flex-col sm:flex-row gap-2 lg:ml-4">
+                    <Tooltip text="Download submission file">
+                      <button
+                        onClick={() => handleDownload(submission.id, submission.fileName)}
+                        className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white glow flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        <span className="hidden sm:inline">Download</span>
+                      </button>
+                    </Tooltip>
+                    <Tooltip text="Submit review for this submission">
+                      <button
+                        onClick={() => setSelectedSubmission(submission.id)}
+                        className="px-4 md:px-6 py-2.5 md:py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white glow flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        <span className="hidden sm:inline">Review</span>
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
 
@@ -447,7 +524,17 @@ export default function ReviewerDashboard() {
                   </form>
                 )}
               </div>
-            ))
+            ))}
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemsPerPage={itemsPerPage}
+                totalItems={filteredSubmissions.length}
+              />
+            </>
           )}
         </div>
       </div>

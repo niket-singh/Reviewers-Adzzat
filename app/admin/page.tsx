@@ -6,6 +6,10 @@ import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
 import { DOMAINS, LANGUAGES } from '@/lib/constants/options'
 import { useToast } from '@/components/ToastContainer'
+import Breadcrumb from '@/components/Breadcrumb'
+import Pagination from '@/components/Pagination'
+import CopyToClipboard from '@/components/CopyToClipboard'
+import Tooltip from '@/components/Tooltip'
 
 interface Submission {
   id: string
@@ -112,6 +116,9 @@ export default function AdminDashboard() {
   })
   const [file, setFile] = useState<File | null>(null)
   const [uploadError, setUploadError] = useState('')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const router = useRouter()
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
@@ -137,6 +144,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     filterData()
+    setCurrentPage(1) // Reset to first page when filters change
   }, [submissions, users, submissionFilter, searchQuery])
 
   const fetchData = async () => {
@@ -379,6 +387,13 @@ export default function AdminDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
+  // Pagination calculations for submissions
+  const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
+  const paginatedSubmissions = filteredSubmissions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 flex items-center justify-center">
@@ -401,7 +416,7 @@ export default function AdminDashboard() {
 
       {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-5">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 via-orange-600 to-pink-600 flex items-center justify-center shadow-xl animate-pulse-glow">
@@ -410,31 +425,74 @@ export default function AdminDashboard() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
+                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
                   Admin Control Panel
                 </h1>
-                <p className="text-sm font-medium text-gray-400">Welcome, {user.name}! 👑</p>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Welcome, {user.name}!</p>
               </div>
             </div>
-            <div className="flex gap-3 animate-slide-in-right">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
               >
-                👤 Profile
+                Profile
               </button>
               <button
                 onClick={handleLogout}
                 className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
               >
-                🚪 Logout
+                Logout
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <button
+                onClick={() => {
+                  router.push('/profile')
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb />
+
         {/* Main Tabs */}
         <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-gray-700/50 animate-slide-up">
           {(['submissions', 'users', 'stats', 'logs', 'leaderboard'] as MainTab[]).map((tab) => (
@@ -635,11 +693,18 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               ) : (
-                filteredSubmissions.map((submission) => (
-                  <div key={submission.id} className="bg-white rounded-xl shadow-md p-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">{submission.title}</h3>
+                <>
+                  {paginatedSubmissions.map((submission) => (
+                  <div key={submission.id} className="bg-white rounded-xl shadow-md p-4 md:p-6">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 break-words">{submission.title}</h3>
+                        <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                          <span>ID:</span>
+                          <CopyToClipboard text={submission.id}>
+                            <span className="font-mono text-gray-600">{submission.id.slice(0, 8)}...</span>
+                          </CopyToClipboard>
+                        </div>
                         <div className="flex flex-wrap gap-2 mb-2">
                           <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
                             {submission.domain}
@@ -706,7 +771,17 @@ export default function AdminDashboard() {
                       </div>
                     )}
                   </div>
-                ))
+                ))}
+
+                  {/* Pagination */}
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={filteredSubmissions.length}
+                  />
+                </>
               )}
             </div>
           </>

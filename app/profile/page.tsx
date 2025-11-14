@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
 import { useToast } from '@/components/ToastContainer'
+import Breadcrumb from '@/components/Breadcrumb'
 
 interface Stats {
   totalSubmissions?: number
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -138,7 +140,7 @@ export default function ProfilePage() {
 
       {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
-        <div className="max-w-5xl mx-auto px-6 py-5">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
               <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${getRoleColor(user.role)} flex items-center justify-center shadow-xl animate-pulse-glow`}>
@@ -147,33 +149,76 @@ export default function ProfilePage() {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">
                   Your Profile
                 </h1>
-                <p className="text-sm font-medium text-gray-400">Manage your account settings ⚙️</p>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Manage your account settings</p>
               </div>
             </div>
-            <div className="flex gap-3 animate-slide-in-right">
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push(getRoleDashboard(user.role))}
                 className={`px-5 py-2.5 bg-gradient-to-r ${getRoleColor(user.role)} text-white rounded-xl hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl glow`}
               >
-                🏠 Dashboard
+                Dashboard
               </button>
               <button
                 onClick={handleLogout}
                 className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
               >
-                🚪 Logout
+                Logout
               </button>
             </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <button
+                onClick={() => {
+                  router.push(getRoleDashboard(user.role))
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full px-5 py-2.5 bg-gradient-to-r ${getRoleColor(user.role)} text-white rounded-xl transition-all duration-300 font-semibold shadow-md`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setMobileMenuOpen(false)
+                }}
+                className="w-full px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md"
+              >
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </nav>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 relative z-10">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 relative z-10">
+        {/* Breadcrumb Navigation */}
+        <Breadcrumb />
+
         {/* Profile Card */}
-        <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 mb-8 border-2 border-gray-700/50 animate-slide-up hover-lift">
+        <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 mb-8 border-2 border-gray-700/50 animate-slide-up hover-lift">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-6">
             <div className="flex items-start gap-6">
               {/* Avatar */}
@@ -281,7 +326,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Statistics */}
-        <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-slide-up hover-lift" style={{ animationDelay: '0.1s' }}>
+        <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 border-2 border-gray-700/50 animate-slide-up hover-lift" style={{ animationDelay: '0.1s' }}>
           <h3 className={`text-2xl font-black mb-6 bg-gradient-to-r ${getRoleColor(user.role)} bg-clip-text text-transparent flex items-center gap-2`}>
             <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
