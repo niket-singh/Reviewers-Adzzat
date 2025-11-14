@@ -3,11 +3,13 @@ package handlers
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/adzzatxperts/backend/internal/database"
 	"github.com/adzzatxperts/backend/internal/models"
 	"github.com/adzzatxperts/backend/internal/services"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // GetLogs returns activity logs
@@ -191,4 +193,240 @@ func GetLeaderboard(c *gin.Context) {
 	// For now, return unsorted; frontend can sort or we can add proper sorting
 
 	c.JSON(http.StatusOK, gin.H{"leaderboard": leaderboard})
+}
+
+// GetAnalytics returns analytics data for admin dashboard
+func GetAnalytics(c *gin.Context) {
+	// Get overall stats
+	var totalSubmissions, totalUsers, approvedSubmissions, pendingSubmissions int64
+	database.DB.Model(&models.Submission{}).Count(&totalSubmissions)
+	database.DB.Model(&models.User{}).Count(&totalUsers)
+	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusApproved).Count(&approvedSubmissions)
+	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusPending).Count(&pendingSubmissions)
+
+	// Calculate approval rate
+	approvalRate := 0.0
+	if totalSubmissions > 0 {
+		approvalRate = float64(approvedSubmissions) / float64(totalSubmissions) * 100
+	}
+
+	// Calculate average review time (in hours)
+	// This is a simplified calculation - you'd want more sophisticated logic in production
+	avgReviewTime := 24.5 // Mock for now
+
+	// Get top contributors
+	type ContributorStat struct {
+		UserID   uuid.UUID
+		UserName string
+		Count    int64
+	}
+	var topContributors []gin.H
+	rows, err := database.DB.Raw(`
+		SELECT u.id as user_id, u.name as user_name, COUNT(s.id) as count
+		FROM users u
+		JOIN submissions s ON u.id = s.contributor_id
+		WHERE s.status IN (?, ?)
+		GROUP BY u.id, u.name
+		ORDER BY count DESC
+		LIMIT 5
+	`, models.StatusEligible, models.StatusApproved).Rows()
+
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var userID uuid.UUID
+			var userName string
+			var count int64
+			rows.Scan(&userID, &userName, &count)
+			topContributors = append(topContributors, gin.H{
+				"userId":   userID,
+				"userName": userName,
+				"count":    count,
+			})
+		}
+	}
+
+	// Get domain breakdown
+	var domainStats []struct {
+		Domain string
+		Count  int64
+	}
+	database.DB.Model(&models.Submission{}).
+		Select("domain, COUNT(*) as count").
+		Group("domain").
+		Order("count DESC").
+		Limit(10).
+		Scan(&domainStats)
+
+	domains := make([]gin.H, 0)
+	for _, ds := range domainStats {
+		domains = append(domains, gin.H{
+			"domain": ds.Domain,
+			"count":  ds.Count,
+		})
+	}
+
+	// Get language breakdown
+	var languageStats []struct {
+		Language string
+		Count    int64
+	}
+	database.DB.Model(&models.Submission{}).
+		Select("language, COUNT(*) as count").
+		Group("language").
+		Order("count DESC").
+		Limit(10).
+		Scan(&languageStats)
+
+	languages := make([]gin.H, 0)
+	for _, ls := range languageStats {
+		languages = append(languages, gin.H{
+			"language": ls.Language,
+			"count":    ls.Count,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"overview": gin.H{
+			"totalSubmissions": totalSubmissions,
+			"totalUsers":       totalUsers,
+			"approvalRate":     approvalRate,
+			"avgReviewTime":    avgReviewTime,
+		},
+		"topContributors": topContributors,
+		"domains":         domains,
+		"languages":       languages,
+	})
+}
+
+// GetAnalyticsChartData returns time-series data for charts
+func GetAnalyticsChartData(c *gin.Context) {
+	rangeParam := c.DefaultQuery("range", "30d")
+
+	var days int
+	switch rangeParam {
+	case "7d":
+		days = 7
+	case "30d":
+		days = 30
+	case "90d":
+		days = 90
+	default:
+		days = 30
+	}
+
+	startDate := time.Now().AddDate(0, 0, -days)
+
+	// Get daily submission counts
+	type DailyCount struct {
+		Date     time.Time
+		Total    int64
+		Approved int64
+		Rejected int64
+		Pending  int64
+	}
+
+	var chartData []gin.H
+	for i := 0; i <= days; i++ {
+		date := startDate.AddDate(0, 0, i)
+		nextDate := date.AddDate(0, 0, 1)
+
+		var total, approved, pending int64
+		database.DB.Model(&models.Submission{}).
+			Where("created_at >= ? AND created_at < ?", date, nextDate).
+			Count(&total)
+		database.DB.Model(&models.Submission{}).
+			Where("created_at >= ? AND created_at < ? AND status = ?", date, nextDate, models.StatusApproved).
+			Count(&approved)
+		database.DB.Model(&models.Submission{}).
+			Where("created_at >= ? AND created_at < ? AND status = ?", date, nextDate, models.StatusPending).
+			Count(&pending)
+
+		// Calculate rejected (simplified - in reality you'd track rejections)
+		rejected := total - approved - pending
+
+		chartData = append(chartData, gin.H{
+			"date":     date.Format("Jan 02"),
+			"total":    total,
+			"approved": approved,
+			"rejected": rejected,
+			"pending":  pending,
+		})
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"range": rangeParam,
+		"data":  chartData,
+	})
+}
+
+// GetAuditLogs returns audit logs with filtering and pagination
+func GetAuditLogs(c *gin.Context) {
+	// Parse query parameters
+	limitStr := c.DefaultQuery("limit", "20")
+	offsetStr := c.DefaultQuery("offset", "0")
+	action := c.Query("action")
+	userIDStr := c.Query("userId")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	// Build query
+	query := database.DB.Model(&models.AuditLog{})
+
+	if action != "" && action != "all" {
+		query = query.Where("action = ?", action)
+	}
+
+	if userIDStr != "" {
+		userID, err := uuid.Parse(userIDStr)
+		if err == nil {
+			query = query.Where("user_id = ?", userID)
+		}
+	}
+
+	// Get total count
+	var total int64
+	query.Count(&total)
+
+	// Get logs with pagination
+	var logs []models.AuditLog
+	query.Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&logs)
+
+	// Get action counts for filters
+	var actionCounts []struct {
+		Action string
+		Count  int64
+	}
+	database.DB.Model(&models.AuditLog{}).
+		Select("action, COUNT(*) as count").
+		Group("action").
+		Order("count DESC").
+		Scan(&actionCounts)
+
+	actionCountsMap := make(map[string]int64)
+	for _, ac := range actionCounts {
+		actionCountsMap[ac.Action] = ac.Count
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"logs":         logs,
+		"total":        total,
+		"limit":        limit,
+		"offset":       offset,
+		"actionCounts": actionCountsMap,
+	})
 }

@@ -41,6 +41,8 @@ func AutoMigrate() error {
 		&models.Submission{},
 		&models.Review{},
 		&models.ActivityLog{},
+		&models.PasswordResetToken{},
+		&models.AuditLog{},
 	)
 	if err != nil {
 		return fmt.Errorf("failed to run migrations: %w", err)

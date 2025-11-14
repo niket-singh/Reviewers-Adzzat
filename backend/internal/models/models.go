@@ -94,6 +94,36 @@ type ActivityLog struct {
 	CreatedAt   time.Time  `json:"createdAt"`
 }
 
+// PasswordResetToken model for password reset flow
+type PasswordResetToken struct {
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null" json:"userId"`
+	Token     string    `gorm:"uniqueIndex;not null" json:"token"`
+	ExpiresAt time.Time `gorm:"not null" json:"expiresAt"`
+	Used      bool      `gorm:"default:false" json:"used"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Relations
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
+// AuditLog model - enhanced version for security tracking
+type AuditLog struct {
+	ID         uuid.UUID  `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID     uuid.UUID  `gorm:"type:uuid;not null" json:"userId"`
+	UserName   string     `gorm:"not null" json:"userName"`
+	Action     string     `gorm:"not null;index" json:"action"`
+	EntityType string     `gorm:"not null" json:"entityType"`
+	EntityID   *uuid.UUID `gorm:"type:uuid" json:"entityId,omitempty"`
+	Metadata   *string    `gorm:"type:jsonb" json:"metadata,omitempty"`
+	IPAddress  string     `gorm:"not null" json:"ipAddress"`
+	UserAgent  string     `gorm:"type:text" json:"userAgent"`
+	CreatedAt  time.Time  `gorm:"index" json:"createdAt"`
+
+	// Relations
+	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
+}
+
 // BeforeCreate hook for User
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == uuid.Nil {
@@ -122,6 +152,20 @@ func (r *Review) BeforeCreate(tx *gorm.DB) error {
 }
 
 func (a *ActivityLog) BeforeCreate(tx *gorm.DB) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
+	}
+	return nil
+}
+
+func (p *PasswordResetToken) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	return nil
+}
+
+func (a *AuditLog) BeforeCreate(tx *gorm.DB) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
 	}

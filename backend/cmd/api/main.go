@@ -69,6 +69,8 @@ func setupRouter() *gin.Engine {
 			auth.POST("/signin", handlers.Signin)
 			auth.POST("/logout", handlers.Logout)
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetMe)
+			auth.POST("/forgot-password", handlers.ForgotPassword)
+			auth.POST("/reset-password", handlers.ResetPassword)
 		}
 
 		// Protected routes
@@ -108,6 +110,13 @@ func setupRouter() *gin.Engine {
 				admin.GET("/logs", handlers.GetLogs)
 				admin.GET("/stats", handlers.GetStats)
 				admin.GET("/leaderboard", handlers.GetLeaderboard)
+
+				// Analytics
+				admin.GET("/admin/analytics", handlers.GetAnalytics)
+				admin.GET("/admin/analytics/chart", handlers.GetAnalyticsChartData)
+
+				// Audit logs
+				admin.GET("/admin/audit-logs", handlers.GetAuditLogs)
 			}
 		}
 	}
