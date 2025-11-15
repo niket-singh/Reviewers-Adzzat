@@ -11,8 +11,10 @@ import (
 // AutoAssignSubmission automatically assigns a submission to the reviewer with the least tasks
 func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	// Get all approved reviewers with green light ON (active)
+	// Include admins who can also review tasks
 	var reviewers []models.User
-	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, true).Find(&reviewers).Error
+	err := database.DB.Where("(role = ? OR role = ?) AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, models.RoleAdmin, true, true).Find(&reviewers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +119,10 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	// Get all active reviewers (approved + green light ON)
+	// Include admins who can also review tasks
 	var reviewers []models.User
-	err = database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, true).Find(&reviewers).Error
+	err = database.DB.Where("(role = ? OR role = ?) AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, models.RoleAdmin, true, true).Find(&reviewers).Error
 	if err != nil {
 		return 0, err
 	}
