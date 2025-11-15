@@ -55,11 +55,11 @@ export default function ContributorDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not a contributor
+  // Redirect if not authenticated or not a contributor/admin
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
-    } else if (user && user.role !== 'CONTRIBUTOR') {
+    } else if (user && user.role !== 'CONTRIBUTOR' && user.role !== 'ADMIN') {
       router.push('/')
     }
   }, [user, authLoading, router])
