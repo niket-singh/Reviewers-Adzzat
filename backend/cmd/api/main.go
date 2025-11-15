@@ -95,6 +95,7 @@ func setupRouter() *gin.Engine {
 			{
 				submissions.POST("", handlers.UploadSubmission)
 				submissions.GET("", handlers.GetSubmissions)
+				submissions.GET("/reviewed", handlers.GetReviewedSubmissions)
 				submissions.GET("/:id", handlers.GetSubmission)
 				submissions.DELETE("/:id", handlers.DeleteSubmission)
 				submissions.GET("/:id/download", handlers.GetDownloadURL)
@@ -112,8 +113,9 @@ func setupRouter() *gin.Engine {
 				admin.PUT("/users/:id/role", handlers.SwitchUserRole)
 				admin.DELETE("/users/:id", handlers.DeleteUser)
 
-				// Submission approval
+				// Submission approval and claiming
 				admin.PUT("/submissions/:id/approve", handlers.ApproveSubmission)
+				admin.PUT("/submissions/:id/claim", handlers.ClaimSubmission)
 
 				// Stats and logs
 				admin.GET("/logs", handlers.GetLogs)

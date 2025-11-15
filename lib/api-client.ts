@@ -104,6 +104,11 @@ class ApiClient {
     return response.data.submissions || []
   }
 
+  async getReviewedSubmissions(params?: { search?: string }) {
+    const response = await this.client.get('/submissions/reviewed', { params })
+    return response.data.submissions || []
+  }
+
   async getSubmission(id: string) {
     const response = await this.client.get(`/submissions/${id}`)
     return response.data.submission

@@ -33,10 +33,11 @@ interface Submission {
   }[]
 }
 
-type StatusFilter = 'claimed' | 'eligible'
+type StatusFilter = 'claimed' | 'eligible' | 'reviewed'
 
 export default function ReviewerDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([])
   const [activeTab, setActiveTab] = useState<StatusFilter>('claimed')
   const [searchQuery, setSearchQuery] = useState('')
@@ -66,8 +67,10 @@ export default function ReviewerDashboard() {
   // Auto-refresh every 30 seconds
   useEffect(() => {
     fetchSubmissions()
+    fetchReviewedSubmissions()
     const interval = setInterval(() => {
       fetchSubmissions()
+      fetchReviewedSubmissions()
     }, 30000) // 30 seconds
 
     return () => clearInterval(interval)
@@ -76,7 +79,7 @@ export default function ReviewerDashboard() {
   useEffect(() => {
     filterSubmissions()
     setCurrentPage(1) // Reset to first page when filters change
-  }, [submissions, activeTab, searchQuery])
+  }, [submissions, reviewedSubmissions, activeTab, searchQuery])
 
   const fetchSubmissions = async () => {
     try {
@@ -87,14 +90,25 @@ export default function ReviewerDashboard() {
     }
   }
 
+  const fetchReviewedSubmissions = async () => {
+    try {
+      const data = await apiClient.getReviewedSubmissions()
+      setReviewedSubmissions(data || [])
+    } catch (err) {
+      console.error('Error fetching reviewed submissions:', err)
+    }
+  }
+
   const filterSubmissions = () => {
-    let filtered = submissions
+    let filtered = activeTab === 'reviewed' ? reviewedSubmissions : submissions
 
     // Filter by status tab
     if (activeTab === 'claimed') {
       filtered = filtered.filter(s => s.status === 'CLAIMED')
     } else if (activeTab === 'eligible') {
       filtered = filtered.filter(s => s.status === 'ELIGIBLE')
+    } else if (activeTab === 'reviewed') {
+      // Already filtered to reviewed submissions
     }
 
     // Filter by search query
@@ -167,6 +181,7 @@ export default function ReviewerDashboard() {
   const getTabCount = (tab: StatusFilter) => {
     if (tab === 'claimed') return submissions.filter(s => s.status === 'CLAIMED').length
     if (tab === 'eligible') return submissions.filter(s => s.status === 'ELIGIBLE').length
+    if (tab === 'reviewed') return reviewedSubmissions.length
     return 0
   }
 
@@ -329,7 +344,7 @@ export default function ReviewerDashboard() {
 
         {/* Glassmorphic Tabs */}
         <div className="flex gap-2 rounded-2xl p-1.5 mb-6 w-fit shadow-xl backdrop-blur-xl animate-slide-up bg-gray-800/40" style={{ animationDelay: '0.1s' }}>
-          {(['claimed', 'eligible'] as StatusFilter[]).map((tab) => (
+          {(['claimed', 'eligible', 'reviewed'] as StatusFilter[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

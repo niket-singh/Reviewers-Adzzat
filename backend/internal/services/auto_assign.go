@@ -11,10 +11,10 @@ import (
 // AutoAssignSubmission automatically assigns a submission to the reviewer with the least tasks
 func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	// Get all approved reviewers with green light ON (active)
-	// Include admins who can also review tasks
+	// Exclude admins - they must manually claim tasks
 	var reviewers []models.User
-	err := database.DB.Where("(role = ? OR role = ?) AND is_approved = ? AND is_green_light = ?",
-		models.RoleReviewer, models.RoleAdmin, true, true).Find(&reviewers).Error
+	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, true, true).Find(&reviewers).Error
 	if err != nil {
 		return nil, err
 	}
@@ -119,10 +119,10 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	// Get all active reviewers (approved + green light ON)
-	// Include admins who can also review tasks
+	// Exclude admins - they must manually claim tasks
 	var reviewers []models.User
-	err = database.DB.Where("(role = ? OR role = ?) AND is_approved = ? AND is_green_light = ?",
-		models.RoleReviewer, models.RoleAdmin, true, true).Find(&reviewers).Error
+	err = database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, true, true).Find(&reviewers).Error
 	if err != nil {
 		return 0, err
 	}
@@ -206,4 +206,105 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	return assignedCount, nil
+}
+
+// RedistributeTasks redistributes all tasks fairly among all active reviewers
+// This is called when a reviewer is activated to ensure fair distribution
+func RedistributeTasks() (int, error) {
+	// Get all active reviewers (approved + green light ON)
+	// Exclude admins - they must manually claim tasks
+	var reviewers []models.User
+	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, true, true).Find(&reviewers).Error
+	if err != nil {
+		return 0, err
+	}
+
+	if len(reviewers) == 0 {
+		return 0, nil // No active reviewers
+	}
+
+	// Get all tasks that need redistribution (PENDING, CLAIMED, ELIGIBLE)
+	// Exclude APPROVED tasks as they're already finalized
+	var allTasks []models.Submission
+	err = database.DB.Where("status IN ?", []string{
+		string(models.StatusPending),
+		string(models.StatusClaimed),
+		string(models.StatusEligible),
+	}).Order("created_at ASC").Find(&allTasks).Error
+	if err != nil {
+		return 0, err
+	}
+
+	if len(allTasks) == 0 {
+		return 0, nil // No tasks to redistribute
+	}
+
+	// Calculate how many tasks each reviewer should get
+	tasksPerReviewer := len(allTasks) / len(reviewers)
+	remainder := len(allTasks) % len(reviewers)
+
+	// Initialize task counts for each reviewer
+	reviewerTaskAssignments := make(map[uuid.UUID]int)
+	for _, reviewer := range reviewers {
+		reviewerTaskAssignments[reviewer.ID] = 0
+	}
+
+	redistributedCount := 0
+
+	// Distribute tasks fairly
+	reviewerIndex := 0
+	for _, task := range allTasks {
+		reviewer := reviewers[reviewerIndex]
+
+		// Assign task to this reviewer
+		now := time.Now()
+		err = database.DB.Model(&models.Submission{}).
+			Where("id = ?", task.ID).
+			Updates(map[string]interface{}{
+				"claimed_by_id": reviewer.ID,
+				"assigned_at":   now,
+				"status":        models.StatusClaimed,
+			}).Error
+
+		if err != nil {
+			continue // Skip this task and continue
+		}
+
+		reviewerTaskAssignments[reviewer.ID]++
+		redistributedCount++
+
+		// Move to next reviewer in round-robin fashion
+		// Give extra tasks to first reviewers if there's a remainder
+		currentReviewerQuota := tasksPerReviewer
+		if reviewerIndex < remainder {
+			currentReviewerQuota++
+		}
+
+		if reviewerTaskAssignments[reviewer.ID] >= currentReviewerQuota {
+			reviewerIndex++
+			if reviewerIndex >= len(reviewers) {
+				reviewerIndex = 0
+			}
+		}
+	}
+
+	// Log the redistribution
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
+	userName := "System"
+	userRole := "SYSTEM"
+
+	LogActivity(LogActivityParams{
+		Action:      "REDISTRIBUTE",
+		Description: "Redistributed tasks fairly among active reviewers",
+		UserID:      &userID,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		Metadata: map[string]interface{}{
+			"taskCount":     redistributedCount,
+			"reviewerCount": len(reviewers),
+		},
+	})
+
+	return redistributedCount, nil
 }
