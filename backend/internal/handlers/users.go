@@ -112,12 +112,12 @@ func ToggleGreenLight(c *gin.Context) {
 		return
 	}
 
-	// If green light was turned ON, assign queued tasks
-	var assignedCount int
+	// If green light was turned ON, redistribute all tasks fairly among active reviewers
+	var redistributedCount int
 	if user.IsGreenLight {
-		count, err := services.AssignQueuedTasks()
+		count, err := services.RedistributeTasks()
 		if err == nil {
-			assignedCount = count
+			redistributedCount = count
 		}
 	}
 
@@ -138,8 +138,8 @@ func ToggleGreenLight(c *gin.Context) {
 	metadata := map[string]interface{}{
 		"status": status,
 	}
-	if assignedCount > 0 {
-		metadata["queuedTasksAssigned"] = assignedCount
+	if redistributedCount > 0 {
+		metadata["tasksRedistributed"] = redistributedCount
 	}
 
 	services.LogActivity(services.LogActivityParams{
@@ -154,9 +154,9 @@ func ToggleGreenLight(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":              "Green light toggled successfully",
-		"isGreenLight":         user.IsGreenLight,
-		"queuedTasksAssigned": assignedCount,
+		"message":            "Green light toggled successfully",
+		"isGreenLight":       user.IsGreenLight,
+		"tasksRedistributed": redistributedCount,
 	})
 }
 
@@ -266,12 +266,12 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	deletionSummary := gin.H{
-		"userName":             user.Name,
-		"userEmail":            user.Email,
-		"userRole":             user.Role,
-		"submissionsDeleted":   0,
-		"filesDeleted":         0,
-		"reviewsDeleted":       0,
+		"userName":              user.Name,
+		"userEmail":             user.Email,
+		"userRole":              user.Role,
+		"submissionsDeleted":    0,
+		"filesDeleted":          0,
+		"reviewsDeleted":        0,
 		"assignmentsUnassigned": 0,
 	}
 
@@ -425,8 +425,8 @@ func GetProfile(c *gin.Context) {
 		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", uid, models.StatusEligible).Count(&eligibleMarked)
 
 		stats = gin.H{
-			"totalReviews":  reviewsCount,
-			"tasksClaimed":  claimedTasks,
+			"totalReviews":   reviewsCount,
+			"tasksClaimed":   claimedTasks,
 			"eligibleMarked": eligibleMarked,
 		}
 	}

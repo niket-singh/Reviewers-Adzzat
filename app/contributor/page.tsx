@@ -541,7 +541,7 @@ export default function ContributorDashboard() {
                           <span className="hidden sm:inline">Download</span>
                         </button>
                       </Tooltip>
-                      {submission.status === 'PENDING' && (
+                      {submission.status !== 'APPROVED' && (
                         <Tooltip text="Delete this submission">
                           <button
                             onClick={() => handleDelete(submission.id, submission.title)}

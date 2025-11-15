@@ -160,6 +160,61 @@ func GetSubmissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"submissions": submissions})
 }
 
+// GetReviewedSubmissions returns submissions that the reviewer has given feedback on
+func GetReviewedSubmissions(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	userRole, _ := c.Get("userRole")
+	uid, _ := uuid.Parse(userID.(string))
+
+	// Only reviewers and admins can access this
+	if userRole != string(models.RoleReviewer) && userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	// Get search query
+	search := c.Query("search")
+
+	// Get all reviews by this reviewer
+	var reviews []models.Review
+	query := database.DB.Where("reviewer_id = ?", uid)
+
+	if err := query.Find(&reviews).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
+		return
+	}
+
+	// Get unique submission IDs
+	submissionIDs := make([]uuid.UUID, 0)
+	for _, review := range reviews {
+		submissionIDs = append(submissionIDs, review.SubmissionID)
+	}
+
+	if len(submissionIDs) == 0 {
+		c.JSON(http.StatusOK, gin.H{"submissions": []models.Submission{}})
+		return
+	}
+
+	// Get submissions
+	submissionQuery := database.DB.Preload("Contributor").Preload("Reviews").Preload("ClaimedBy").
+		Where("id IN ?", submissionIDs)
+
+	// Search filter
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		submissionQuery = submissionQuery.Where("title ILIKE ? OR domain ILIKE ? OR language ILIKE ?",
+			searchPattern, searchPattern, searchPattern)
+	}
+
+	var submissions []models.Submission
+	if err := submissionQuery.Order("updated_at DESC").Find(&submissions).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch submissions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"submissions": submissions})
+}
+
 // GetSubmission returns a single submission
 func GetSubmission(c *gin.Context) {
 	submissionID := c.Param("id")
@@ -231,9 +286,9 @@ func DeleteSubmission(c *gin.Context) {
 		TargetID:    &sid,
 		TargetType:  &targetType,
 		Metadata: map[string]interface{}{
-			"title":            submission.Title,
-			"contributorName":  submission.Contributor.Name,
-			"reviewCount":      len(submission.Reviews),
+			"title":           submission.Title,
+			"contributorName": submission.Contributor.Name,
+			"reviewCount":     len(submission.Reviews),
 		},
 	})
 
@@ -415,4 +470,66 @@ func ApproveSubmission(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Submission approved successfully"})
+}
+
+// ClaimSubmission allows admins to manually claim tasks
+func ClaimSubmission(c *gin.Context) {
+	submissionID := c.Param("id")
+	sid, err := uuid.Parse(submissionID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	// Get current user (must be admin)
+	userID, _ := c.Get("userId")
+	userRole, _ := c.Get("userRole")
+
+	if userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can manually claim tasks"})
+		return
+	}
+
+	uid, _ := uuid.Parse(userID.(string))
+
+	var submission models.Submission
+	if err := database.DB.Preload("Contributor").First(&submission, sid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Can only claim PENDING or CLAIMED tasks
+	if submission.Status != models.StatusPending && submission.Status != models.StatusClaimed {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Can only claim pending or claimed tasks"})
+		return
+	}
+
+	// Assign task to admin
+	submission.ClaimedByID = &uid
+	submission.Status = models.StatusClaimed
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to claim submission"})
+		return
+	}
+
+	// Log activity
+	userName, _ := c.Get("userEmail")
+	userNameStr := userName.(string)
+	userRoleStr := userRole.(string)
+	targetType := "submission"
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "MANUAL_CLAIM",
+		Description: "Admin manually claimed task \"" + submission.Title + "\"",
+		UserID:      &uid,
+		UserName:    &userNameStr,
+		UserRole:    &userRoleStr,
+		TargetID:    &sid,
+		TargetType:  &targetType,
+		Metadata: map[string]interface{}{
+			"contributorName": submission.Contributor.Name,
+		},
+	})
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task claimed successfully"})
 }
