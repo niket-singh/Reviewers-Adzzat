@@ -48,17 +48,36 @@ func GetSignedURL(fileKey string, expiresIn int) (string, error) {
 		return "", fmt.Errorf("storage client not initialized")
 	}
 
-	// Default expiration: 60 seconds
+	// Longer expiration: 1 hour (3600 seconds)
 	if expiresIn == 0 {
-		expiresIn = 60
+		expiresIn = 3600
 	}
 
+	// Create signed URL with download parameter
 	resp, err := client.CreateSignedUrl("submissions", fileKey, expiresIn)
 	if err != nil {
 		return "", fmt.Errorf("failed to create signed URL: %w", err)
 	}
 
-	return resp.SignedURL, nil
+	// Add download parameter to force download instead of display
+	downloadURL := resp.SignedURL + "&download="
+
+	return downloadURL, nil
+}
+
+// DownloadFile retrieves file content from Supabase storage
+func DownloadFile(fileKey string) ([]byte, error) {
+	if client == nil {
+		return nil, fmt.Errorf("storage client not initialized")
+	}
+
+	// Download file from Supabase
+	resp, err := client.DownloadFile("submissions", fileKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to download file: %w", err)
+	}
+
+	return resp, nil
 }
 
 // DeleteFile deletes a file from Supabase storage

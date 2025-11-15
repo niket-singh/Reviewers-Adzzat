@@ -240,7 +240,7 @@ func DeleteSubmission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Submission deleted successfully"})
 }
 
-// GetDownloadURL returns a signed URL for downloading
+// GetDownloadURL proxies file download with proper headers
 func GetDownloadURL(c *gin.Context) {
 	submissionID := c.Param("id")
 	sid, err := uuid.Parse(submissionID)
@@ -268,17 +268,24 @@ func GetDownloadURL(c *gin.Context) {
 		return
 	}
 
-	// Generate signed URL
-	signedURL, err := storage.GetSignedURL(submission.FileURL, 60)
+	// Download file from Supabase
+	fileData, err := storage.DownloadFile(submission.FileURL)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate download URL"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download file"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"downloadUrl": signedURL,
-		"fileName":    submission.FileName,
-	})
+	// Set headers for file download
+	c.Header("Content-Description", "File Transfer")
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Content-Disposition", "attachment; filename=\""+submission.FileName+"\"")
+	c.Header("Content-Type", "application/zip")
+	c.Header("Cache-Control", "no-cache, no-store, must-revalidate")
+	c.Header("Pragma", "no-cache")
+	c.Header("Expires", "0")
+
+	// Send file data
+	c.Data(http.StatusOK, "application/zip", fileData)
 }
 
 // SubmitFeedback submits review feedback
