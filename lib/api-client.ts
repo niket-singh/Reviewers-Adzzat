@@ -4,8 +4,12 @@ class ApiClient {
   private client: AxiosInstance
 
   constructor() {
+    // Ensure API URL has a protocol to prevent ERR_NAME_NOT_RESOLVED errors
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+    const baseURL = this.ensureProtocol(apiUrl)
+
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+      baseURL,
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
@@ -34,6 +38,35 @@ class ApiClient {
         return Promise.reject(error)
       }
     )
+  }
+
+  /**
+   * Ensures the API URL has a protocol (http:// or https://)
+   * This prevents ERR_NAME_NOT_RESOLVED errors when the protocol is missing
+   */
+  private ensureProtocol(url: string): string {
+    const trimmedUrl = url.trim()
+
+    // If URL already has a protocol, return as-is
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+      return trimmedUrl
+    }
+
+    // If URL starts with localhost or 127.0.0.1, use http://
+    if (/^(localhost|127\.0\.0\.1)(:|\/|$)/i.test(trimmedUrl)) {
+      return `http://${trimmedUrl}`
+    }
+
+    // For all other URLs (production domains), use https://
+    // Log a warning in development mode to alert developers
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(
+        `[API Client] URL missing protocol, adding https://: ${trimmedUrl}\n` +
+        `Please update NEXT_PUBLIC_API_URL in your .env file to include the protocol.`
+      )
+    }
+
+    return `https://${trimmedUrl}`
   }
 
   // Auth
