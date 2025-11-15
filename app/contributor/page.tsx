@@ -173,13 +173,16 @@ export default function ContributorDashboard() {
       const link = document.createElement('a')
       link.href = downloadUrl
       link.download = fileName
-      link.target = '_blank'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+
+      // Clean up blob URL to prevent memory leaks
+      setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
+
       showToast('Download started!', 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to generate download link', 'error')
+      showToast(err.response?.data?.error || 'Failed to download file', 'error')
     }
   }
 

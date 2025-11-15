@@ -115,8 +115,17 @@ class ApiClient {
   }
 
   async getDownloadURL(id: string) {
-    const response = await this.client.get(`/submissions/${id}/download`)
-    return response.data.downloadUrl
+    // Backend now proxies the file directly with proper headers
+    // We need to request as blob and create a download URL
+    const response = await this.client.get(`/submissions/${id}/download`, {
+      responseType: 'blob',
+    })
+
+    // Create a blob URL for download
+    const blob = new Blob([response.data], { type: 'application/zip' })
+    const downloadUrl = window.URL.createObjectURL(blob)
+
+    return { downloadUrl, blob }
   }
 
   async submitFeedback(id: string, data: { feedback: string; accountPostedIn?: string; markEligible: boolean }) {
