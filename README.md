@@ -305,7 +305,7 @@ npm install -g netlify-cli
 netlify deploy
 ```
 
-**Important**: Set `NEXT_PUBLIC_API_URL` to your backend URL
+**Important**: Set `NEXT_PUBLIC_API_URL` to your backend URL (must include `https://` protocol)
 
 ---
 
@@ -313,7 +313,11 @@ netlify deploy
 
 ### Frontend (`.env.local`)
 ```env
+# Local development
 NEXT_PUBLIC_API_URL=http://localhost:8080/api
+
+# Production (example)
+# NEXT_PUBLIC_API_URL=https://your-backend.railway.app/api
 ```
 
 ### Backend (`backend/.env`)
