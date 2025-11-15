@@ -48,8 +48,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
     // Get WebSocket URL from environment or construct it
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL ||
-      (process.env.NEXT_PUBLIC_API_URL?.replace('http', 'ws').replace('/api', '/ws') ||
-       'ws://localhost:8080/ws')
+      (process.env.NEXT_PUBLIC_API_URL?.replace('http', 'ws') + '/ws' ||
+       'ws://localhost:8080/api/ws')
 
     try {
       const token = localStorage.getItem('authToken')

@@ -79,12 +79,13 @@ func setupRouter() *gin.Engine {
 			auth.POST("/reset-password", handlers.ResetPassword)
 		}
 
+		// WebSocket route (uses query param auth for browser compatibility)
+		api.GET("/ws", middleware.WebSocketAuthMiddleware(), handlers.HandleWebSocket)
+
 		// Protected routes
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
 		{
-			// WebSocket route
-			protected.GET("/ws", handlers.HandleWebSocket)
 
 			// Profile routes
 			protected.GET("/profile", handlers.GetProfile)
