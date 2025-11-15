@@ -18,28 +18,33 @@ A scalable web platform for managing task submissions and reviews with three use
 - ✅ Upload ZIP files with domain and language selection
 - ✅ Track submission status (Pending → Claimed → Eligible → Approved)
 - ✅ View reviewer feedback
-- ✅ Delete pending submissions
+- ✅ **Delete submissions** (PENDING, CLAIMED, ELIGIBLE - not APPROVED)
 - ✅ Search submissions by title, domain, or language
 - ✅ Auto-refresh dashboard every 30 seconds
 - ✅ View submission statistics
 
 ### For Reviewers
 - ✅ **Auto-assigned tasks** (fair distribution algorithm)
+- ✅ **Three dashboard tabs**: Claimed, Eligible, Reviewed
+- ✅ **Reviewed tab** shows all tasks you've given feedback on
 - ✅ Download submission files
 - ✅ Submit detailed feedback
 - ✅ Mark submissions as eligible
-- ✅ Search tasks
+- ✅ Search tasks across all tabs
 - ✅ Auto-refresh dashboard
 - ✅ View review statistics
 - ✅ **Requires admin approval** to start reviewing
 
 ### For Admins
 - ✅ **5 comprehensive dashboard tabs**:
-  - **Submissions**: View, approve, delete any submission
-  - **Users**: Manage users, approve reviewers, **switch roles**, delete accounts
+  - **Submissions**: View, approve, delete, **manually claim** any submission
+  - **Users**: Manage users, approve reviewers, **toggle green light**, **switch roles**, delete accounts
   - **Stats**: Platform overview, contributor stats, reviewer workload
   - **Logs**: Activity log viewer (recent 50 actions)
   - **Leaderboard**: Top contributors ranking
+- ✅ **Manual task claiming** - Admins excluded from auto-assignment, can claim tasks manually
+- ✅ **Green light toggle** - Activate/deactivate reviewers, triggers fair task redistribution
+- ✅ **Fair task redistribution** - When reviewers are activated, all tasks redistributed evenly
 - ✅ Search functionality across all tabs
 - ✅ Delete users with cascade warnings
 - ✅ **Role switching** capability
@@ -167,15 +172,18 @@ AdzzatXperts/
 ### Submissions
 - `POST /api/submissions` - Upload submission (FormData)
 - `GET /api/submissions` - List submissions (with search/filter)
+- `GET /api/submissions/reviewed` - Get reviewed submissions (reviewer/admin) ⭐
 - `GET /api/submissions/:id` - Get single submission
-- `DELETE /api/submissions/:id` - Delete submission
+- `DELETE /api/submissions/:id` - Delete submission (contributor: non-approved only)
 - `GET /api/submissions/:id/download` - Get download URL
 - `POST /api/submissions/:id/feedback` - Submit review
 - `PUT /api/submissions/:id/approve` - Approve (admin only)
+- `PUT /api/submissions/:id/claim` - Manually claim task (admin only) ⭐
 
 ### Admin
 - `GET /api/users` - List all users
 - `PUT /api/users/:id/approve` - Approve reviewer
+- `PUT /api/users/:id/greenlight` - Toggle reviewer active status (triggers redistribution) ⭐
 - `PUT /api/users/:id/role` - Switch user role ⭐
 - `DELETE /api/users/:id` - Delete user
 - `GET /api/logs` - Get activity logs ⭐
@@ -223,8 +231,12 @@ AdzzatXperts/
 
 ## 📊 Key Features
 
-### Auto-Assignment System
-Tasks are automatically assigned to the reviewer with the fewest active tasks, ensuring fair workload distribution.
+### Auto-Assignment & Redistribution System
+- **Auto-Assignment**: Tasks are automatically assigned to active reviewers with the fewest tasks
+- **Admins Excluded**: Admins are not auto-assigned; they must manually claim tasks
+- **Fair Redistribution**: When reviewers are activated/deactivated (green light toggle), all tasks are redistributed evenly among active reviewers
+- **Queue Management**: When no reviewers are active, tasks remain in PENDING status and are visible to admins
+- **Load Balancing**: Round-robin distribution ensures balanced workload across all active reviewers
 
 ### Activity Logging
 All platform actions are logged for admin oversight:
@@ -234,6 +246,8 @@ All platform actions are logged for admin oversight:
 - Approvals granted
 - Role changes
 - Deletions
+- Task redistribution (when reviewers activated)
+- Manual task claims (admin)
 
 ### Comprehensive Statistics
 Admins can view:
@@ -322,24 +336,26 @@ CORS_ORIGINS=http://localhost:3000
 - [ ] Sign up as reviewer
 - [ ] Admin approves reviewer
 - [ ] Reviewer sees auto-assigned task
-- [ ] Reviewer submits feedback
+- [ ] Reviewer submits feedback (appears in "Reviewed" tab)
 - [ ] Reviewer marks as eligible
 - [ ] Admin approves submission
+- [ ] Test delete functionality (contributor can delete PENDING/CLAIMED/ELIGIBLE, not APPROVED)
 - [ ] Test search functionality
-- [ ] Test delete functionality
+- [ ] Test green light toggle (tasks redistribute fairly)
+- [ ] Test admin manual claim
 - [ ] Test role switching (admin)
 - [ ] View activity logs (admin)
 - [ ] View statistics (admin)
+- [ ] Check reviewer "Reviewed" tab
 
 ---
 
 ## 📚 Documentation
 
 - **`backend/README.md`** - Complete backend documentation
-- **`FRONTEND-INTEGRATION-COMPLETE.md`** - Frontend integration details
-- **`FRONTEND-INTEGRATION-GUIDE.md`** - Integration guide
-- **`SESSION-SUMMARY.md`** - Development session summary
-- **`REBUILD-ARCHITECTURE.md`** - Architecture decisions
+- **`SETUP-AND-DEPLOYMENT-GUIDE.md`** - Detailed setup and deployment instructions
+- **`BACKEND_SECURITY_GUIDE.md`** - Security best practices and guidelines
+- **`BACKEND_HEALTH_CHECK.md`** - Health check and monitoring guide
 
 ---
 
@@ -386,5 +402,5 @@ For issues or questions:
 
 **Built with ❤️ using Go, Next.js, and modern web technologies**
 
-**Version**: 2.0.0 (Complete Rebuild)
+**Version**: 2.1.0 (Enhanced Task Management & Fair Distribution)
 **Last Updated**: November 2025
