@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
@@ -41,54 +41,7 @@ export default function AuditLogsPage() {
     }
   }, [user, authLoading, router])
 
-  // Fetch audit logs
-  useEffect(() => {
-    if (user?.role === 'ADMIN') {
-      fetchLogs()
-    }
-  }, [user])
-
-  // Filter logs
-  useEffect(() => {
-    let filtered = logs
-
-    // Filter by action type
-    if (filterAction !== 'all') {
-      filtered = filtered.filter((log) => log.action === filterAction)
-    }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (log) =>
-          log.userName.toLowerCase().includes(query) ||
-          log.action.toLowerCase().includes(query) ||
-          log.entityType.toLowerCase().includes(query) ||
-          log.ipAddress.includes(query)
-      )
-    }
-
-    setFilteredLogs(filtered)
-    setCurrentPage(1) // Reset to first page when filter changes
-  }, [logs, filterAction, searchQuery])
-
-  const fetchLogs = async () => {
-    try {
-      setLoading(true)
-      const response = await apiClient.getAuditLogs({ limit: 1000 })
-      setLogs(response.logs || [])
-    } catch (error: any) {
-      console.error('Error fetching audit logs:', error)
-      showToast('Failed to load audit logs', 'error')
-      // Use mock data for development
-      setMockLogs()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const setMockLogs = () => {
+  const setMockLogs = useCallback(() => {
     // Mock audit logs for development/demo
     const actions = ['UPLOAD', 'REVIEW', 'APPROVE', 'DELETE', 'LOGIN', 'LOGOUT', 'UPDATE_PROFILE', 'CREATE_USER']
     const entityTypes = ['SUBMISSION', 'USER', 'REVIEW', 'PROFILE']
@@ -117,7 +70,54 @@ export default function AuditLogsPage() {
     })
 
     setLogs(mockData)
-  }
+  }, [])
+
+  const fetchLogs = useCallback(async () => {
+    try {
+      setLoading(true)
+      const response = await apiClient.getAuditLogs({ limit: 1000 })
+      setLogs(response.logs || [])
+    } catch (error: any) {
+      console.error('Error fetching audit logs:', error)
+      showToast('Failed to load audit logs', 'error')
+      // Use mock data for development
+      setMockLogs()
+    } finally {
+      setLoading(false)
+    }
+  }, [showToast, setMockLogs])
+
+  // Fetch audit logs
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchLogs()
+    }
+  }, [user, fetchLogs])
+
+  // Filter logs
+  useEffect(() => {
+    let filtered = logs
+
+    // Filter by action type
+    if (filterAction !== 'all') {
+      filtered = filtered.filter((log) => log.action === filterAction)
+    }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (log) =>
+          log.userName.toLowerCase().includes(query) ||
+          log.action.toLowerCase().includes(query) ||
+          log.entityType.toLowerCase().includes(query) ||
+          log.ipAddress.includes(query)
+      )
+    }
+
+    setFilteredLogs(filtered)
+    setCurrentPage(1) // Reset to first page when filter changes
+  }, [logs, filterAction, searchQuery])
 
   const handleLogout = async () => {
     await logout()

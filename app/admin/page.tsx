@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
@@ -132,22 +132,7 @@ export default function AdminDashboard() {
     }
   }, [user, authLoading, router])
 
-  // Auto-refresh every 30 seconds
-  useEffect(() => {
-    fetchData()
-    const interval = setInterval(() => {
-      fetchData()
-    }, 30000) // 30 seconds
-
-    return () => clearInterval(interval)
-  }, [activeTab])
-
-  useEffect(() => {
-    filterData()
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [submissions, users, submissionFilter, searchQuery])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       if (activeTab === 'submissions') {
         const data = await apiClient.getSubmissions()
@@ -168,9 +153,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error fetching data:', err)
     }
-  }
+  }, [activeTab])
 
-  const filterData = () => {
+  const filterData = useCallback(() => {
     // Filter submissions
     let filteredSubs = submissions
 
@@ -205,7 +190,22 @@ export default function AdminDashboard() {
     }
 
     setFilteredUsers(filteredUsr)
-  }
+  }, [submissions, submissionFilter, searchQuery, activeTab, users])
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    fetchData()
+    const interval = setInterval(() => {
+      fetchData()
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [activeTab, fetchData])
+
+  useEffect(() => {
+    filterData()
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [filterData])
 
   const handleApproveReviewer = async (userId: string) => {
     try {

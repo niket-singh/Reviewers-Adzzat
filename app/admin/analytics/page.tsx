@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
@@ -54,35 +54,7 @@ export default function AnalyticsDashboard() {
     }
   }, [user, authLoading, router])
 
-  // Fetch analytics data
-  useEffect(() => {
-    if (user?.role === 'ADMIN') {
-      fetchAnalytics()
-    }
-  }, [user, timeRange])
-
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true)
-      // Fetch both analytics overview and chart data
-      const [analyticsData, chartDataResponse] = await Promise.all([
-        apiClient.getAnalytics(),
-        apiClient.getAnalyticsChartData(timeRange),
-      ])
-
-      setAnalytics(analyticsData)
-      setChartData(chartDataResponse.data || [])
-    } catch (error: any) {
-      console.error('Error fetching analytics:', error)
-      showToast('Failed to load analytics', 'error')
-      // Use mock data for development
-      setMockData()
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const setMockData = () => {
+  const setMockData = useCallback(() => {
     // Mock data for development/demo
     const mockAnalytics: AnalyticsData = {
       totalSubmissions: 247,
@@ -126,7 +98,35 @@ export default function AnalyticsDashboard() {
 
     setAnalytics(mockAnalytics)
     setChartData(mockChart)
-  }
+  }, [timeRange])
+
+  const fetchAnalytics = useCallback(async () => {
+    try {
+      setLoading(true)
+      // Fetch both analytics overview and chart data
+      const [analyticsData, chartDataResponse] = await Promise.all([
+        apiClient.getAnalytics(),
+        apiClient.getAnalyticsChartData(timeRange),
+      ])
+
+      setAnalytics(analyticsData)
+      setChartData(chartDataResponse.data || [])
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error)
+      showToast('Failed to load analytics', 'error')
+      // Use mock data for development
+      setMockData()
+    } finally {
+      setLoading(false)
+    }
+  }, [timeRange, showToast, setMockData])
+
+  // Fetch analytics data
+  useEffect(() => {
+    if (user?.role === 'ADMIN') {
+      fetchAnalytics()
+    }
+  }, [user, fetchAnalytics])
 
   const handleLogout = async () => {
     await logout()

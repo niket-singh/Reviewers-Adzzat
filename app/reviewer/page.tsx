@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { useToast } from '@/components/ToastContainer'
@@ -76,11 +76,6 @@ export default function ReviewerDashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [submissions, reviewedSubmissions, activeTab, searchQuery])
-
   const fetchSubmissions = async () => {
     try {
       const data = await apiClient.getSubmissions()
@@ -99,7 +94,7 @@ export default function ReviewerDashboard() {
     }
   }
 
-  const filterSubmissions = () => {
+  const filterSubmissions = useCallback(() => {
     let filtered = activeTab === 'reviewed' ? reviewedSubmissions : submissions
 
     // Filter by status tab
@@ -124,7 +119,12 @@ export default function ReviewerDashboard() {
     }
 
     setFilteredSubmissions(filtered)
-  }
+  }, [activeTab, reviewedSubmissions, submissions, searchQuery])
+
+  useEffect(() => {
+    filterSubmissions()
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [filterSubmissions])
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -222,7 +222,7 @@ export default function ReviewerDashboard() {
               Pending Approval
             </h2>
             <p className="mb-8 text-lg text-gray-300">
-              Your reviewer account is waiting for admin approval. You'll be able to review submissions once an admin approves your account.
+              Your reviewer account is waiting for admin approval. You&apos;ll be able to review submissions once an admin approves your account.
             </p>
             <button
               onClick={handleLogout}

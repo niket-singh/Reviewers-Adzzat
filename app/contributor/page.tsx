@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
@@ -74,11 +74,6 @@ export default function ContributorDashboard() {
     return () => clearInterval(interval)
   }, [])
 
-  useEffect(() => {
-    filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
-  }, [submissions, activeTab, searchQuery])
-
   const fetchSubmissions = async () => {
     try {
       const data = await apiClient.getSubmissions()
@@ -88,7 +83,7 @@ export default function ContributorDashboard() {
     }
   }
 
-  const filterSubmissions = () => {
+  const filterSubmissions = useCallback(() => {
     let filtered = submissions
 
     if (activeTab !== 'all') {
@@ -106,7 +101,12 @@ export default function ContributorDashboard() {
     }
 
     setFilteredSubmissions(filtered)
-  }
+  }, [submissions, activeTab, searchQuery])
+
+  useEffect(() => {
+    filterSubmissions()
+    setCurrentPage(1) // Reset to first page when filters change
+  }, [filterSubmissions])
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault()
