@@ -90,7 +90,7 @@ func setupRouter() *gin.Engine {
 			protected.GET("/profile", handlers.GetProfile)
 			protected.PUT("/profile", handlers.UpdateProfile)
 
-			// Submission routes
+			// Submission routes (Project X)
 			submissions := protected.Group("/submissions")
 			{
 				submissions.POST("", handlers.UploadSubmission)
@@ -100,6 +100,16 @@ func setupRouter() *gin.Engine {
 				submissions.DELETE("/:id", handlers.DeleteSubmission)
 				submissions.GET("/:id/download", handlers.GetDownloadURL)
 				submissions.POST("/:id/feedback", handlers.SubmitFeedback)
+			}
+
+			// Project V routes
+			projectv := protected.Group("/projectv")
+			{
+				projectv.POST("/submissions", handlers.CreateProjectVSubmission)
+				projectv.GET("/submissions", handlers.GetProjectVSubmissions)
+				projectv.GET("/submissions/:id", handlers.GetProjectVSubmission)
+				projectv.PUT("/submissions/:id/status", handlers.UpdateProjectVStatus)
+				projectv.DELETE("/submissions/:id", handlers.DeleteProjectVSubmission)
 			}
 
 			// Admin-only routes

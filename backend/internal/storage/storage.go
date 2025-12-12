@@ -93,3 +93,17 @@ func DeleteFile(fileKey string) error {
 
 	return nil
 }
+
+// DownloadFileToPath downloads a file from Supabase and saves it to the specified path
+func DownloadFileToPath(fileKey string, targetPath string) error {
+	data, err := DownloadFile(fileKey)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(targetPath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+
+	return nil
+}
