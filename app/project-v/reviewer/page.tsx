@@ -13,6 +13,7 @@ interface Submission {
   commitHash: string;
   issueUrl: string;
   status: string;
+  accountPostedIn?: string;
   processingComplete: boolean;
   cloneSuccess: boolean;
   cloneError?: string;
@@ -48,6 +49,7 @@ export default function ProjectVReviewer() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [accountPostedIn, setAccountPostedIn] = useState<string>("");
 
   useEffect(() => {
     if (!loading && (!user || (user.role !== "REVIEWER" && user.role !== "ADMIN"))) {
@@ -75,13 +77,20 @@ export default function ProjectVReviewer() {
     }
   };
 
-  const updateStatus = async (submissionId: string, newStatus: string) => {
+  const updateStatus = async (submissionId: string, newStatus: string, includeAccount: boolean = false) => {
     setUpdatingStatus(true);
     try {
       const token = localStorage.getItem("authToken");
+      const payload: any = { status: newStatus };
+
+      // Only include accountPostedIn if explicitly requested
+      if (includeAccount && accountPostedIn.trim()) {
+        payload.accountPostedIn = accountPostedIn.trim();
+      }
+
       await axios.put(
         `${process.env.NEXT_PUBLIC_API_URL}/projectv/submissions/${submissionId}/status`,
-        { status: newStatus },
+        payload,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -90,6 +99,7 @@ export default function ProjectVReviewer() {
       showToast("Status updated successfully", "success");
       fetchSubmissions();
       setSelectedSubmission(null);
+      setAccountPostedIn(""); // Reset the account input
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.error || "Failed to update status";
@@ -474,11 +484,40 @@ export default function ProjectVReviewer() {
                   </div>
                 )}
 
+                {/* Account Posted In */}
+                {selectedSubmission.accountPostedIn && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Account Posted In:
+                    </h4>
+                    <p className="text-gray-700">{selectedSubmission.accountPostedIn}</p>
+                  </div>
+                )}
+
                 {/* Status Update Buttons */}
                 <div className="border-t pt-4">
                   <h4 className="font-semibold text-gray-900 mb-3">
                     Update Status:
                   </h4>
+
+                  {/* Account Input for Task Submitted */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Account Posted In (for Task Submitted status):
+                    </label>
+                    <input
+                      type="text"
+                      value={accountPostedIn}
+                      onChange={(e) => setAccountPostedIn(e.target.value)}
+                      placeholder="Enter account name..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={updatingStatus}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This will be saved when you click "Task Submitted" button
+                    </p>
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
                     <StatusButton
                       label="Task Submitted"
@@ -486,7 +525,7 @@ export default function ProjectVReviewer() {
                       color="blue"
                       currentStatus={selectedSubmission.status}
                       onClick={() =>
-                        updateStatus(selectedSubmission.id, "TASK_SUBMITTED")
+                        updateStatus(selectedSubmission.id, "TASK_SUBMITTED", true)
                       }
                       disabled={updatingStatus}
                     />
@@ -513,16 +552,18 @@ export default function ProjectVReviewer() {
                       }
                       disabled={updatingStatus}
                     />
-                    <StatusButton
-                      label="Approved"
-                      status="APPROVED"
-                      color="green"
-                      currentStatus={selectedSubmission.status}
-                      onClick={() =>
-                        updateStatus(selectedSubmission.id, "APPROVED")
-                      }
-                      disabled={updatingStatus}
-                    />
+                    {user?.role === "ADMIN" && (
+                      <StatusButton
+                        label="Approved"
+                        status="APPROVED"
+                        color="green"
+                        currentStatus={selectedSubmission.status}
+                        onClick={() =>
+                          updateStatus(selectedSubmission.id, "APPROVED")
+                        }
+                        disabled={updatingStatus}
+                      />
+                    )}
                     <StatusButton
                       label="Rejected"
                       status="REJECTED"

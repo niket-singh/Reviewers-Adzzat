@@ -8,12 +8,21 @@ import { useToast } from '@/components/ToastContainer'
 import Breadcrumb from '@/components/Breadcrumb'
 
 interface Stats {
+  // Project X stats
   totalSubmissions?: number
   eligibleSubmissions?: number
   approvedSubmissions?: number
   totalReviews?: number
   tasksClaimed?: number
   eligibleMarked?: number
+  // Project V stats
+  projectVTotal?: number
+  projectVSubmitted?: number
+  projectVApproved?: number
+  projectVRejected?: number
+  // Combined stats
+  allProjectsTotal?: number
+  allProjectsApproved?: number
 }
 
 interface ProfileData {
@@ -24,6 +33,7 @@ interface ProfileData {
     role: string
     isApproved: boolean
     createdAt: string
+    profilePictureUrl?: string
   }
   stats: Stats
 }
@@ -33,6 +43,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [uploadingPfp, setUploadingPfp] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     password: '',
@@ -100,6 +111,37 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await apiClient.logout()
     router.push('/')
+  }
+
+  const handlePfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please upload an image file', 'error')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image must be less than 5MB', 'error')
+      return
+    }
+
+    setUploadingPfp(true)
+    try {
+      const formData = new FormData()
+      formData.append('profilePicture', file)
+
+      await apiClient.updateProfile(formData)
+      showToast('✨ Profile picture updated!', 'success')
+      fetchProfile()
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Upload failed', 'error')
+    } finally {
+      setUploadingPfp(false)
+    }
   }
 
   const getRoleDashboard = (role: string) => {
@@ -222,10 +264,41 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-6">
             <div className="flex items-start gap-6">
               {/* Avatar */}
-              <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${getRoleColor(user.role)} flex items-center justify-center shadow-2xl animate-pulse-glow flex-shrink-0 glow`}>
-                <span className="text-4xl font-black text-white">
-                  {user.name.charAt(0).toUpperCase()}
-                </span>
+              <div className="relative group">
+                <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${getRoleColor(user.role)} flex items-center justify-center shadow-2xl animate-pulse-glow flex-shrink-0 glow overflow-hidden`}>
+                  {user.profilePictureUrl ? (
+                    <img
+                      src={user.profilePictureUrl}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-4xl font-black text-white">
+                      {user.name.charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <label
+                  htmlFor="pfp-upload"
+                  className="absolute inset-0 bg-black bg-opacity-60 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer flex items-center justify-center"
+                >
+                  {uploadingPfp ? (
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+                  ) : (
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                  <input
+                    id="pfp-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePfpUpload}
+                    className="hidden"
+                    disabled={uploadingPfp}
+                  />
+                </label>
               </div>
 
               {/* Info */}
@@ -331,52 +404,99 @@ export default function ProfilePage() {
             <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            Your Statistics
+            Your Statistics - All Projects
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {user.role === 'CONTRIBUTOR' && (
-              <>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">{stats.totalSubmissions || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">📝 Total Submissions</div>
-                </div>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-2">{stats.eligibleSubmissions || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">✓ Eligible</div>
-                </div>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-2">{stats.approvedSubmissions || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">🌟 Approved</div>
-                </div>
-              </>
-            )}
 
-            {user.role === 'REVIEWER' && (
-              <>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent mb-2">{stats.tasksClaimed || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">📌 Tasks Claimed</div>
-                </div>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-2">{stats.totalReviews || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">💬 Total Reviews</div>
-                </div>
-                <div className="text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                  <div className="text-5xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-2">{stats.eligibleMarked || 0}</div>
-                  <div className="text-sm text-gray-400 font-bold">✅ Marked Eligible</div>
-                </div>
-              </>
-            )}
-
-            {user.role === 'ADMIN' && (
-              <div className="col-span-full text-center p-10 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
-                <div className="text-6xl mb-4">👑</div>
-                <div className="text-xl font-bold text-gray-300">
-                  View platform statistics in the Admin Dashboard
-                </div>
-              </div>
-            )}
+          {/* Overall Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-6 bg-gradient-to-br from-blue-600 to-blue-700 backdrop-blur-sm rounded-2xl border-2 border-blue-500/50 hover-lift">
+              <div className="text-5xl font-black text-white mb-2">{stats.allProjectsTotal || 0}</div>
+              <div className="text-sm text-blue-100 font-bold">📊 Total Across All Projects</div>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-green-600 to-green-700 backdrop-blur-sm rounded-2xl border-2 border-green-500/50 hover-lift">
+              <div className="text-5xl font-black text-white mb-2">{stats.allProjectsApproved || 0}</div>
+              <div className="text-sm text-green-100 font-bold">✅ Total Approved</div>
+            </div>
+            <div className="text-center p-6 bg-gradient-to-br from-purple-600 to-purple-700 backdrop-blur-sm rounded-2xl border-2 border-purple-500/50 hover-lift">
+              <div className="text-5xl font-black text-white mb-2">{((stats.allProjectsApproved || 0) / (stats.allProjectsTotal || 1) * 100).toFixed(0)}%</div>
+              <div className="text-sm text-purple-100 font-bold">🎯 Approval Rate</div>
+            </div>
           </div>
+
+          {/* Project X Stats */}
+          <div className="mb-6">
+            <h4 className="text-lg font-bold text-yellow-400 mb-3 flex items-center gap-2">
+              <span className="text-2xl">X</span> Project X Stats
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {user.role === 'CONTRIBUTOR' && (
+                <>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">{stats.totalSubmissions || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Total Submissions</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-1">{stats.eligibleSubmissions || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Eligible</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent mb-1">{stats.approvedSubmissions || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Approved</div>
+                  </div>
+                </>
+              )}
+              {user.role === 'REVIEWER' && (
+                <>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent mb-1">{stats.tasksClaimed || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Tasks Claimed</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">{stats.totalReviews || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Total Reviews</div>
+                  </div>
+                  <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                    <div className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-1">{stats.eligibleMarked || 0}</div>
+                    <div className="text-xs text-gray-400 font-bold">Marked Eligible</div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Project V Stats */}
+          <div>
+            <h4 className="text-lg font-bold text-green-400 mb-3 flex items-center gap-2">
+              <span className="text-2xl">V</span> Project V Stats
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                <div className="text-3xl font-black bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent mb-1">{stats.projectVTotal || 0}</div>
+                <div className="text-xs text-gray-400 font-bold">Total Submissions</div>
+              </div>
+              <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                <div className="text-3xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent mb-1">{stats.projectVSubmitted || 0}</div>
+                <div className="text-xs text-gray-400 font-bold">Submitted</div>
+              </div>
+              <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                <div className="text-3xl font-black bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent mb-1">{stats.projectVApproved || 0}</div>
+                <div className="text-xs text-gray-400 font-bold">Approved</div>
+              </div>
+              <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
+                <div className="text-3xl font-black bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent mb-1">{stats.projectVRejected || 0}</div>
+                <div className="text-xs text-gray-400 font-bold">Rejected</div>
+              </div>
+            </div>
+          </div>
+
+          {user.role === 'ADMIN' && (
+            <div className="mt-6 text-center p-6 bg-gray-900/50 backdrop-blur-sm rounded-2xl border-2 border-gray-700/50 hover-lift">
+              <div className="text-4xl mb-3">👑</div>
+              <div className="text-lg font-bold text-gray-300">
+                View detailed platform statistics in the Admin Dashboard
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

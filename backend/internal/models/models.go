@@ -148,6 +148,7 @@ type ProjectVSubmission struct {
 	Status        ProjectVStatus `gorm:"type:varchar(50);not null;default:'TASK_SUBMITTED';index" json:"status"`
 	ContributorID uuid.UUID      `gorm:"type:uuid;not null;index" json:"contributorId"`
 	ReviewerID    *uuid.UUID     `gorm:"type:uuid;index" json:"reviewerId,omitempty"`
+	AccountPostedIn *string      `gorm:"type:text" json:"accountPostedIn,omitempty"` // Only visible to reviewers/admins
 
 	// Processing results
 	CloneSuccess      bool   `gorm:"default:false" json:"cloneSuccess"`
