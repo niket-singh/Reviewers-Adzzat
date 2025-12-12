@@ -62,12 +62,9 @@ export default function SelectProject() {
         {/* Project Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Project X */}
-          <div
-            onClick={() => handleProjectSelect("X")}
-            className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl opacity-75 blur-xl group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative bg-white rounded-2xl p-8 shadow-xl border-4 border-yellow-500">
+          <div className="relative group cursor-not-allowed transform transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl opacity-50 blur-xl"></div>
+            <div className="relative bg-white rounded-2xl p-8 shadow-xl border-4 border-yellow-500 opacity-75">
               <div className="absolute top-4 right-4">
                 <span className="bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   PAUSED
@@ -108,15 +105,15 @@ export default function SelectProject() {
             onClick={() => handleProjectSelect("V")}
             className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl opacity-75 blur-xl group-hover:opacity-100 transition-opacity"></div>
-            <div className="relative bg-white rounded-2xl p-8 shadow-xl border-2 border-blue-200 hover:border-blue-500 transition-colors">
+            <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl opacity-75 blur-xl group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative bg-white rounded-2xl p-8 shadow-xl border-2 border-yellow-200 hover:border-yellow-500 transition-colors">
               <div className="absolute top-4 right-4">
                 <span className="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
                   ACTIVE
                 </span>
               </div>
               <div className="mb-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                <div className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center text-white text-2xl font-bold shadow-lg">
                   V
                 </div>
               </div>
