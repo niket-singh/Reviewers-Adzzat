@@ -119,7 +119,7 @@ class ApiClient {
     return response.data
   }
 
-  async updateProfile(data: { name?: string; password?: string }) {
+  async updateProfile(data: { name?: string; password?: string } | FormData) {
     const response = await this.client.put('/profile', data)
     return response.data
   }
