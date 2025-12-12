@@ -112,7 +112,7 @@ export default function ProjectVReviewer() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "TASK_SUBMITTED":
-        return "bg-blue-100 text-blue-800 border-blue-300";
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "ELIGIBLE_FOR_MANUAL_REVIEW":
         return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "FINAL_CHECKS":
@@ -147,9 +147,9 @@ export default function ProjectVReviewer() {
 
   if (loading || loadingSubmissions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function ProjectVReviewer() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
@@ -486,7 +486,7 @@ export default function ProjectVReviewer() {
 
                 {/* Account Posted In */}
                 {selectedSubmission.accountPostedIn && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                     <h4 className="font-semibold text-gray-900 mb-2">
                       Account Posted In:
                     </h4>
@@ -600,8 +600,8 @@ function StatCard({
 }) {
   const colorClasses = {
     blue: active
-      ? "bg-blue-500 text-white border-blue-600"
-      : "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
+      ? "bg-yellow-500 text-white border-yellow-600"
+      : "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100",
     yellow: active
       ? "bg-yellow-500 text-white border-yellow-600"
       : "bg-yellow-50 text-yellow-700 border-yellow-200 hover:bg-yellow-100",
@@ -687,8 +687,8 @@ function StatusButton({
   const isActive = currentStatus === status;
   const colorClasses = {
     blue: isActive
-      ? "bg-blue-600 text-white border-blue-700"
-      : "bg-white text-blue-600 border-blue-300 hover:bg-blue-50",
+      ? "bg-yellow-600 text-white border-yellow-700"
+      : "bg-white text-yellow-600 border-yellow-300 hover:bg-yellow-50",
     yellow: isActive
       ? "bg-yellow-600 text-white border-yellow-700"
       : "bg-white text-yellow-600 border-yellow-300 hover:bg-yellow-50",
