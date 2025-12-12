@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/components/ToastContainer";
 import axios from "axios";
 
@@ -51,15 +51,7 @@ export default function ProjectVReviewer() {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [accountPostedIn, setAccountPostedIn] = useState<string>("");
 
-  useEffect(() => {
-    if (!loading && (!user || (user.role !== "REVIEWER" && user.role !== "ADMIN"))) {
-      router.push("/");
-    } else if (user) {
-      fetchSubmissions();
-    }
-  }, [user, loading, router]);
-
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(
@@ -75,7 +67,15 @@ export default function ProjectVReviewer() {
     } finally {
       setLoadingSubmissions(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    if (!loading && (!user || (user.role !== "REVIEWER" && user.role !== "ADMIN"))) {
+      router.push("/");
+    } else if (user) {
+      fetchSubmissions();
+    }
+  }, [user, loading, router, fetchSubmissions]);
 
   const updateStatus = async (submissionId: string, newStatus: string, includeAccount: boolean = false) => {
     setUpdatingStatus(true);
@@ -514,7 +514,7 @@ export default function ProjectVReviewer() {
                       disabled={updatingStatus}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      This will be saved when you click "Task Submitted" button
+                      This will be saved when you click &ldquo;Task Submitted&rdquo; button
                     </p>
                   </div>
 
