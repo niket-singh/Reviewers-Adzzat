@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/components/ToastContainer";
 import axios from "axios";
 
@@ -57,15 +57,7 @@ export default function ProjectVContributor() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
 
-  useEffect(() => {
-    if (!loading && (!user || user.role !== "CONTRIBUTOR")) {
-      router.push("/");
-    } else if (user) {
-      fetchSubmissions();
-    }
-  }, [user, loading, router]);
-
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
       const token = localStorage.getItem("authToken");
       const response = await axios.get(
@@ -81,7 +73,15 @@ export default function ProjectVContributor() {
     } finally {
       setLoadingSubmissions(false);
     }
-  };
+  }, [showToast]);
+
+  useEffect(() => {
+    if (!loading && (!user || user.role !== "CONTRIBUTOR")) {
+      router.push("/");
+    } else if (user) {
+      fetchSubmissions();
+    }
+  }, [user, loading, router, fetchSubmissions]);
 
   const validateDescription = (text: string): boolean => {
     // Check for non-ASCII characters
