@@ -94,10 +94,12 @@ interface Stats {
 
 type MainTab = 'submissions' | 'users' | 'stats' | 'logs' | 'leaderboard'
 type SubmissionFilter = 'all' | 'pending' | 'claimed' | 'eligible' | 'approved'
+type ProjectFilter = 'X' | 'V'
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<MainTab>('submissions')
   const [submissionFilter, setSubmissionFilter] = useState<SubmissionFilter>('eligible')
+  const [projectFilter, setProjectFilter] = useState<ProjectFilter>('X')
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([])
   const [users, setUsers] = useState<User[]>([])
@@ -434,6 +436,19 @@ export default function AdminDashboard() {
                 </h1>
                 <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Welcome, {user.name}!</p>
               </div>
+            </div>
+
+            {/* Project Filter */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-400 font-medium">Project:</span>
+              <select
+                value={projectFilter}
+                onChange={(e) => setProjectFilter(e.target.value as ProjectFilter)}
+                className="px-3 py-2 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-orange-500 focus:border-transparent font-semibold"
+              >
+                <option value="X">Project X</option>
+                <option value="V">Project V</option>
+              </select>
             </div>
 
             {/* Desktop Navigation */}

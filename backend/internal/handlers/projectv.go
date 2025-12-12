@@ -165,6 +165,13 @@ func GetProjectVSubmissions(c *gin.Context) {
 		return
 	}
 
+	// Hide accountPostedIn from contributors
+	if userRole == "CONTRIBUTOR" {
+		for i := range submissions {
+			submissions[i].AccountPostedIn = nil
+		}
+	}
+
 	c.JSON(http.StatusOK, submissions)
 }
 
@@ -202,11 +209,18 @@ func UpdateProjectVStatus(c *gin.Context) {
 	}
 
 	var req struct {
-		Status string `json:"status" binding:"required"`
+		Status          string  `json:"status" binding:"required"`
+		AccountPostedIn *string `json:"accountPostedIn,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		return
+	}
+
+	// Only admin can approve tasks
+	if req.Status == string(models.ProjectVStatusApproved) && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can approve tasks"})
 		return
 	}
 
@@ -244,6 +258,11 @@ func UpdateProjectVStatus(c *gin.Context) {
 	if submission.ReviewerID == nil {
 		reviewerID, _ := uuid.Parse(c.GetString("userId"))
 		submission.ReviewerID = &reviewerID
+	}
+
+	// Update accountPostedIn if provided
+	if req.AccountPostedIn != nil {
+		submission.AccountPostedIn = req.AccountPostedIn
 	}
 
 	if err := database.DB.Save(&submission).Error; err != nil {
