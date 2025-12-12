@@ -22,14 +22,8 @@ export default function Home() {
   // Redirect if already logged in
   useEffect(() => {
     if (user && !authLoading) {
-      const role = user.role
-      if (role === 'CONTRIBUTOR') {
-        router.push('/contributor')
-      } else if (role === 'REVIEWER') {
-        router.push('/reviewer')
-      } else if (role === 'ADMIN') {
-        router.push('/admin')
-      }
+      // Redirect to project selection page
+      router.push('/select-project')
     }
   }, [user, authLoading, router])
 

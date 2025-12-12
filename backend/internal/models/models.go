@@ -16,7 +16,7 @@ const (
 	RoleContributor UserRole = "CONTRIBUTOR"
 )
 
-// TaskStatus enum
+// TaskStatus enum (for Project X)
 type TaskStatus string
 
 const (
@@ -24,6 +24,17 @@ const (
 	StatusClaimed  TaskStatus = "CLAIMED"
 	StatusEligible TaskStatus = "ELIGIBLE"
 	StatusApproved TaskStatus = "APPROVED"
+)
+
+// ProjectVStatus enum (for Project V)
+type ProjectVStatus string
+
+const (
+	ProjectVStatusSubmitted            ProjectVStatus = "TASK_SUBMITTED"
+	ProjectVStatusEligibleManualReview ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
+	ProjectVStatusFinalChecks          ProjectVStatus = "FINAL_CHECKS"
+	ProjectVStatusApproved             ProjectVStatus = "APPROVED"
+	ProjectVStatusRejected             ProjectVStatus = "REJECTED"
 )
 
 // User model
@@ -124,6 +135,49 @@ type AuditLog struct {
 	User *User `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
+// ProjectVSubmission model - for Project V workflow
+type ProjectVSubmission struct {
+	ID            uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	Description   string         `gorm:"type:text;not null" json:"description"`
+	GithubRepo    string         `gorm:"not null" json:"githubRepo"`
+	CommitHash    string         `gorm:"not null" json:"commitHash"`
+	IssueURL      string         `gorm:"not null" json:"issueUrl"`
+	TestPatchURL  string         `gorm:"not null" json:"testPatchUrl"`
+	DockerfileURL string         `gorm:"not null" json:"dockerfileUrl"`
+	SolutionPatchURL string      `gorm:"not null" json:"solutionPatchUrl"`
+	Status        ProjectVStatus `gorm:"type:varchar(50);not null;default:'TASK_SUBMITTED';index" json:"status"`
+	ContributorID uuid.UUID      `gorm:"type:uuid;not null;index" json:"contributorId"`
+	ReviewerID    *uuid.UUID     `gorm:"type:uuid;index" json:"reviewerId,omitempty"`
+
+	// Processing results
+	CloneSuccess      bool   `gorm:"default:false" json:"cloneSuccess"`
+	CloneError        string `gorm:"type:text" json:"cloneError,omitempty"`
+	TestPatchSuccess  bool   `gorm:"default:false" json:"testPatchSuccess"`
+	TestPatchError    string `gorm:"type:text" json:"testPatchError,omitempty"`
+	DockerBuildSuccess bool  `gorm:"default:false" json:"dockerBuildSuccess"`
+	DockerBuildError  string `gorm:"type:text" json:"dockerBuildError,omitempty"`
+	BaseTestSuccess   bool   `gorm:"default:false" json:"baseTestSuccess"`
+	BaseTestError     string `gorm:"type:text" json:"baseTestError,omitempty"`
+	NewTestSuccess    bool   `gorm:"default:false" json:"newTestSuccess"`
+	NewTestError      string `gorm:"type:text" json:"newTestError,omitempty"`
+	SolutionPatchSuccess bool `gorm:"default:false" json:"solutionPatchSuccess"`
+	SolutionPatchError string `gorm:"type:text" json:"solutionPatchError,omitempty"`
+	FinalBaseTestSuccess bool `gorm:"default:false" json:"finalBaseTestSuccess"`
+	FinalBaseTestError string `gorm:"type:text" json:"finalBaseTestError,omitempty"`
+	FinalNewTestSuccess bool `gorm:"default:false" json:"finalNewTestSuccess"`
+	FinalNewTestError string `gorm:"type:text" json:"finalNewTestError,omitempty"`
+
+	ProcessingComplete bool   `gorm:"default:false" json:"processingComplete"`
+	ProcessingLogs    string  `gorm:"type:text" json:"processingLogs,omitempty"`
+
+	CreatedAt time.Time `gorm:"index" json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+
+	// Relations
+	Contributor *User `gorm:"foreignKey:ContributorID" json:"contributor,omitempty"`
+	Reviewer    *User `gorm:"foreignKey:ReviewerID" json:"reviewer,omitempty"`
+}
+
 // BeforeCreate hook for User
 func (u *User) BeforeCreate(tx *gorm.DB) error {
 	if u.ID == uuid.Nil {
@@ -168,6 +222,13 @@ func (p *PasswordResetToken) BeforeCreate(tx *gorm.DB) error {
 func (a *AuditLog) BeforeCreate(tx *gorm.DB) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
+	}
+	return nil
+}
+
+func (p *ProjectVSubmission) BeforeCreate(tx *gorm.DB) error {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
 	}
 	return nil
 }
