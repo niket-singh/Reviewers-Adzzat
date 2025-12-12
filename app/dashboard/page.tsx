@@ -28,7 +28,6 @@ export default function Dashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
-  const [selectedProject, setSelectedProject] = useState<"V" | null>("V");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -96,176 +95,60 @@ export default function Dashboard() {
     );
   }
 
-  const handleProjectAction = () => {
-    if (!selectedProject) return;
-
-    if (selectedProject === "V") {
-      if (user?.role === "CONTRIBUTOR") {
-        router.push("/project-v/contributor");
-      } else {
-        router.push("/project-v/reviewer");
-      }
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => router.push("/profile")}
-                className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
-              >
-                Profile
-              </button>
-              {user?.role === "ADMIN" && (
-                <button
-                  onClick={() => router.push("/admin")}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
-                >
-                  Admin Panel
-                </button>
-              )}
-            </div>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
           </div>
-
-          {/* Project Selector */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Project</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Project X - Disabled */}
-              <div className="relative opacity-50 cursor-not-allowed">
-                <div className="border-4 border-gray-300 rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                        X
-                      </div>
-                      <span className="font-bold text-gray-900">Project X</span>
-                    </div>
-                    <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      PAUSED
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600">Task submission platform</p>
-                </div>
-              </div>
-
-              {/* Project V - Active */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/profile")}
+              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
+            >
+              Profile
+            </button>
+            {user?.role === "ADMIN" && (
               <button
-                onClick={() => setSelectedProject("V")}
-                className={`border-4 rounded-lg p-4 transition-all ${
-                  selectedProject === "V"
-                    ? "border-yellow-500 bg-yellow-50"
-                    : "border-gray-200 bg-white hover:border-yellow-300"
-                }`}
+                onClick={() => router.push("/admin")}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                      V
-                    </div>
-                    <span className="font-bold text-gray-900">Project V</span>
-                  </div>
-                  <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                    ACTIVE
-                  </span>
-                </div>
-                <p className="text-sm text-gray-600 text-left">Docker testing platform</p>
+                Admin Panel
               </button>
-
-              {/* Project Z - Disabled */}
-              <div className="relative opacity-50 cursor-not-allowed">
-                <div className="border-4 border-gray-300 rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-pink-500 rounded-lg flex items-center justify-center text-white text-sm font-bold">
-                        Z
-                      </div>
-                      <span className="font-bold text-gray-900">Project Z</span>
-                    </div>
-                    <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                      PAUSED
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600">Analytics platform</p>
-                </div>
-              </div>
-            </div>
+            )}
+            <button
+              onClick={() => router.push("/select-project")}
+              className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-medium rounded-lg transition-colors"
+            >
+              Go to Projects
+            </button>
           </div>
         </div>
 
-        {/* Project Stats */}
-        {selectedProject === "V" && (
-          <>
-            {/* Overall Stats for Selected Project */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <StatCard
-                title="Total Submissions"
-                value={stats?.projectVStats.total || 0}
-                icon="📊"
-                color="yellow"
-              />
-              <StatCard
-                title="In Review"
-                value={stats?.projectVStats.inReview || 0}
-                icon="⏳"
-                color="orange"
-              />
-              <StatCard
-                title="Approved"
-                value={stats?.projectVStats.approved || 0}
-                icon="✅"
-                color="green"
-              />
-            </div>
-
-            {/* Detailed Project V Stats */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Project V - Detailed Stats</h2>
-                <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
-                  ACTIVE
-                </span>
-              </div>
-              <div className="space-y-4">
-                <ProjectStatRow
-                  label="Total Submissions"
-                  value={stats?.projectVStats.total || 0}
-                  color="gray"
-                />
-                <ProjectStatRow
-                  label="Task Submitted"
-                  value={stats?.projectVStats.submitted || 0}
-                  color="blue"
-                />
-                <ProjectStatRow
-                  label="In Review"
-                  value={stats?.projectVStats.inReview || 0}
-                  color="yellow"
-                />
-                <ProjectStatRow
-                  label="Approved"
-                  value={stats?.projectVStats.approved || 0}
-                  color="green"
-                />
-              </div>
-              <button
-                onClick={handleProjectAction}
-                className="mt-6 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 rounded-lg transition-all transform hover:scale-105"
-              >
-                Go to Project V
-              </button>
-            </div>
-          </>
-        )}
+        {/* Overall Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <StatCard
+            title="Total Submissions"
+            value={stats?.totalSubmissions || 0}
+            icon="📊"
+            color="blue"
+          />
+          <StatCard
+            title="Pending Review"
+            value={stats?.pendingSubmissions || 0}
+            icon="⏳"
+            color="yellow"
+          />
+          <StatCard
+            title="Approved"
+            value={stats?.approvedSubmissions || 0}
+            icon="✅"
+            color="green"
+          />
+        </div>
 
         {/* Admin Message */}
         {user?.role === "ADMIN" && (
@@ -275,7 +158,7 @@ export default function Dashboard() {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Admin Powers Active</h3>
                 <p className="text-gray-700">
-                  You have full administrative access. Only you can approve tasks and manage the platform.
+                  You have full administrative access. Only you can approve tasks across all projects.
                 </p>
               </div>
               <button
@@ -288,8 +171,90 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Project-wise Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Project X Stats */}
+          <div className="bg-white rounded-xl shadow-lg p-6 opacity-60">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Project X</h2>
+              <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
+                PAUSED
+              </span>
+            </div>
+            <div className="space-y-4">
+              <ProjectStatRow
+                label="Total Submissions"
+                value={stats?.projectXStats.total || 0}
+                color="gray"
+              />
+              <ProjectStatRow
+                label="Pending"
+                value={stats?.projectXStats.pending || 0}
+                color="blue"
+              />
+              <ProjectStatRow
+                label="Claimed"
+                value={stats?.projectXStats.claimed || 0}
+                color="purple"
+              />
+              <ProjectStatRow
+                label="Approved"
+                value={stats?.projectXStats.approved || 0}
+                color="green"
+              />
+            </div>
+            <button
+              disabled
+              className="mt-6 w-full bg-gray-100 text-gray-400 font-semibold py-2 rounded-lg cursor-not-allowed"
+            >
+              Project Paused
+            </button>
+          </div>
+
+          {/* Project V Stats */}
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Project V</h2>
+              <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
+                ACTIVE
+              </span>
+            </div>
+            <div className="space-y-4">
+              <ProjectStatRow
+                label="Total Submissions"
+                value={stats?.projectVStats.total || 0}
+                color="gray"
+              />
+              <ProjectStatRow
+                label="Task Submitted"
+                value={stats?.projectVStats.submitted || 0}
+                color="blue"
+              />
+              <ProjectStatRow
+                label="In Review"
+                value={stats?.projectVStats.inReview || 0}
+                color="yellow"
+              />
+              <ProjectStatRow
+                label="Approved"
+                value={stats?.projectVStats.approved || 0}
+                color="green"
+              />
+            </div>
+            <button
+              onClick={() => {
+                if (user?.role === "CONTRIBUTOR") router.push("/project-v/contributor");
+                else router.push("/project-v/reviewer");
+              }}
+              className="mt-6 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
+            >
+              View Project V
+            </button>
+          </div>
+        </div>
+
         {/* Quick Links */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Links</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickLink
@@ -297,13 +262,11 @@ export default function Dashboard() {
               icon="👤"
               onClick={() => router.push("/profile")}
             />
-            {selectedProject && (
-              <QuickLink
-                title={`Go to Project ${selectedProject}`}
-                icon="🚀"
-                onClick={handleProjectAction}
-              />
-            )}
+            <QuickLink
+              title="Projects"
+              icon="📁"
+              onClick={() => router.push("/select-project")}
+            />
             {user?.role === "ADMIN" && (
               <QuickLink
                 title="Admin Panel"
