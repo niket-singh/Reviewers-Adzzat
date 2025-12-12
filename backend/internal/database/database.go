@@ -60,7 +60,18 @@ func Connect() error {
 func AutoMigrate() error {
 	log.Println("Running database migrations...")
 
-	err := DB.AutoMigrate(
+	// Disable PrepareStmt temporarily during migrations to avoid cache issues
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get database instance: %w", err)
+	}
+
+	// Close all existing prepared statements
+	sqlDB.SetMaxOpenConns(0)
+	sqlDB.SetMaxOpenConns(25)
+
+	// Run migrations without prepared statements
+	err = DB.Session(&gorm.Session{PrepareStmt: false}).AutoMigrate(
 		&models.User{},
 		&models.Submission{},
 		&models.Review{},
