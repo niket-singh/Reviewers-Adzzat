@@ -22,8 +22,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o server ./cmd/api
 # Runtime stage
 FROM alpine:latest
 
-# Install ca-certificates for HTTPS
-RUN apk --no-cache add ca-certificates
+# Install runtime dependencies: ca-certificates for HTTPS, git for cloning repos, docker for building images
+RUN apk --no-cache add ca-certificates git docker
 
 WORKDIR /root/
 

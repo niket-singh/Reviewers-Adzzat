@@ -147,22 +147,22 @@ export default function ProjectVReviewer() {
 
   if (loading || loadingSubmissions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-white">
               Project V - Reviewer Dashboard
             </h1>
             <p className="text-gray-600 mt-1">
@@ -227,37 +227,37 @@ export default function ProjectVReviewer() {
         </div>
 
         {/* Submissions Table */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-gray-900 border-b border-gray-700">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Repository
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Contributor
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Tests
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Date
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {filteredSubmissions.length === 0 ? (
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-8 text-center text-gray-500"
+                      className="px-6 py-8 text-center text-gray-400"
                     >
                       No submissions found
                     </td>
@@ -266,21 +266,21 @@ export default function ProjectVReviewer() {
                   filteredSubmissions.map((submission) => (
                     <tr
                       key={submission.id}
-                      className="hover:bg-gray-50 transition-colors"
+                      className="hover:bg-gray-700 transition-colors"
                     >
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-white">
                           {submission.githubRepo.split("/").slice(-2).join("/")}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {submission.commitHash.substring(0, 7)}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm text-gray-900">
+                        <div className="text-sm text-white">
                           {submission.contributor?.name || "Unknown"}
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-400">
                           {submission.contributor?.email}
                         </div>
                       </td>

@@ -16,10 +16,10 @@ export default function SelectProject() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -47,14 +47,14 @@ export default function SelectProject() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Welcome, {user?.name}!
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-300">
             Select a project to continue
           </p>
         </div>
@@ -189,7 +189,7 @@ export default function SelectProject() {
               localStorage.removeItem("authToken");
               router.push("/");
             }}
-            className="text-gray-600 hover:text-gray-900 font-medium transition-colors"
+            className="text-gray-300 hover:text-white font-medium transition-colors"
           >
             Logout
           </button>
