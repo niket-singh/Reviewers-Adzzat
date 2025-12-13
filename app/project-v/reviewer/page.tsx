@@ -165,13 +165,13 @@ export default function ProjectVReviewer() {
             <h1 className="text-3xl font-bold text-white">
               Project V - Reviewer Dashboard
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-400 mt-1">
               Review and manage submissions
             </p>
           </div>
           <button
             onClick={() => router.push("/select-project")}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
+            className="px-4 py-2 text-gray-400 hover:text-white font-medium"
           >
             ← Back to Projects
           </button>
@@ -310,13 +310,13 @@ export default function ProjectVReviewer() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
+                      <td className="px-6 py-4 text-sm text-gray-400">
                         {new Date(submission.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4">
                         <button
                           onClick={() => setSelectedSubmission(submission)}
-                          className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                          className="text-yellow-400 hover:text-yellow-300 font-medium text-sm"
                         >
                           View Details
                         </button>
@@ -642,21 +642,21 @@ function StatusItem({
     <div
       className={`flex items-start justify-between p-3 rounded-lg border ${
         success
-          ? "bg-green-50 border-green-200"
+          ? "bg-green-900 bg-opacity-30 border-green-700"
           : error
-          ? "bg-red-50 border-red-200"
-          : "bg-gray-50 border-gray-200"
+          ? "bg-red-900 bg-opacity-30 border-red-700"
+          : "bg-gray-700 border-gray-600"
       }`}
     >
-      <span className="text-sm text-gray-700 font-medium">{label}</span>
+      <span className="text-sm text-gray-200 font-medium">{label}</span>
       <div className="flex items-center">
         {success ? (
-          <span className="text-green-600 font-bold text-lg">✓</span>
+          <span className="text-green-400 font-bold text-lg">✓</span>
         ) : error ? (
           <div className="flex flex-col items-end">
-            <span className="text-red-600 font-bold text-lg">✗</span>
+            <span className="text-red-400 font-bold text-lg">✗</span>
             {error && (
-              <span className="text-xs text-red-600 mt-1 max-w-xs text-right">
+              <span className="text-xs text-red-300 mt-1 max-w-xs text-right">
                 {error}
               </span>
             )}
