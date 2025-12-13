@@ -86,28 +86,28 @@ export default function Dashboard() {
 
   if (loading || loadingStats) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-1">Welcome back, {user?.name}!</p>
+            <h1 className="text-3xl font-bold text-white">Dashboard</h1>
+            <p className="text-gray-300 mt-1">Welcome back, {user?.name}!</p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => router.push("/profile")}
-              className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
+              className="px-4 py-2 text-gray-300 hover:text-white font-medium"
             >
               Profile
             </button>
@@ -174,9 +174,9 @@ export default function Dashboard() {
         {/* Project-wise Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Project X Stats */}
-          <div className="bg-white rounded-xl shadow-lg p-6 opacity-60">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6 opacity-60">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Project X</h2>
+              <h2 className="text-xl font-bold text-white">Project X</h2>
               <span className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-3 py-1 rounded-full">
                 PAUSED
               </span>
@@ -212,9 +212,9 @@ export default function Dashboard() {
           </div>
 
           {/* Project V Stats */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900">Project V</h2>
+              <h2 className="text-xl font-bold text-white">Project V</h2>
               <span className="bg-green-100 text-green-800 text-xs font-semibold px-3 py-1 rounded-full">
                 ACTIVE
               </span>
@@ -254,8 +254,8 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Links</h2>
+        <div className="mt-8 bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
+          <h2 className="text-xl font-bold text-white mb-4">Quick Links</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickLink
               title="Profile"
@@ -365,10 +365,10 @@ function QuickLink({
   return (
     <button
       onClick={onClick}
-      className="flex flex-col items-center justify-center p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+      className="flex flex-col items-center justify-center p-4 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
     >
       <span className="text-3xl mb-2">{icon}</span>
-      <span className="text-sm font-medium text-gray-700">{title}</span>
+      <span className="text-sm font-medium text-gray-200">{title}</span>
     </button>
   );
 }
