@@ -331,20 +331,20 @@ export default function ProjectVReviewer() {
 
         {/* Submission Details Modal */}
         {selectedSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-6">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <h3 className="text-2xl font-bold text-gray-900">
+                  <h3 className="text-2xl font-bold text-white">
                     Submission Review
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-gray-300 mt-1">
                     Submitted by {selectedSubmission.contributor?.name}
                   </p>
                 </div>
                 <button
                   onClick={() => setSelectedSubmission(null)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-400 hover:text-white"
                 >
                   <svg
                     className="w-6 h-6"
@@ -364,44 +364,44 @@ export default function ProjectVReviewer() {
 
               <div className="space-y-6">
                 {/* Repository Info */}
-                <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="bg-gray-700 border border-gray-600 p-4 rounded-lg">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h4 className="font-semibold text-gray-700 text-sm mb-1">
+                      <h4 className="font-semibold text-gray-300 text-sm mb-1">
                         Repository:
                       </h4>
                       <a
                         href={selectedSubmission.githubRepo}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
+                        className="text-yellow-400 hover:underline text-sm"
                       >
                         {selectedSubmission.githubRepo}
                       </a>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-700 text-sm mb-1">
+                      <h4 className="font-semibold text-gray-300 text-sm mb-1">
                         Commit:
                       </h4>
-                      <code className="text-sm bg-white px-2 py-1 rounded border">
+                      <code className="text-sm bg-gray-900 text-gray-200 px-2 py-1 rounded border border-gray-600">
                         {selectedSubmission.commitHash}
                       </code>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-700 text-sm mb-1">
+                      <h4 className="font-semibold text-gray-300 text-sm mb-1">
                         Issue:
                       </h4>
                       <a
                         href={selectedSubmission.issueUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline text-sm"
+                        className="text-yellow-400 hover:underline text-sm"
                       >
                         View Issue
                       </a>
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-700 text-sm mb-1">
+                      <h4 className="font-semibold text-gray-300 text-sm mb-1">
                         Status:
                       </h4>
                       <span
@@ -414,10 +414,10 @@ export default function ProjectVReviewer() {
                     </div>
                   </div>
                   <div className="mt-4">
-                    <h4 className="font-semibold text-gray-700 text-sm mb-1">
+                    <h4 className="font-semibold text-gray-300 text-sm mb-1">
                       Description:
                     </h4>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-200">
                       {selectedSubmission.description}
                     </p>
                   </div>
@@ -425,7 +425,7 @@ export default function ProjectVReviewer() {
 
                 {/* Processing Status */}
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">
+                  <h4 className="font-semibold text-white mb-3">
                     Validation Pipeline:
                   </h4>
                   <div className="space-y-2">
@@ -475,10 +475,10 @@ export default function ProjectVReviewer() {
                 {/* Processing Logs */}
                 {selectedSubmission.processingLogs && (
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">
+                    <h4 className="font-semibold text-white mb-2">
                       Processing Logs:
                     </h4>
-                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto">
+                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto border border-gray-700">
                       {selectedSubmission.processingLogs}
                     </pre>
                   </div>
@@ -486,17 +486,17 @@ export default function ProjectVReviewer() {
 
                 {/* Account Posted In */}
                 {selectedSubmission.accountPostedIn && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-gray-900 mb-2">
+                  <div className="bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-lg p-4">
+                    <h4 className="font-semibold text-white mb-2">
                       Account Posted In:
                     </h4>
-                    <p className="text-gray-700">{selectedSubmission.accountPostedIn}</p>
+                    <p className="text-gray-200">{selectedSubmission.accountPostedIn}</p>
                   </div>
                 )}
 
                 {/* Status Update Buttons */}
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold text-gray-900 mb-3">
+                <div className="border-t border-gray-700 pt-4">
+                  <h4 className="font-semibold text-white mb-3">
                     Update Status:
                   </h4>
 
