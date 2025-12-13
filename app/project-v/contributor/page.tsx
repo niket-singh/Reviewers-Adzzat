@@ -202,31 +202,31 @@ export default function ProjectVContributor() {
 
   if (loading || loadingSubmissions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-white to-orange-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
+            <h1 className="text-3xl font-bold text-white">
               Project V - Contributor
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-gray-300 mt-1">
               Submit your Docker-based solutions
             </p>
           </div>
           <button
             onClick={() => router.push("/select-project")}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
+            className="px-4 py-2 text-gray-300 hover:text-white font-medium"
           >
             ← Back to Projects
           </button>
@@ -234,13 +234,13 @@ export default function ProjectVContributor() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Submission Form */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold text-white mb-4">
               New Submission
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Description (ASCII only)
                 </label>
                 <textarea
@@ -248,14 +248,14 @@ export default function ProjectVContributor() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
                   rows={4}
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   GitHub Repository URL
                 </label>
                 <input
@@ -265,13 +265,13 @@ export default function ProjectVContributor() {
                     setFormData({ ...formData, githubRepo: e.target.value })
                   }
                   placeholder="https://github.com/user/repo"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Commit Hash
                 </label>
                 <input
@@ -281,13 +281,13 @@ export default function ProjectVContributor() {
                     setFormData({ ...formData, commitHash: e.target.value })
                   }
                   placeholder="abc123def456"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Issue URL
                 </label>
                 <input
@@ -297,13 +297,13 @@ export default function ProjectVContributor() {
                     setFormData({ ...formData, issueUrl: e.target.value })
                   }
                   placeholder="https://github.com/user/repo/issues/123"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Test Patch (.patch)
                 </label>
                 <input
@@ -315,13 +315,13 @@ export default function ProjectVContributor() {
                       testPatch: e.target.files?.[0] || null,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Dockerfile
                 </label>
                 <input
@@ -332,13 +332,13 @@ export default function ProjectVContributor() {
                       dockerfile: e.target.files?.[0] || null,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Solution Patch (.patch)
                 </label>
                 <input
@@ -350,7 +350,7 @@ export default function ProjectVContributor() {
                       solutionPatch: e.target.files?.[0] || null,
                     })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
                   required
                 />
               </div>
@@ -366,13 +366,13 @@ export default function ProjectVContributor() {
           </div>
 
           {/* Submissions List */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold text-white mb-4">
               My Submissions
             </h2>
             <div className="space-y-3 max-h-[800px] overflow-y-auto">
               {submissions.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
+                <p className="text-gray-400 text-center py-8">
                   No submissions yet
                 </p>
               ) : (
@@ -380,10 +380,10 @@ export default function ProjectVContributor() {
                   <div
                     key={submission.id}
                     onClick={() => setSelectedSubmission(submission)}
-                    className="border border-gray-200 rounded-lg p-4 hover:border-yellow-500 cursor-pointer transition-colors"
+                    className="border border-gray-600 bg-gray-700 rounded-lg p-4 hover:border-yellow-500 cursor-pointer transition-colors"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-gray-900">
+                      <span className="text-sm font-medium text-white">
                         {submission.githubRepo.split("/").slice(-2).join("/")}
                       </span>
                       <span
@@ -394,10 +394,10 @@ export default function ProjectVContributor() {
                         {submission.status.replace(/_/g, " ")}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                    <p className="text-sm text-gray-300 mb-2 line-clamp-2">
                       {submission.description}
                     </p>
-                    <div className="flex justify-between items-center text-xs text-gray-500">
+                    <div className="flex justify-between items-center text-xs text-gray-400">
                       <span>{submission.commitHash.substring(0, 7)}</span>
                       <span>
                         {new Date(submission.createdAt).toLocaleDateString()}
@@ -406,7 +406,7 @@ export default function ProjectVContributor() {
                     {submission.processingComplete && (
                       <div className="mt-2">
                         {canSubmit(submission) ? (
-                          <span className="text-xs text-green-600 font-semibold">
+                          <span className="text-xs text-green-400 font-semibold">
                             ✓ All tests passed
                           </span>
                         ) : (
