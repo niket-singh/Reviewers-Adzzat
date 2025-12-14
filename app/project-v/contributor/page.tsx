@@ -40,6 +40,25 @@ interface Submission {
     name: string;
     email: string;
   };
+  // Processing fields
+  processingLogs?: string;
+  processingComplete?: boolean;
+  cloneSuccess?: boolean;
+  cloneError?: string;
+  testPatchSuccess?: boolean;
+  testPatchError?: string;
+  dockerBuildSuccess?: boolean;
+  dockerBuildError?: string;
+  baseTestSuccess?: boolean;
+  baseTestError?: string;
+  newTestSuccess?: boolean;
+  newTestError?: string;
+  solutionPatchSuccess?: boolean;
+  solutionPatchError?: string;
+  finalBaseTestSuccess?: boolean;
+  finalBaseTestError?: string;
+  finalNewTestSuccess?: boolean;
+  finalNewTestError?: string;
 }
 
 export default function ProjectVContributor() {
@@ -462,15 +481,27 @@ export default function ProjectVContributor() {
               <div className="space-y-6">
                 {/* Status */}
                 <div>
+                  <h4 className="font-semibold text-gray-300 mb-2">Status:</h4>
+                  <span
+                    className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(
+                      selectedSubmission.status
+                    )}`}
+                  >
+                    {selectedSubmission.status.replace(/_/g, " ")}
+                  </span>
+                </div>
+
+                {/* Repository */}
+                <div>
                   <h4 className="font-semibold text-gray-300">Repository:</h4>
                   <a
                     href={selectedSubmission.githubRepo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-yellow-400 hover:underline"
+                    className="text-blue-400 hover:underline"
                   >
-                    {selectedSubmission.status.replace(/_/g, " ")}
-                  </span>
+                    {selectedSubmission.githubRepo}
+                  </a>
                 </div>
 
                 {/* Description */}
@@ -601,6 +632,37 @@ function FileInput({
   label: string;
   file: File | null;
   onChange: (file: File | null) => void;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-300 mb-1">
+        {label} *
+      </label>
+      <input
+        type="file"
+        onChange={(e) => {
+          const selectedFile = e.target.files?.[0] || null;
+          onChange(selectedFile);
+        }}
+        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+      />
+      {file && (
+        <p className="mt-1 text-sm text-gray-400">
+          Selected: {file.name}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function StatusItem({
+  label,
+  success,
+  error,
+}: {
+  label: string;
+  success?: boolean;
+  error?: string;
 }) {
   return (
     <div
