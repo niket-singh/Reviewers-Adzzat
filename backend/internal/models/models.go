@@ -39,6 +39,8 @@ const (
 	ProjectVStatusFinalChecks      ProjectVStatus = "FINAL_CHECKS"
 	ProjectVStatusApproved         ProjectVStatus = "APPROVED"
 	ProjectVStatusRejected         ProjectVStatus = "REJECTED"
+	ProjectVStatusRework           ProjectVStatus = "REWORK"
+	ProjectVStatusEligible         ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
 )
 
 // User model
@@ -159,10 +161,16 @@ type ProjectVSubmission struct {
 	TesterID      *uuid.UUID     `gorm:"type:uuid;index" json:"testerId,omitempty"`
 	ReviewerID    *uuid.UUID     `gorm:"type:uuid;index" json:"reviewerId,omitempty"`
 
+	// Tester workflow fields
+	TesterFeedback     string  `gorm:"type:text" json:"testerFeedback,omitempty"`
+	SubmittedAccount   *string `gorm:"type:text" json:"submittedAccount,omitempty"`
+	TaskLink           *string `gorm:"type:text" json:"taskLink,omitempty"`
+
 	// Reviewer workflow fields
 	ReviewerFeedback    string  `gorm:"type:text" json:"reviewerFeedback,omitempty"`
 	HasChangesRequested bool    `gorm:"default:false" json:"hasChangesRequested"`
 	ChangesDone         bool    `gorm:"default:false" json:"changesDone"`
+	RejectionReason     *string `gorm:"type:text" json:"rejectionReason,omitempty"`
 	AccountPostedIn     *string `gorm:"type:text" json:"accountPostedIn,omitempty"`
 
 	// Processing-related fields

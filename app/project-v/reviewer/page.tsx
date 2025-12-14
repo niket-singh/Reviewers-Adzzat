@@ -21,9 +21,13 @@ interface Submission {
   dockerfileUrl: string;
   solutionPatchUrl: string;
   status: string;
+  testerFeedback?: string;
   reviewerFeedback?: string;
   hasChangesRequested: boolean;
   changesDone: boolean;
+  submittedAccount?: string;
+  taskLink?: string;
+  rejectionReason?: string;
   accountPostedIn?: string;
   createdAt: string;
   contributor?: { id: string; name: string; email: string };
@@ -42,7 +46,9 @@ export default function ProjectVReviewer() {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [feedback, setFeedback] = useState<string>("");
   const [accountPosted, setAccountPosted] = useState<string>("");
+  const [rejectionReason, setRejectionReason] = useState<string>("");
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
+  const [showRejectionDialog, setShowRejectionDialog] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,6 +137,28 @@ export default function ProjectVReviewer() {
     }
   };
 
+  const handleReject = async () => {
+    if (!selectedSubmission) return;
+    if (!rejectionReason.trim()) {
+      showToast("Please provide a rejection reason", "error");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await apiClient.markRejected(selectedSubmission.id, rejectionReason);
+      showToast("✅ Task rejected successfully", "success");
+      setShowRejectionDialog(false);
+      setRejectionReason("");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to reject task", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     router.push("/");
@@ -141,11 +169,13 @@ export default function ProjectVReviewer() {
       TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
       IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
       PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
+      ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow-purple",
       CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
       CHANGES_DONE: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
       FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
       REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
+      REWORK: "bg-gradient-to-r from-yellow-500 to-orange-600 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
@@ -158,6 +188,7 @@ export default function ProjectVReviewer() {
       filtered = submissions.filter(
         (s) =>
           s.status === "PENDING_REVIEW" ||
+          s.status === "ELIGIBLE_FOR_MANUAL_REVIEW" ||
           s.status === "CHANGES_DONE" ||
           s.status === "FINAL_CHECKS"
       );
@@ -186,7 +217,7 @@ export default function ProjectVReviewer() {
   const getStatusCount = (status: string) => {
     if (status === "ALL") {
       return user?.role === "REVIEWER"
-        ? submissions.filter(s => ["PENDING_REVIEW", "CHANGES_DONE", "FINAL_CHECKS"].includes(s.status)).length
+        ? submissions.filter(s => ["PENDING_REVIEW", "ELIGIBLE_FOR_MANUAL_REVIEW", "CHANGES_DONE", "FINAL_CHECKS"].includes(s.status)).length
         : submissions.length;
     }
     return submissions.filter((s) => s.status === status).length;
@@ -386,7 +417,7 @@ export default function ProjectVReviewer() {
                   </h3>
                   <p className="text-gray-300">Submitted by <span className="font-semibold text-white">{selectedSubmission.contributor?.name}</span></p>
                 </div>
-                <button onClick={() => { setSelectedSubmission(null); setShowFeedbackDialog(false); setFeedback(""); setAccountPosted(""); }}
+                <button onClick={() => { setSelectedSubmission(null); setShowFeedbackDialog(false); setShowRejectionDialog(false); setFeedback(""); setAccountPosted(""); setRejectionReason(""); }}
                   className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -477,11 +508,11 @@ export default function ProjectVReviewer() {
                 )}
 
                 {/* Reviewer Actions */}
-                {(selectedSubmission.status === "PENDING_REVIEW" || selectedSubmission.status === "CHANGES_DONE" || selectedSubmission.status === "FINAL_CHECKS") && (
+                {(selectedSubmission.status === "PENDING_REVIEW" || selectedSubmission.status === "ELIGIBLE_FOR_MANUAL_REVIEW" || selectedSubmission.status === "CHANGES_DONE" || selectedSubmission.status === "FINAL_CHECKS") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">⚡ Reviewer Actions:</h4>
 
-                    {!showFeedbackDialog ? (
+                    {!showFeedbackDialog && !showRejectionDialog ? (
                       <div className="space-y-3">
                         {selectedSubmission.status === "FINAL_CHECKS" && (
                           <div className="mb-4">
@@ -489,6 +520,16 @@ export default function ProjectVReviewer() {
                             <input type="text" value={accountPosted} onChange={(e) => setAccountPosted(e.target.value)}
                               placeholder="e.g., @username or account URL" disabled={processing}
                               className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
+                          </div>
+                        )}
+
+                        {selectedSubmission.taskLink && (
+                          <div className="mb-4 bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-5">
+                            <h5 className="font-bold text-purple-300 mb-2">🔗 Task Link (from Tester):</h5>
+                            <a href={selectedSubmission.taskLink} target="_blank" rel="noopener noreferrer"
+                              className="text-cyan-400 hover:text-cyan-300 break-all hover:underline font-medium">
+                              {selectedSubmission.taskLink}
+                            </a>
                           </div>
                         )}
 
@@ -506,9 +547,33 @@ export default function ProjectVReviewer() {
                           ) : (
                             <button onClick={() => handleFinalChecks(selectedSubmission.id)} disabled={processing}
                               className="flex-1 px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                              {processing ? "Processing..." : "→ Mark for Final Checks"}
+                              {processing ? "Processing..." : "→ Gone for Final Check"}
                             </button>
                           )}
+
+                          <button onClick={() => setShowRejectionDialog(true)} disabled={processing}
+                            className="flex-1 px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ✗ Reject
+                          </button>
+                        </div>
+                      </div>
+                    ) : showRejectionDialog ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-2.5 text-gray-200">Rejection Reason: *</label>
+                          <textarea value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} rows={6}
+                            placeholder="Provide detailed reason for rejection..." disabled={processing}
+                            className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-red-500 focus:ring-4 focus:ring-red-500/20 font-medium" />
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={handleReject} disabled={processing || !rejectionReason.trim()}
+                            className="flex-1 px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {processing ? "Rejecting..." : "Confirm Rejection"}
+                          </button>
+                          <button onClick={() => { setShowRejectionDialog(false); setRejectionReason(""); }} disabled={processing}
+                            className="px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 disabled:opacity-50">
+                            Cancel
+                          </button>
                         </div>
                       </div>
                     ) : (

@@ -21,9 +21,13 @@ interface Submission {
   dockerfileUrl: string;
   solutionPatchUrl: string;
   status: string;
+  testerFeedback?: string;
   reviewerFeedback?: string;
   hasChangesRequested: boolean;
   changesDone: boolean;
+  submittedAccount?: string;
+  taskLink?: string;
+  rejectionReason?: string;
   accountPostedIn?: string;
   createdAt: string;
   contributor?: { id: string; name: string; email: string };
@@ -60,6 +64,11 @@ export default function ProjectVTester() {
   const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [processing, setProcessing] = useState(false);
+  const [actionType, setActionType] = useState<string | null>(null);
+  const [submittedAccount, setSubmittedAccount] = useState("");
+  const [taskLink, setTaskLink] = useState("");
+  const [testerFeedback, setTesterFeedback] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -99,11 +108,13 @@ export default function ProjectVTester() {
       TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
       IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
       PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
+      ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow-purple",
       CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
       CHANGES_DONE: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
       FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
       REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
+      REWORK: "bg-gradient-to-r from-yellow-500 to-orange-600 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
@@ -137,6 +148,72 @@ export default function ProjectVTester() {
       return submissions.length;
     }
     return submissions.filter((s) => s.status === status).length;
+  };
+
+  const handleTaskSubmitted = async () => {
+    if (!selectedSubmission) return;
+    if (!submittedAccount.trim()) {
+      showToast("Please enter the account where task was submitted", "error");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await apiClient.markTaskSubmitted(selectedSubmission.id, submittedAccount);
+      showToast("✅ Task marked as submitted successfully", "success");
+      setActionType(null);
+      setSubmittedAccount("");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to mark task as submitted", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleEligibleForReview = async () => {
+    if (!selectedSubmission) return;
+    if (!taskLink.trim()) {
+      showToast("Please enter the task link", "error");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await apiClient.markEligibleForManualReview(selectedSubmission.id, taskLink);
+      showToast("✅ Task marked as eligible for manual review successfully", "success");
+      setActionType(null);
+      setTaskLink("");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to mark task as eligible", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSendFeedback = async () => {
+    if (!selectedSubmission) return;
+    if (!testerFeedback.trim()) {
+      showToast("Please enter feedback", "error");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await apiClient.sendTesterFeedback(selectedSubmission.id, testerFeedback);
+      showToast("✅ Feedback sent successfully", "success");
+      setActionType(null);
+      setTesterFeedback("");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to send feedback", "error");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   if (loading || loadingSubmissions) {
@@ -335,7 +412,7 @@ export default function ProjectVTester() {
                   </h3>
                   <p className="text-gray-300">Submitted by <span className="font-semibold text-white">{selectedSubmission.contributor?.name}</span></p>
                 </div>
-                <button onClick={() => setSelectedSubmission(null)}
+                <button onClick={() => { setSelectedSubmission(null); setActionType(null); setSubmittedAccount(""); setTaskLink(""); setTesterFeedback(""); }}
                   className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -446,6 +523,90 @@ export default function ProjectVTester() {
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback:</h4>
                     <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.reviewerFeedback}</p>
+                  </div>
+                )}
+
+                {/* Tester Actions */}
+                {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "IN_TESTING") && (
+                  <div className="border-t-2 border-gray-700 pt-6">
+                    <h4 className="font-bold text-white mb-4 text-lg">⚡ Tester Actions:</h4>
+
+                    {!actionType ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <button onClick={() => setActionType("submitted")} disabled={processing}
+                          className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                          ✓ Task Submitted
+                        </button>
+                        <button onClick={() => setActionType("eligible")} disabled={processing}
+                          className="px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                          → Eligible for Manual Review
+                        </button>
+                        <button onClick={() => setActionType("feedback")} disabled={processing}
+                          className="px-6 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                          💬 Send Feedback
+                        </button>
+                      </div>
+                    ) : actionType === "submitted" ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-2.5 text-gray-200">Submitted Account: *</label>
+                          <input type="text" value={submittedAccount} onChange={(e) => setSubmittedAccount(e.target.value)}
+                            placeholder="e.g., @username or account URL" disabled={processing}
+                            className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
+                          <p className="text-xs text-gray-400 mt-2">Note: This will only be visible to you and admins</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={handleTaskSubmitted} disabled={processing || !submittedAccount.trim()}
+                            className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {processing ? "Submitting..." : "Submit"}
+                          </button>
+                          <button onClick={() => { setActionType(null); setSubmittedAccount(""); }} disabled={processing}
+                            className="px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 disabled:opacity-50">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : actionType === "eligible" ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Link: *</label>
+                          <input type="url" value={taskLink} onChange={(e) => setTaskLink(e.target.value)}
+                            placeholder="https://..." disabled={processing}
+                            className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium" />
+                          <p className="text-xs text-gray-400 mt-2">This will be visible to testers, reviewers, and admins. Contributor will be notified that task is eligible for manual review.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={handleEligibleForReview} disabled={processing || !taskLink.trim()}
+                            className="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {processing ? "Submitting..." : "Mark as Eligible"}
+                          </button>
+                          <button onClick={() => { setActionType(null); setTaskLink(""); }} disabled={processing}
+                            className="px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 disabled:opacity-50">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-bold mb-2.5 text-gray-200">Feedback for Contributor: *</label>
+                          <textarea value={testerFeedback} onChange={(e) => setTesterFeedback(e.target.value)} rows={6}
+                            placeholder="Provide detailed feedback on what needs to be reworked..." disabled={processing}
+                            className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 font-medium" />
+                          <p className="text-xs text-gray-400 mt-2">Task will be marked as &quot;Rework&quot; and feedback will be shown to contributor.</p>
+                        </div>
+                        <div className="flex gap-3">
+                          <button onClick={handleSendFeedback} disabled={processing || !testerFeedback.trim()}
+                            className="flex-1 px-6 py-4 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            {processing ? "Sending..." : "Send Feedback"}
+                          </button>
+                          <button onClick={() => { setActionType(null); setTesterFeedback(""); }} disabled={processing}
+                            className="px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 disabled:opacity-50">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

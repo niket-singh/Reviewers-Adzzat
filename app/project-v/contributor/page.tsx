@@ -21,9 +21,11 @@ interface Submission {
   dockerfileUrl: string;
   solutionPatchUrl: string;
   status: string;
+  testerFeedback?: string;
   reviewerFeedback?: string;
   hasChangesRequested: boolean;
   changesDone: boolean;
+  rejectionReason?: string;
   accountPostedIn?: string;
   createdAt: string;
   contributor?: { id: string; name: string; email: string };
@@ -204,11 +206,13 @@ export default function ProjectVContributor() {
       TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
       IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
       PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
+      ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow-purple",
       CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
       CHANGES_DONE: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
       FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
       REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
+      REWORK: "bg-gradient-to-r from-yellow-500 to-orange-600 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
@@ -355,17 +359,26 @@ export default function ProjectVContributor() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                   <label className="block text-sm font-bold mb-2.5 text-gray-200">Language *</label>
-                  <input type="text" required value={formData.language}
+                  <select required value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
-                    placeholder="e.g., Python, JavaScript" />
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium">
+                    <option value="">Select Language</option>
+                    <option value="Python">Python</option>
+                    <option value="TypeScript">TypeScript</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-bold mb-2.5 text-gray-200">Category *</label>
-                  <input type="text" required value={formData.category}
+                  <select required value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
-                    placeholder="e.g., Backend, Frontend" />
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium">
+                    <option value="">Select Category</option>
+                    <option value="Bug Fixing">Bug Fixing</option>
+                    <option value="Feature Request">Feature Request</option>
+                    <option value="Enhancement">Enhancement</option>
+                    <option value="Refactor">Refactor</option>
+                    <option value="Optimization">Optimization</option>
+                  </select>
                 </div>
               </div>
 
@@ -571,6 +584,30 @@ export default function ProjectVContributor() {
                     <pre className="text-green-400 text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono leading-relaxed custom-scrollbar">
                       {selectedSubmission.processingLogs}
                     </pre>
+                  </div>
+                )}
+
+                {/* Tester Feedback */}
+                {selectedSubmission.testerFeedback && (
+                  <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-xl p-5">
+                    <h4 className="font-bold text-yellow-300 mb-3 text-lg">🔄 Tester Feedback (Rework Required):</h4>
+                    <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.testerFeedback}</p>
+                  </div>
+                )}
+
+                {/* Reviewer Feedback */}
+                {selectedSubmission.reviewerFeedback && (
+                  <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
+                    <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback (Changes Requested):</h4>
+                    <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.reviewerFeedback}</p>
+                  </div>
+                )}
+
+                {/* Rejection Reason */}
+                {selectedSubmission.rejectionReason && (
+                  <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-5">
+                    <h4 className="font-bold text-red-300 mb-3 text-lg">❌ Rejection Reason:</h4>
+                    <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.rejectionReason}</p>
                   </div>
                 )}
 
