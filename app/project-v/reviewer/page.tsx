@@ -323,7 +323,7 @@ export default function ProjectVReviewer() {
             <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 border-2 border-gray-700/50 text-center">
               <div className="text-6xl mb-4">🔍</div>
               <p className="text-gray-400 font-medium text-lg">No submissions found for review</p>
-              <p className="text-gray-500 text-sm mt-2">Submissions will appear here when they're ready for review</p>
+              <p className="text-gray-500 text-sm mt-2">Submissions will appear here when they&apos;re ready for review</p>
             </div>
           ) : (
             filteredSubmissions.map((submission) => (
