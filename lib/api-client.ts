@@ -47,6 +47,11 @@ class ApiClient {
   private ensureProtocol(url: string): string {
     const trimmedUrl = url.trim()
 
+    // If empty, return default localhost
+    if (!trimmedUrl) {
+      return 'http://localhost:8080/api'
+    }
+
     // If URL already has a protocol, return as-is
     if (/^https?:\/\//i.test(trimmedUrl)) {
       return trimmedUrl
@@ -67,6 +72,37 @@ class ApiClient {
     }
 
     return `https://${trimmedUrl}`
+  }
+
+  /**
+   * Get the current API base URL being used
+   */
+  getBaseURL(): string {
+    return this.client.defaults.baseURL || ''
+  }
+
+  /**
+   * Check if the backend API is reachable
+   */
+  async checkHealth(): Promise<{ healthy: boolean; error?: string }> {
+    try {
+      const response = await axios.get(`${this.getBaseURL().replace('/api', '')}/health`, {
+        timeout: 5000,
+      })
+      return { healthy: response.data.status === 'healthy' }
+    } catch (error: any) {
+      let errorMessage = 'Backend is not reachable'
+
+      if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED') {
+        errorMessage = 'Cannot connect to backend. Make sure the backend server is running.'
+      } else if (error.code === 'ERR_NAME_NOT_RESOLVED') {
+        errorMessage = 'Backend URL is invalid. Please configure NEXT_PUBLIC_API_URL in Azure Portal.'
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+
+      return { healthy: false, error: errorMessage }
+    }
   }
 
   // Auth
