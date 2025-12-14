@@ -30,7 +30,7 @@ interface Submission {
     id: string
     feedback: string
     accountPostedIn?: string
-    reviewer: {
+    tester: {
       name: string
     }
   }[]
@@ -1014,25 +1014,25 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-gray-200">
                     {stats.reviewers && stats.reviewers.length > 0 ? (
                       stats.reviewers.map((reviewer) => (
-                        <tr key={tester.userId} className={tester.isGreenLight ? '' : 'bg-gray-50'}>
-                          <td className="px-4 py-3 text-sm text-gray-800">{tester.name}</td>
+                        <tr key={reviewer.userId} className={reviewer.isGreenLight ? '' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 text-sm text-gray-800">{reviewer.name}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${tester.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                              <span className={`text-xs font-semibold ${tester.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
-                                {tester.isGreenLight ? 'Active' : 'Inactive'}
+                              <div className={`w-3 h-3 rounded-full ${reviewer.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                              <span className={`text-xs font-semibold ${reviewer.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
+                                {reviewer.isGreenLight ? 'Active' : 'Inactive'}
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{tester.tasksInStack}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{tester.reviewedCount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.tasksInStack}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.reviewedCount}</td>
                           <td className="px-4 py-3 text-sm text-right">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              tester.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
-                              tester.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
+                              reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
+                              reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-green-100 text-green-800'
                             }`}>
-                              {tester.currentWorkload} active
+                              {reviewer.currentWorkload} active
                             </span>
                           </td>
                         </tr>

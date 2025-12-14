@@ -24,7 +24,7 @@ interface Submission {
     id: string
     feedback: string
     createdAt: string
-    reviewer: {
+    tester: {
       name: string
     }
   }[]
