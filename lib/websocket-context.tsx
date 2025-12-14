@@ -5,7 +5,7 @@ import { useAuth } from './auth-context'
 import { useToast } from '@/components/ToastContainer'
 
 interface WebSocketMessage {
-  type: 'SUBMISSION_CREATED' | 'SUBMISSION_REVIEWED' | 'SUBMISSION_APPROVED' | 'REVIEWER_APPROVED' | 'NOTIFICATION'
+  type: 'SUBMISSION_CREATED' | 'SUBMISSION_REVIEWED' | 'SUBMISSION_APPROVED' | 'TESTER_APPROVED' | 'NOTIFICATION'
   data: any
   timestamp: string
 }

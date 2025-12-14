@@ -12,7 +12,7 @@ type UserRole string
 
 const (
 	RoleAdmin       UserRole = "ADMIN"
-	RoleReviewer    UserRole = "REVIEWER"
+	RoleTester      UserRole = "TESTER"
 	RoleContributor UserRole = "CONTRIBUTOR"
 )
 
@@ -52,7 +52,7 @@ type User struct {
 	// Relations
 	Submissions        []Submission `gorm:"foreignKey:ContributorID" json:"submissions,omitempty"`
 	ClaimedSubmissions []Submission `gorm:"foreignKey:ClaimedByID" json:"claimedSubmissions,omitempty"`
-	Reviews            []Review     `gorm:"foreignKey:ReviewerID" json:"reviews,omitempty"`
+	Reviews            []Review     `gorm:"foreignKey:TesterID" json:"reviews,omitempty"`
 }
 
 // Submission model
@@ -82,13 +82,13 @@ type Review struct {
 	Feedback        string     `gorm:"type:text;not null" json:"feedback"`
 	AccountPostedIn *string    `json:"accountPostedIn,omitempty"`
 	SubmissionID    uuid.UUID  `gorm:"type:uuid;not null;index" json:"submissionId"` // Index for fetching reviews by submission
-	ReviewerID      uuid.UUID  `gorm:"type:uuid;not null;index" json:"reviewerId"` // Index for reviewer stats
+	TesterID        uuid.UUID  `gorm:"type:uuid;not null;index" json:"testerId"` // Index for tester stats
 	CreatedAt       time.Time  `gorm:"index" json:"createdAt"` // Index for sorting
 	UpdatedAt       time.Time  `json:"updatedAt"`
 
 	// Relations
 	Submission *Submission `gorm:"foreignKey:SubmissionID" json:"submission,omitempty"`
-	Reviewer   *User       `gorm:"foreignKey:ReviewerID" json:"reviewer,omitempty"`
+	Tester     *User       `gorm:"foreignKey:TesterID" json:"tester,omitempty"`
 }
 
 // ActivityLog model
@@ -143,40 +143,22 @@ type ProjectVSubmission struct {
 	CommitHash    string         `gorm:"not null" json:"commitHash"`
 	IssueURL      string         `gorm:"not null" json:"issueUrl"`
 	TestPatchURL  string         `gorm:"not null" json:"testPatchUrl"`
-	DockerfileURL string         `gorm:"not null" json:"dockerfileUrl"`
 	SolutionPatchURL string      `gorm:"not null" json:"solutionPatchUrl"`
 	Status        ProjectVStatus `gorm:"type:varchar(50);not null;default:'TASK_SUBMITTED';index" json:"status"`
 	ContributorID uuid.UUID      `gorm:"type:uuid;not null;index" json:"contributorId"`
-	ReviewerID    *uuid.UUID     `gorm:"type:uuid;index" json:"reviewerId,omitempty"`
-	AccountPostedIn *string      `gorm:"type:text" json:"accountPostedIn,omitempty"` // Only visible to reviewers/admins
+	TesterID      *uuid.UUID     `gorm:"type:uuid;index" json:"testerId,omitempty"`
+	AccountPostedIn *string      `gorm:"type:text" json:"accountPostedIn,omitempty"` // Only visible to testers/admins
 
-	// Processing results
-	CloneSuccess      bool   `gorm:"default:false" json:"cloneSuccess"`
-	CloneError        string `gorm:"type:text" json:"cloneError,omitempty"`
-	TestPatchSuccess  bool   `gorm:"default:false" json:"testPatchSuccess"`
-	TestPatchError    string `gorm:"type:text" json:"testPatchError,omitempty"`
-	DockerBuildSuccess bool  `gorm:"default:false" json:"dockerBuildSuccess"`
-	DockerBuildError  string `gorm:"type:text" json:"dockerBuildError,omitempty"`
-	BaseTestSuccess   bool   `gorm:"default:false" json:"baseTestSuccess"`
-	BaseTestError     string `gorm:"type:text" json:"baseTestError,omitempty"`
-	NewTestSuccess    bool   `gorm:"default:false" json:"newTestSuccess"`
-	NewTestError      string `gorm:"type:text" json:"newTestError,omitempty"`
-	SolutionPatchSuccess bool `gorm:"default:false" json:"solutionPatchSuccess"`
-	SolutionPatchError string `gorm:"type:text" json:"solutionPatchError,omitempty"`
-	FinalBaseTestSuccess bool `gorm:"default:false" json:"finalBaseTestSuccess"`
-	FinalBaseTestError string `gorm:"type:text" json:"finalBaseTestError,omitempty"`
-	FinalNewTestSuccess bool `gorm:"default:false" json:"finalNewTestSuccess"`
-	FinalNewTestError string `gorm:"type:text" json:"finalNewTestError,omitempty"`
-
-	ProcessingComplete bool   `gorm:"default:false" json:"processingComplete"`
-	ProcessingLogs    string  `gorm:"type:text" json:"processingLogs,omitempty"`
+	// Processing results (simplified - no Docker testing)
+	ValidationComplete bool   `gorm:"default:false" json:"validationComplete"`
+	ValidationNotes    string `gorm:"type:text" json:"validationNotes,omitempty"`
 
 	CreatedAt time.Time `gorm:"index" json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 
 	// Relations
 	Contributor *User `gorm:"foreignKey:ContributorID" json:"contributor,omitempty"`
-	Reviewer    *User `gorm:"foreignKey:ReviewerID" json:"reviewer,omitempty"`
+	Tester      *User `gorm:"foreignKey:TesterID" json:"tester,omitempty"`
 }
 
 // BeforeCreate hook for User

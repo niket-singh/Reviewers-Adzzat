@@ -100,13 +100,13 @@ func UploadSubmission(c *gin.Context) {
 		},
 	})
 
-	// Auto-assign to reviewer
-	reviewerID, _ := services.AutoAssignSubmission(submission.ID)
+	// Auto-assign to tester
+	testerID, _ := services.AutoAssignSubmission(submission.ID)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message":    "Submission uploaded successfully",
 		"submission": submission,
-		"assigned":   reviewerID != nil,
+		"assigned":   testerID != nil,
 	})
 }
 
@@ -122,12 +122,12 @@ func GetSubmissions(c *gin.Context) {
 	query := database.DB.Model(&models.Submission{}).
 		Preload("Contributor").
 		Preload("ClaimedBy").
-		Preload("Reviews.Reviewer")
+		Preload("Reviews.Tester")
 
 	// Role-based filtering
 	if userRole == string(models.RoleContributor) {
 		query = query.Where("contributor_id = ?", uid)
-	} else if userRole == string(models.RoleReviewer) {
+	} else if userRole == string(models.RoleTester) {
 		query = query.Where("claimed_by_id = ?", uid)
 	} else if userRole == string(models.RoleAdmin) {
 		// Admins can filter to see their assigned tasks or all tasks
@@ -160,14 +160,14 @@ func GetSubmissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"submissions": submissions})
 }
 
-// GetReviewedSubmissions returns submissions that the reviewer has given feedback on
+// GetReviewedSubmissions returns submissions that the tester has given feedback on
 func GetReviewedSubmissions(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 	uid, _ := uuid.Parse(userID.(string))
 
-	// Only reviewers and admins can access this
-	if userRole != string(models.RoleReviewer) && userRole != string(models.RoleAdmin) {
+	// Only testers and admins can access this
+	if userRole != string(models.RoleTester) && userRole != string(models.RoleAdmin) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
@@ -175,9 +175,9 @@ func GetReviewedSubmissions(c *gin.Context) {
 	// Get search query
 	search := c.Query("search")
 
-	// Get all reviews by this reviewer
+	// Get all reviews by this tester
 	var reviews []models.Review
-	query := database.DB.Where("reviewer_id = ?", uid)
+	query := database.DB.Where("tester_id = ?", uid)
 
 	if err := query.Find(&reviews).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
@@ -228,7 +228,7 @@ func GetSubmission(c *gin.Context) {
 	if err := database.DB.
 		Preload("Contributor").
 		Preload("ClaimedBy").
-		Preload("Reviews.Reviewer").
+		Preload("Reviews.Tester").
 		First(&submission, sid).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
 		return
@@ -314,9 +314,9 @@ func GetDownloadURL(c *gin.Context) {
 		return
 	}
 
-	// Allow reviewers, admins, and contributors to download their own submissions
+	// Allow testers, admins, and contributors to download their own submissions
 	isOwner := submission.ContributorID == uid
-	canDownload := userRole == string(models.RoleReviewer) || userRole == string(models.RoleAdmin) || (userRole == string(models.RoleContributor) && isOwner)
+	canDownload := userRole == string(models.RoleTester) || userRole == string(models.RoleAdmin) || (userRole == string(models.RoleContributor) && isOwner)
 
 	if !canDownload {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to download this file"})
@@ -355,8 +355,8 @@ func SubmitFeedback(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 
-	if userRole != string(models.RoleReviewer) && userRole != string(models.RoleAdmin) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers and admins can submit feedback"})
+	if userRole != string(models.RoleTester) && userRole != string(models.RoleAdmin) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only testers and admins can submit feedback"})
 		return
 	}
 
@@ -377,7 +377,7 @@ func SubmitFeedback(c *gin.Context) {
 		Feedback:        req.Feedback,
 		AccountPostedIn: req.AccountPostedIn,
 		SubmissionID:    sid,
-		ReviewerID:      uid,
+		TesterID:        uid,
 	}
 
 	if err := database.DB.Create(&review).Error; err != nil {

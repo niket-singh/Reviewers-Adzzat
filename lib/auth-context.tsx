@@ -7,7 +7,7 @@ interface User {
   id: string
   email: string
   name: string
-  role: 'ADMIN' | 'REVIEWER' | 'CONTRIBUTOR'
+  role: 'ADMIN' | 'TESTER' | 'CONTRIBUTOR'
   isApproved: boolean
 }
 

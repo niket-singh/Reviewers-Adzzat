@@ -8,53 +8,53 @@ import (
 	"github.com/google/uuid"
 )
 
-// AutoAssignSubmission automatically assigns a submission to the reviewer with the least tasks
+// AutoAssignSubmission automatically assigns a submission to the tester with the least tasks
 func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
-	// Get all approved reviewers with green light ON (active)
+	// Get all approved testers with green light ON (active)
 	// Exclude admins - they must manually claim tasks
-	var reviewers []models.User
+	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
-		models.RoleReviewer, true, true).Find(&reviewers).Error
+		models.RoleTester, true, true).Find(&testers).Error
 	if err != nil {
 		return nil, err
 	}
 
-	if len(reviewers) == 0 {
-		// No active reviewers available - task stays in PENDING status
+	if len(testers) == 0 {
+		// No active testers available - task stays in PENDING status
 		return nil, nil
 	}
 
-	// Count tasks for each reviewer
-	type ReviewerTaskCount struct {
-		ReviewerID uuid.UUID
-		Count      int64
+	// Count tasks for each tester
+	type TesterTaskCount struct {
+		TesterID uuid.UUID
+		Count    int64
 	}
 
-	var reviewerCounts []ReviewerTaskCount
-	for _, reviewer := range reviewers {
+	var testerCounts []TesterTaskCount
+	for _, tester := range testers {
 		var count int64
 		database.DB.Model(&models.Submission{}).
-			Where("claimed_by_id = ? AND status IN ?", reviewer.ID, []string{
+			Where("claimed_by_id = ? AND status IN ?", tester.ID, []string{
 				string(models.StatusPending),
 				string(models.StatusClaimed),
 				string(models.StatusEligible),
 			}).
 			Count(&count)
 
-		reviewerCounts = append(reviewerCounts, ReviewerTaskCount{
-			ReviewerID: reviewer.ID,
-			Count:      count,
+		testerCounts = append(testerCounts, TesterTaskCount{
+			TesterID: tester.ID,
+			Count:    count,
 		})
 	}
 
-	// Find reviewer with least tasks
-	minCount := reviewerCounts[0].Count
-	selectedReviewerID := reviewerCounts[0].ReviewerID
+	// Find tester with least tasks
+	minCount := testerCounts[0].Count
+	selectedTesterID := testerCounts[0].TesterID
 
-	for _, rc := range reviewerCounts {
+	for _, rc := range testerCounts {
 		if rc.Count < minCount {
 			minCount = rc.Count
-			selectedReviewerID = rc.ReviewerID
+			selectedTesterID = rc.TesterID
 		}
 	}
 
@@ -63,7 +63,7 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	err = database.DB.Model(&models.Submission{}).
 		Where("id = ?", submissionID).
 		Updates(map[string]interface{}{
-			"claimed_by_id": selectedReviewerID,
+			"claimed_by_id": selectedTesterID,
 			"assigned_at":   now,
 			"status":        models.StatusClaimed,
 		}).Error
@@ -76,9 +76,9 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	var submission models.Submission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	// Get reviewer details
-	var reviewer models.User
-	database.DB.First(&reviewer, selectedReviewerID)
+	// Get tester details
+	var tester models.User
+	database.DB.First(&tester, selectedTesterID)
 
 	// Log the activity
 	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
@@ -88,24 +88,24 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 
 	LogActivity(LogActivityParams{
 		Action:      "AUTO_ASSIGN",
-		Description: "Task \"" + submission.Title + "\" auto-assigned to " + reviewer.Name,
+		Description: "Task \"" + submission.Title + "\" auto-assigned to " + tester.Name,
 		UserID:      &userID,
 		UserName:    &userName,
 		UserRole:    &userRole,
 		TargetID:    &submissionID,
 		TargetType:  &targetType,
 		Metadata: map[string]interface{}{
-			"reviewerId":      selectedReviewerID.String(),
-			"reviewerName":    reviewer.Name,
+			"testerId":        selectedTesterID.String(),
+			"testerName":      tester.Name,
 			"contributorName": submission.Contributor.Name,
 		},
 	})
 
-	return &selectedReviewerID, nil
+	return &selectedTesterID, nil
 }
 
-// AssignQueuedTasks assigns all pending (queued) tasks to active reviewers
-// This is called when a reviewer's green light is turned ON
+// AssignQueuedTasks assigns all pending (queued) tasks to active testers
+// This is called when a tester's green light is turned ON
 func AssignQueuedTasks() (int, error) {
 	// Get all PENDING submissions (tasks waiting in queue)
 	var pendingSubmissions []models.Submission
@@ -118,46 +118,46 @@ func AssignQueuedTasks() (int, error) {
 		return 0, nil // No queued tasks
 	}
 
-	// Get all active reviewers (approved + green light ON)
+	// Get all active testers (approved + green light ON)
 	// Exclude admins - they must manually claim tasks
-	var reviewers []models.User
+	var testers []models.User
 	err = database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
-		models.RoleReviewer, true, true).Find(&reviewers).Error
+		models.RoleTester, true, true).Find(&testers).Error
 	if err != nil {
 		return 0, err
 	}
 
-	if len(reviewers) == 0 {
-		return 0, nil // No active reviewers - tasks stay queued
+	if len(testers) == 0 {
+		return 0, nil // No active testers - tasks stay queued
 	}
 
-	// Build reviewer task count map for fair distribution
-	reviewerTaskCounts := make(map[uuid.UUID]int64)
-	for _, reviewer := range reviewers {
+	// Build tester task count map for fair distribution
+	testerTaskCounts := make(map[uuid.UUID]int64)
+	for _, tester := range testers {
 		var count int64
 		database.DB.Model(&models.Submission{}).
-			Where("claimed_by_id = ? AND status IN ?", reviewer.ID, []string{
+			Where("claimed_by_id = ? AND status IN ?", tester.ID, []string{
 				string(models.StatusPending),
 				string(models.StatusClaimed),
 				string(models.StatusEligible),
 			}).
 			Count(&count)
-		reviewerTaskCounts[reviewer.ID] = count
+		testerTaskCounts[tester.ID] = count
 	}
 
 	assignedCount := 0
 
-	// Assign each pending task to reviewer with least current workload
+	// Assign each pending task to tester with least current workload
 	for _, submission := range pendingSubmissions {
-		// Find reviewer with minimum tasks
-		var selectedReviewerID uuid.UUID
+		// Find tester with minimum tasks
+		var selectedTesterID uuid.UUID
 		minCount := int64(-1)
 
-		for _, reviewer := range reviewers {
-			count := reviewerTaskCounts[reviewer.ID]
+		for _, tester := range testers {
+			count := testerTaskCounts[tester.ID]
 			if minCount == -1 || count < minCount {
 				minCount = count
-				selectedReviewerID = reviewer.ID
+				selectedTesterID = tester.ID
 			}
 		}
 
@@ -166,7 +166,7 @@ func AssignQueuedTasks() (int, error) {
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", submission.ID).
 			Updates(map[string]interface{}{
-				"claimed_by_id": selectedReviewerID,
+				"claimed_by_id": selectedTesterID,
 				"assigned_at":   now,
 				"status":        models.StatusClaimed,
 			}).Error
@@ -175,13 +175,13 @@ func AssignQueuedTasks() (int, error) {
 			continue // Skip this task and continue with others
 		}
 
-		// Increment task count for this reviewer
-		reviewerTaskCounts[selectedReviewerID]++
+		// Increment task count for this tester
+		testerTaskCounts[selectedTesterID]++
 		assignedCount++
 
-		// Get reviewer details for logging
-		var reviewer models.User
-		database.DB.First(&reviewer, selectedReviewerID)
+		// Get tester details for logging
+		var tester models.User
+		database.DB.First(&tester, selectedTesterID)
 
 		// Log the activity
 		userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
@@ -191,16 +191,16 @@ func AssignQueuedTasks() (int, error) {
 
 		LogActivity(LogActivityParams{
 			Action:      "AUTO_ASSIGN",
-			Description: "Queued task \"" + submission.Title + "\" assigned to " + reviewer.Name,
+			Description: "Queued task \"" + submission.Title + "\" assigned to " + tester.Name,
 			UserID:      &userID,
 			UserName:    &userName,
 			UserRole:    &userRole,
 			TargetID:    &submission.ID,
 			TargetType:  &targetType,
 			Metadata: map[string]interface{}{
-				"reviewerId":   selectedReviewerID.String(),
-				"reviewerName": reviewer.Name,
-				"wasQueued":    true,
+				"testerId":   selectedTesterID.String(),
+				"testerName": tester.Name,
+				"wasQueued":  true,
 			},
 		})
 	}
@@ -208,20 +208,20 @@ func AssignQueuedTasks() (int, error) {
 	return assignedCount, nil
 }
 
-// RedistributeTasks redistributes all tasks fairly among all active reviewers
-// This is called when a reviewer is activated to ensure fair distribution
+// RedistributeTasks redistributes all tasks fairly among all active testers
+// This is called when a tester is activated to ensure fair distribution
 func RedistributeTasks() (int, error) {
-	// Get all active reviewers (approved + green light ON)
+	// Get all active testers (approved + green light ON)
 	// Exclude admins - they must manually claim tasks
-	var reviewers []models.User
+	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
-		models.RoleReviewer, true, true).Find(&reviewers).Error
+		models.RoleTester, true, true).Find(&testers).Error
 	if err != nil {
 		return 0, err
 	}
 
-	if len(reviewers) == 0 {
-		return 0, nil // No active reviewers
+	if len(testers) == 0 {
+		return 0, nil // No active testers
 	}
 
 	// Get all tasks that need redistribution (PENDING, CLAIMED, ELIGIBLE)
@@ -240,29 +240,29 @@ func RedistributeTasks() (int, error) {
 		return 0, nil // No tasks to redistribute
 	}
 
-	// Calculate how many tasks each reviewer should get
-	tasksPerReviewer := len(allTasks) / len(reviewers)
-	remainder := len(allTasks) % len(reviewers)
+	// Calculate how many tasks each tester should get
+	tasksPerTester := len(allTasks) / len(testers)
+	remainder := len(allTasks) % len(testers)
 
-	// Initialize task counts for each reviewer
-	reviewerTaskAssignments := make(map[uuid.UUID]int)
-	for _, reviewer := range reviewers {
-		reviewerTaskAssignments[reviewer.ID] = 0
+	// Initialize task counts for each tester
+	testerTaskAssignments := make(map[uuid.UUID]int)
+	for _, tester := range testers {
+		testerTaskAssignments[tester.ID] = 0
 	}
 
 	redistributedCount := 0
 
 	// Distribute tasks fairly
-	reviewerIndex := 0
+	testerIndex := 0
 	for _, task := range allTasks {
-		reviewer := reviewers[reviewerIndex]
+		tester := testers[testerIndex]
 
-		// Assign task to this reviewer
+		// Assign task to this tester
 		now := time.Now()
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", task.ID).
 			Updates(map[string]interface{}{
-				"claimed_by_id": reviewer.ID,
+				"claimed_by_id": tester.ID,
 				"assigned_at":   now,
 				"status":        models.StatusClaimed,
 			}).Error
@@ -271,20 +271,20 @@ func RedistributeTasks() (int, error) {
 			continue // Skip this task and continue
 		}
 
-		reviewerTaskAssignments[reviewer.ID]++
+		testerTaskAssignments[tester.ID]++
 		redistributedCount++
 
-		// Move to next reviewer in round-robin fashion
-		// Give extra tasks to first reviewers if there's a remainder
-		currentReviewerQuota := tasksPerReviewer
-		if reviewerIndex < remainder {
-			currentReviewerQuota++
+		// Move to next tester in round-robin fashion
+		// Give extra tasks to first testers if there's a remainder
+		currentTesterQuota := tasksPerTester
+		if testerIndex < remainder {
+			currentTesterQuota++
 		}
 
-		if reviewerTaskAssignments[reviewer.ID] >= currentReviewerQuota {
-			reviewerIndex++
-			if reviewerIndex >= len(reviewers) {
-				reviewerIndex = 0
+		if testerTaskAssignments[tester.ID] >= currentTesterQuota {
+			testerIndex++
+			if testerIndex >= len(testers) {
+				testerIndex = 0
 			}
 		}
 	}
@@ -296,13 +296,13 @@ func RedistributeTasks() (int, error) {
 
 	LogActivity(LogActivityParams{
 		Action:      "REDISTRIBUTE",
-		Description: "Redistributed tasks fairly among active reviewers",
+		Description: "Redistributed tasks fairly among active testers",
 		UserID:      &userID,
 		UserName:    &userName,
 		UserRole:    &userRole,
 		Metadata: map[string]interface{}{
-			"taskCount":     redistributedCount,
-			"reviewerCount": len(reviewers),
+			"taskCount":    redistributedCount,
+			"testerCount":  len(testers),
 		},
 	})
 

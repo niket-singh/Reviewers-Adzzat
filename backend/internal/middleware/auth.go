@@ -74,7 +74,7 @@ func AdminOnly() gin.HandlerFunc {
 	return RequireRole("ADMIN")
 }
 
-// ReviewerOrAdmin middleware allows reviewers and admins
-func ReviewerOrAdmin() gin.HandlerFunc {
-	return RequireRole("REVIEWER", "ADMIN")
+// TesterOrAdmin middleware allows testers and admins
+func TesterOrAdmin() gin.HandlerFunc {
+	return RequireRole("TESTER", "ADMIN")
 }

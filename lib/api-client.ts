@@ -177,7 +177,7 @@ class ApiClient {
     return response.data.users || []
   }
 
-  async approveReviewer(userId: string) {
+  async approveTester(userId: string) {
     const response = await this.client.put(`/users/${userId}/approve`)
     return response.data
   }

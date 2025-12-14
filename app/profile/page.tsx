@@ -146,14 +146,14 @@ export default function ProfilePage() {
 
   const getRoleDashboard = (role: string) => {
     if (role === 'CONTRIBUTOR') return '/contributor'
-    if (role === 'REVIEWER') return '/reviewer'
+    if (role === 'TESTER') return '/reviewer'
     if (role === 'ADMIN') return '/admin'
     return '/'
   }
 
   const getRoleColor = (role: string) => {
     if (role === 'ADMIN') return 'from-red-600 via-orange-600 to-pink-600'
-    if (role === 'REVIEWER') return 'from-purple-600 via-indigo-600 to-blue-600'
+    if (role === 'TESTER') return 'from-purple-600 via-indigo-600 to-blue-600'
     return 'from-blue-600 via-indigo-600 to-purple-600'
   }
 
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                   <span className={`px-4 py-2 bg-gradient-to-r ${getRoleColor(user.role)} text-white rounded-xl text-sm font-black shadow-md`}>
                     {user.role}
                   </span>
-                  {user.role === 'REVIEWER' && (
+                  {user.role === 'TESTER' && (
                     <span className={`px-4 py-2 rounded-xl text-sm font-black shadow-md ${
                       user.isApproved
                         ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white'
@@ -445,7 +445,7 @@ export default function ProfilePage() {
                   </div>
                 </>
               )}
-              {user.role === 'REVIEWER' && (
+              {user.role === 'TESTER' && (
                 <>
                   <div className="text-center p-4 bg-gray-900/50 backdrop-blur-sm rounded-xl border border-gray-700/50">
                     <div className="text-3xl font-black bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent mb-1">{stats.tasksClaimed || 0}</div>

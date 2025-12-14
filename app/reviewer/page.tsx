@@ -35,7 +35,7 @@ interface Submission {
 
 type StatusFilter = 'claimed' | 'eligible' | 'reviewed'
 
-export default function ReviewerDashboard() {
+export default function TesterDashboard() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [reviewedSubmissions, setReviewedSubmissions] = useState<Submission[]>([])
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([])
@@ -57,7 +57,7 @@ export default function ReviewerDashboard() {
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
-    } else if (user && user.role !== 'REVIEWER') {
+    } else if (user && user.role !== 'TESTER') {
       router.push('/')
     } else if (user && !user.isApproved) {
       // Show waiting for approval message
@@ -222,7 +222,7 @@ export default function ReviewerDashboard() {
               Pending Approval
             </h2>
             <p className="mb-8 text-lg text-gray-300">
-              Your reviewer account is waiting for admin approval. You&apos;ll be able to review submissions once an admin approves your account.
+              Your tester account is waiting for admin approval. You&apos;ll be able to review submissions once an admin approves your account.
             </p>
             <button
               onClick={handleLogout}
@@ -257,7 +257,7 @@ export default function ReviewerDashboard() {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-400 to-blue-400">
-                  Reviewer Hub
+                  Tester Hub
                 </h1>
                 <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">
                   Welcome back, {user.name}
@@ -445,7 +445,7 @@ export default function ReviewerDashboard() {
                           </p>
                         )}
                         <p className="text-xs text-gray-500">
-                          by {review.reviewer.name}
+                          by {review.tester.name}
                         </p>
                       </div>
                     ))}
