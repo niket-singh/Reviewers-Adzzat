@@ -30,8 +30,12 @@ export default function SelectProject() {
       // Navigate to Project V
       if (user?.role === "CONTRIBUTOR") {
         router.push("/project-v/contributor");
-      } else if (user?.role === "REVIEWER" || user?.role === "ADMIN") {
+      } else if (user?.role === "TESTER") {
+        router.push("/project-v/tester");
+      } else if (user?.role === "REVIEWER") {
         router.push("/project-v/reviewer");
+      } else if (user?.role === "ADMIN") {
+        router.push("/project-v/admin");
       }
     } else if (project === "X") {
       // Navigate to existing Project X (current implementation)
