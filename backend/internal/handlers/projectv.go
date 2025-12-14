@@ -172,10 +172,37 @@ func GetProjectVSubmissions(c *gin.Context) {
 		return
 	}
 
-	// Hide accountPostedIn from contributors
+	// Generate signed URLs for all file URLs
+	for i := range submissions {
+		testPatchURL, err := storage.GetSignedURL(submissions[i].TestPatchURL, 3600)
+		if err == nil {
+			submissions[i].TestPatchURL = testPatchURL
+		}
+
+		dockerfileURL, err := storage.GetSignedURL(submissions[i].DockerfileURL, 3600)
+		if err == nil {
+			submissions[i].DockerfileURL = dockerfileURL
+		}
+
+		solutionPatchURL, err := storage.GetSignedURL(submissions[i].SolutionPatchURL, 3600)
+		if err == nil {
+			submissions[i].SolutionPatchURL = solutionPatchURL
+		}
+	}
+
+	// Hide sensitive fields based on role
 	if userRole == "CONTRIBUTOR" {
 		for i := range submissions {
 			submissions[i].AccountPostedIn = nil
+			submissions[i].SubmittedAccount = nil
+			submissions[i].TaskLink = nil
+		}
+	}
+
+	// Hide submittedAccount from reviewers (only tester and admin can see)
+	if userRole == "REVIEWER" {
+		for i := range submissions {
+			submissions[i].SubmittedAccount = nil
 		}
 	}
 
@@ -195,6 +222,22 @@ func GetProjectVSubmission(c *gin.Context) {
 	if err := database.DB.Preload("Contributor").Preload("Tester").Preload("Reviewer").First(&submission, submissionID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
 		return
+	}
+
+	// Generate signed URLs for files
+	testPatchURL, err := storage.GetSignedURL(submission.TestPatchURL, 3600)
+	if err == nil {
+		submission.TestPatchURL = testPatchURL
+	}
+
+	dockerfileURL, err := storage.GetSignedURL(submission.DockerfileURL, 3600)
+	if err == nil {
+		submission.DockerfileURL = dockerfileURL
+	}
+
+	solutionPatchURL, err := storage.GetSignedURL(submission.SolutionPatchURL, 3600)
+	if err == nil {
+		submission.SolutionPatchURL = solutionPatchURL
 	}
 
 	c.JSON(http.StatusOK, submission)
@@ -469,6 +512,209 @@ func DeleteProjectVSubmission(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Submission deleted successfully"})
+}
+
+// MarkTaskSubmitted allows testers to mark task as submitted with account info
+func MarkTaskSubmitted(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "TESTER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only testers can mark task as submitted"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var req struct {
+		SubmittedAccount string `json:"submittedAccount" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Submitted account is required"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Assign tester if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.TesterID == nil {
+		submission.TesterID = &userID
+	}
+
+	// Update submission
+	submission.SubmittedAccount = &req.SubmittedAccount
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task marked as submitted successfully", "submission": submission})
+}
+
+// MarkEligibleForManualReview allows testers to mark task as eligible with task link
+func MarkEligibleForManualReview(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "TESTER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only testers can mark task as eligible"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var req struct {
+		TaskLink string `json:"taskLink" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task link is required"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Assign tester if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.TesterID == nil {
+		submission.TesterID = &userID
+	}
+
+	// Update submission - mark as eligible and assign to reviewer
+	submission.Status = models.ProjectVStatusEligible
+	submission.TaskLink = &req.TaskLink
+
+	// Auto-assign reviewer
+	reviewerID, err := services.AutoAssignReviewer(submissionID)
+	if err == nil && reviewerID != nil {
+		submission.ReviewerID = reviewerID
+	}
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task marked as eligible for manual review successfully", "submission": submission})
+}
+
+// SendTesterFeedback allows testers to send feedback (marks task as REWORK)
+func SendTesterFeedback(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "TESTER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only testers can send feedback"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var req struct {
+		Feedback string `json:"feedback" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Feedback is required"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Assign tester if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.TesterID == nil {
+		submission.TesterID = &userID
+	}
+
+	// Update submission - mark as rework with feedback
+	submission.Status = models.ProjectVStatusRework
+	submission.TesterFeedback = req.Feedback
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Feedback sent successfully", "submission": submission})
+}
+
+// MarkRejected allows reviewers to reject a task with reason
+func MarkRejected(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "REVIEWER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can reject tasks"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var req struct {
+		RejectionReason string `json:"rejectionReason" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Rejection reason is required"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Verify task is in correct status
+	if submission.Status != models.ProjectVStatusEligible && submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
+		return
+	}
+
+	// Assign reviewer if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.ReviewerID == nil {
+		submission.ReviewerID = &userID
+	}
+
+	// Update submission - mark as rejected with reason
+	submission.Status = models.ProjectVStatusRejected
+	submission.RejectionReason = &req.RejectionReason
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Task rejected successfully", "submission": submission})
 }
 
 // Helper function to check if string contains only ASCII characters

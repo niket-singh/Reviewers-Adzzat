@@ -317,6 +317,34 @@ class ApiClient {
     const response = await this.client.delete(`/projectv/submissions/${id}`)
     return response.data
   }
+
+  async markTaskSubmitted(id: string, submittedAccount: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/task-submitted`, {
+      submittedAccount,
+    })
+    return response.data
+  }
+
+  async markEligibleForManualReview(id: string, taskLink: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/eligible`, {
+      taskLink,
+    })
+    return response.data
+  }
+
+  async sendTesterFeedback(id: string, feedback: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/tester-feedback`, {
+      feedback,
+    })
+    return response.data
+  }
+
+  async markRejected(id: string, rejectionReason: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/rejected`, {
+      rejectionReason,
+    })
+    return response.data
+  }
 }
 
 export const apiClient = new ApiClient()
