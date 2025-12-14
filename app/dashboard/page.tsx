@@ -24,7 +24,7 @@ interface Stats {
 }
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -82,6 +82,11 @@ export default function Dashboard() {
     } finally {
       setLoadingStats(false);
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
   };
 
   if (loading || loadingStats) {
@@ -277,10 +282,7 @@ export default function Dashboard() {
             <QuickLink
               title="Logout"
               icon="🚪"
-              onClick={() => {
-                localStorage.removeItem("authToken");
-                router.push("/");
-              }}
+              onClick={handleLogout}
             />
           </div>
         </div>
