@@ -46,10 +46,8 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const connect = useCallback(() => {
     if (!user || typeof window === 'undefined') return
 
-    // Get WebSocket URL from environment or construct it
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL ||
-      (process.env.NEXT_PUBLIC_API_URL?.replace('http', 'ws') + '/ws' ||
-       'ws://localhost:8080/api/ws')
+    // Hardcoded production WebSocket URL
+    const wsUrl = 'wss://reviewers-backend-app.victoriousfield-13acbce7.southeastasia.azurecontainerapps.io/api/ws'
 
     try {
       const token = localStorage.getItem('authToken')

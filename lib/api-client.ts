@@ -4,8 +4,8 @@ class ApiClient {
   private client: AxiosInstance
 
   constructor() {
-    // Ensure API URL has a protocol to prevent ERR_NAME_NOT_RESOLVED errors
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
+    // Hardcoded production backend URL
+    const apiUrl = 'https://reviewers-backend-app.victoriousfield-13acbce7.southeastasia.azurecontainerapps.io/api'
     const baseURL = this.ensureProtocol(apiUrl)
 
     this.client = axios.create({
