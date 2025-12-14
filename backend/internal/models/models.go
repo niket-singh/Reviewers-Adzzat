@@ -31,16 +31,17 @@ const (
 type ProjectVStatus string
 
 const (
-	ProjectVStatusSubmitted        ProjectVStatus = "TASK_SUBMITTED"
-	ProjectVStatusInTesting        ProjectVStatus = "IN_TESTING"
-	ProjectVStatusPendingReview    ProjectVStatus = "PENDING_REVIEW"
-	ProjectVStatusChangesRequested ProjectVStatus = "CHANGES_REQUESTED"
-	ProjectVStatusChangesDone      ProjectVStatus = "CHANGES_DONE"
-	ProjectVStatusFinalChecks      ProjectVStatus = "FINAL_CHECKS"
-	ProjectVStatusApproved         ProjectVStatus = "APPROVED"
-	ProjectVStatusRejected         ProjectVStatus = "REJECTED"
-	ProjectVStatusRework           ProjectVStatus = "REWORK"
-	ProjectVStatusEligible         ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
+	ProjectVStatusSubmitted               ProjectVStatus = "TASK_SUBMITTED"
+	ProjectVStatusInTesting               ProjectVStatus = "IN_TESTING"
+	ProjectVStatusTaskSubmittedToPlatform ProjectVStatus = "TASK_SUBMITTED_TO_PLATFORM"
+	ProjectVStatusPendingReview           ProjectVStatus = "PENDING_REVIEW"
+	ProjectVStatusChangesRequested        ProjectVStatus = "CHANGES_REQUESTED"
+	ProjectVStatusChangesDone             ProjectVStatus = "CHANGES_DONE"
+	ProjectVStatusFinalChecks             ProjectVStatus = "FINAL_CHECKS"
+	ProjectVStatusApproved                ProjectVStatus = "APPROVED"
+	ProjectVStatusRejected                ProjectVStatus = "REJECTED"
+	ProjectVStatusRework                  ProjectVStatus = "REWORK"
+	ProjectVStatusEligible                ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
 )
 
 // User model
@@ -165,6 +166,7 @@ type ProjectVSubmission struct {
 	TesterFeedback     string  `gorm:"type:text" json:"testerFeedback,omitempty"`
 	SubmittedAccount   *string `gorm:"type:text" json:"submittedAccount,omitempty"`
 	TaskLink           *string `gorm:"type:text" json:"taskLink,omitempty"`
+	TaskLinkSubmitted  *string `gorm:"type:text" json:"taskLinkSubmitted,omitempty"`
 
 	// Reviewer workflow fields
 	ReviewerFeedback    string  `gorm:"type:text" json:"reviewerFeedback,omitempty"`

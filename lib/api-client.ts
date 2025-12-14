@@ -318,9 +318,10 @@ class ApiClient {
     return response.data
   }
 
-  async markTaskSubmitted(id: string, submittedAccount: string) {
+  async markTaskSubmitted(id: string, submittedAccount: string, taskLinkSubmitted: string) {
     const response = await this.client.put(`/projectv/submissions/${id}/task-submitted`, {
       submittedAccount,
+      taskLinkSubmitted,
     })
     return response.data
   }
