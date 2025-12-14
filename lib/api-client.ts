@@ -233,6 +233,54 @@ class ApiClient {
     const response = await this.client.get('/admin/audit-logs', { params })
     return response.data
   }
+
+  // Project V
+  async createProjectVSubmission(formData: FormData) {
+    const response = await this.client.post('/projectv/submissions', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return response.data
+  }
+
+  async getProjectVSubmissions(params?: { search?: string }) {
+    const response = await this.client.get('/projectv/submissions', { params })
+    return response.data || []
+  }
+
+  async getProjectVSubmission(id: string) {
+    const response = await this.client.get(`/projectv/submissions/${id}`)
+    return response.data
+  }
+
+  async updateProjectVStatus(id: string, status: string, accountPostedIn?: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/status`, {
+      status,
+      accountPostedIn,
+    })
+    return response.data
+  }
+
+  async markChangesRequested(id: string, feedback: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/changes-requested`, {
+      feedback,
+    })
+    return response.data
+  }
+
+  async markFinalChecks(id: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/final-checks`)
+    return response.data
+  }
+
+  async markChangesDone(id: string) {
+    const response = await this.client.put(`/projectv/submissions/${id}/changes-done`)
+    return response.data
+  }
+
+  async deleteProjectVSubmission(id: string) {
+    const response = await this.client.delete(`/projectv/submissions/${id}`)
+    return response.data
+  }
 }
 
 export const apiClient = new ApiClient()

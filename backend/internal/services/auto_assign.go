@@ -308,3 +308,85 @@ func RedistributeTasks() (int, error) {
 
 	return redistributedCount, nil
 }
+
+// AutoAssignReviewer automatically assigns a Project V submission to the reviewer with the least tasks
+func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
+	// Get all approved reviewers with green light ON (active)
+	var reviewers []models.User
+	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
+		models.RoleReviewer, true, true).Find(&reviewers).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(reviewers) == 0 {
+		// No active reviewers available - task stays without reviewer
+		return nil, nil
+	}
+
+	// Count tasks for each reviewer
+	type ReviewerTaskCount struct {
+		ReviewerID uuid.UUID
+		Count      int64
+	}
+
+	var reviewerCounts []ReviewerTaskCount
+	for _, reviewer := range reviewers {
+		var count int64
+		database.DB.Model(&models.ProjectVSubmission{}).
+			Where("reviewer_id = ? AND status IN ?", reviewer.ID, []string{
+				string(models.ProjectVStatusPendingReview),
+				string(models.ProjectVStatusChangesRequested),
+				string(models.ProjectVStatusChangesDone),
+				string(models.ProjectVStatusFinalChecks),
+			}).
+			Count(&count)
+
+		reviewerCounts = append(reviewerCounts, ReviewerTaskCount{
+			ReviewerID: reviewer.ID,
+			Count:      count,
+		})
+	}
+
+	// Find reviewer with least tasks
+	minCount := reviewerCounts[0].Count
+	selectedReviewerID := reviewerCounts[0].ReviewerID
+
+	for _, rc := range reviewerCounts {
+		if rc.Count < minCount {
+			minCount = rc.Count
+			selectedReviewerID = rc.ReviewerID
+		}
+	}
+
+	// Get submission details for logging
+	var submission models.ProjectVSubmission
+	database.DB.Preload("Contributor").First(&submission, submissionID)
+
+	// Get reviewer details
+	var reviewer models.User
+	database.DB.First(&reviewer, selectedReviewerID)
+
+	// Log the activity
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
+	userName := "System"
+	userRole := "SYSTEM"
+	targetType := "projectv_submission"
+
+	LogActivity(LogActivityParams{
+		Action:      "AUTO_ASSIGN_REVIEWER",
+		Description: "Project V task \"" + submission.Title + "\" auto-assigned to reviewer " + reviewer.Name,
+		UserID:      &userID,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &submissionID,
+		TargetType:  &targetType,
+		Metadata: map[string]interface{}{
+			"reviewerId":      selectedReviewerID.String(),
+			"reviewerName":    reviewer.Name,
+			"contributorName": submission.Contributor.Name,
+		},
+	})
+
+	return &selectedReviewerID, nil
+}

@@ -36,13 +36,17 @@ func CreateProjectVSubmission(c *gin.Context) {
 	}
 
 	// Get form values
+	title := c.PostForm("title")
+	language := c.PostForm("language")
+	category := c.PostForm("category")
+	difficulty := c.PostForm("difficulty")
 	description := c.PostForm("description")
 	githubRepo := c.PostForm("githubRepo")
 	commitHash := c.PostForm("commitHash")
 	issueURL := c.PostForm("issueUrl")
 
 	// Validate required fields
-	if description == "" || githubRepo == "" || commitHash == "" || issueURL == "" {
+	if title == "" || language == "" || category == "" || difficulty == "" || description == "" || githubRepo == "" || commitHash == "" || issueURL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 		return
 	}
@@ -67,6 +71,13 @@ func CreateProjectVSubmission(c *gin.Context) {
 	}
 	defer testPatchFile.Close()
 
+	dockerFile, dockerHeader, err := c.Request.FormFile("dockerfile")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Dockerfile is required"})
+		return
+	}
+	defer dockerFile.Close()
+
 	solutionPatchFile, solutionHeader, err := c.Request.FormFile("solutionPatch")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Solution patch file is required"})
@@ -78,6 +89,12 @@ func CreateProjectVSubmission(c *gin.Context) {
 	testPatchData, err := io.ReadAll(testPatchFile)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read test patch"})
+		return
+	}
+
+	dockerData, err := io.ReadAll(dockerFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read Dockerfile"})
 		return
 	}
 
@@ -94,6 +111,12 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
+	dockerfileURL, err := storage.UploadFile(dockerData, dockerHeader.Filename, "text/plain")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload Dockerfile: %v", err)})
+		return
+	}
+
 	solutionPatchURL, err := storage.UploadFile(solutionPatchData, solutionHeader.Filename, "text/plain")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload solution patch: %v", err)})
@@ -102,11 +125,16 @@ func CreateProjectVSubmission(c *gin.Context) {
 
 	// Create submission record
 	submission := models.ProjectVSubmission{
+		Title:            title,
+		Language:         language,
+		Category:         category,
+		Difficulty:       difficulty,
 		Description:      description,
 		GithubRepo:       githubRepo,
 		CommitHash:       commitHash,
 		IssueURL:         issueURL,
 		TestPatchURL:     testPatchURL,
+		DockerfileURL:    dockerfileURL,
 		SolutionPatchURL: solutionPatchURL,
 		ContributorID:    contributorID,
 		Status:           models.ProjectVStatusSubmitted,
@@ -131,7 +159,7 @@ func GetProjectVSubmissions(c *gin.Context) {
 	userRole := c.GetString("userRole")
 
 	var submissions []models.ProjectVSubmission
-	query := database.DB.Preload("Contributor").Preload("Tester")
+	query := database.DB.Preload("Contributor").Preload("Tester").Preload("Reviewer")
 
 	if userRole == "CONTRIBUTOR" {
 		contributorID, _ := uuid.Parse(userID)
@@ -164,7 +192,7 @@ func GetProjectVSubmission(c *gin.Context) {
 	}
 
 	var submission models.ProjectVSubmission
-	if err := database.DB.Preload("Contributor").Preload("Tester").First(&submission, submissionID).Error; err != nil {
+	if err := database.DB.Preload("Contributor").Preload("Tester").Preload("Reviewer").First(&submission, submissionID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
 		return
 	}
@@ -206,7 +234,10 @@ func UpdateProjectVStatus(c *gin.Context) {
 	// Validate status
 	validStatuses := []string{
 		string(models.ProjectVStatusSubmitted),
-		string(models.ProjectVStatusEligibleManualReview),
+		string(models.ProjectVStatusInTesting),
+		string(models.ProjectVStatusPendingReview),
+		string(models.ProjectVStatusChangesRequested),
+		string(models.ProjectVStatusChangesDone),
 		string(models.ProjectVStatusFinalChecks),
 		string(models.ProjectVStatusApproved),
 		string(models.ProjectVStatusRejected),
@@ -239,6 +270,14 @@ func UpdateProjectVStatus(c *gin.Context) {
 		submission.TesterID = &testerID
 	}
 
+	// If status is PENDING_REVIEW and no reviewer assigned, assign one
+	if req.Status == string(models.ProjectVStatusPendingReview) && submission.ReviewerID == nil {
+		reviewerID, err := services.AutoAssignReviewer(submissionID)
+		if err == nil && reviewerID != nil {
+			submission.ReviewerID = reviewerID
+		}
+	}
+
 	// Update accountPostedIn if provided
 	if req.AccountPostedIn != nil {
 		submission.AccountPostedIn = req.AccountPostedIn
@@ -250,6 +289,148 @@ func UpdateProjectVStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Status updated successfully", "submission": submission})
+}
+
+// MarkChangesRequested allows reviewers to request changes with feedback
+func MarkChangesRequested(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "REVIEWER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can request changes"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var req struct {
+		Feedback string `json:"feedback" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Feedback is required"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Verify task is in correct status
+	if submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
+		return
+	}
+
+	// Assign reviewer if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.ReviewerID == nil {
+		submission.ReviewerID = &userID
+	}
+
+	// Update submission
+	submission.Status = models.ProjectVStatusChangesRequested
+	submission.ReviewerFeedback = req.Feedback
+	submission.HasChangesRequested = true
+	submission.ChangesDone = false
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Changes requested successfully", "submission": submission})
+}
+
+// MarkFinalChecks allows reviewers to mark task for final checks
+func MarkFinalChecks(c *gin.Context) {
+	userRole := c.GetString("userRole")
+	if userRole != "REVIEWER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can mark for final checks"})
+		return
+	}
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Verify task is in correct status
+	if submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
+		return
+	}
+
+	// Assign reviewer if not already assigned
+	userID, _ := uuid.Parse(c.GetString("userId"))
+	if submission.ReviewerID == nil {
+		submission.ReviewerID = &userID
+	}
+
+	// Update submission
+	submission.Status = models.ProjectVStatusFinalChecks
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Marked for final checks successfully", "submission": submission})
+}
+
+// MarkChangesDone allows contributors to mark changes as done
+func MarkChangesDone(c *gin.Context) {
+	userID := c.GetString("userId")
+	userRole := c.GetString("userRole")
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Verify user is the contributor or admin
+	if userRole != "ADMIN" && submission.ContributorID.String() != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this submission"})
+		return
+	}
+
+	// Verify task has changes requested
+	if submission.Status != models.ProjectVStatusChangesRequested {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task does not have changes requested"})
+		return
+	}
+
+	// Update submission - keep the same reviewer
+	submission.Status = models.ProjectVStatusChangesDone
+	submission.ChangesDone = true
+
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Changes marked as done successfully", "submission": submission})
 }
 
 // DeleteProjectVSubmission deletes a Project V submission (contributor can delete their own, admin can delete any)
@@ -278,6 +459,7 @@ func DeleteProjectVSubmission(c *gin.Context) {
 
 	// Delete files from Supabase
 	storage.DeleteFile(submission.TestPatchURL)
+	storage.DeleteFile(submission.DockerfileURL)
 	storage.DeleteFile(submission.SolutionPatchURL)
 
 	// Delete submission

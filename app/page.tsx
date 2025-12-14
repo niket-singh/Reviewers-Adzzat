@@ -35,8 +35,8 @@ export default function Home() {
       if (isSignUp) {
         await signup(formData.email, formData.password, formData.name, formData.role)
 
-        // Check if reviewer - they need approval
-        if (formData.role === 'TESTER') {
+        // Check if tester or reviewer - they need approval
+        if (formData.role === 'TESTER' || formData.role === 'REVIEWER') {
           showToast('Account created! Waiting for admin approval.', 'success')
           setSubmitting(false)
           return
@@ -179,12 +179,13 @@ export default function Home() {
                 className="w-full px-5 py-4 rounded-xl border-2 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 border-gray-700 text-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 focus:glow"
               >
                 <option value="CONTRIBUTOR">Contributor</option>
+                <option value="TESTER">Tester</option>
                 <option value="REVIEWER">Reviewer</option>
               </select>
-              {formData.role === 'TESTER' && (
+              {(formData.role === 'TESTER' || formData.role === 'REVIEWER') && (
                 <p className="text-xs mt-3 flex items-center gap-2 text-gray-400">
                   <span className="text-yellow-500">⚠️</span>
-                  Reviewer accounts require admin approval
+                  {formData.role === 'TESTER' ? 'Tester' : 'Reviewer'} accounts require admin approval
                 </p>
               )}
             </div>
