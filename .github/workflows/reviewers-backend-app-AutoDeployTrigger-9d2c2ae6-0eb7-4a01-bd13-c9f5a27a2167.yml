@@ -34,16 +34,13 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          appSourcePath: ${{ github.workspace }}/backend
+          dockerfilePath: backend/Dockerfile
           registryUrl: adzzatregistry.azurecr.io
           registryUsername: ${{ secrets.REVIEWERSBACKENDAPP_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.REVIEWERSBACKENDAPP_REGISTRY_PASSWORD }}
           containerAppName: reviewers-backend-app
           resourceGroup: adzzat-reviewers-rg
           imageToBuild: adzzatregistry.azurecr.io/reviewers-backend-app:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
 
 
