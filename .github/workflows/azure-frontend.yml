@@ -32,8 +32,8 @@ jobs:
           action: "upload"
           app_location: "/" # App source code path
           api_location: "" # Api source code path - leave empty
-          output_location: ".next" # Built app content directory
-          app_build_command: "npm run build"
+          output_location: "out" # Next.js static export output folder
+          skip_app_build: false
 
       - name: Deployment complete
         run: |

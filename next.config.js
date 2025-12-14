@@ -5,10 +5,12 @@ const nextConfig = {
       bodySizeLimit: '50mb', // Allows larger file uploads
     },
   },
-  output: 'standalone', // Optimized for Azure deployment
+  output: 'export', // Static export for Azure Static Web Apps
   images: {
-    unoptimized: true, // Required for static export on Azure
+    unoptimized: true, // Required for static export
   },
+  // Disable server-side features for static export
+  trailingSlash: true,
 }
 
 module.exports = nextConfig
