@@ -15,26 +15,47 @@ import (
 func main() {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found, using system environment variables")
+		log.Println("⚠️  No .env file found, using system environment variables")
 	}
 
+	log.Println("🔧 Starting server initialization...")
+
+	// Check required environment variables
+	requiredEnvVars := []string{"DATABASE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "JWT_SECRET"}
+	for _, envVar := range requiredEnvVars {
+		if os.Getenv(envVar) == "" {
+			log.Printf("❌ ERROR: Required environment variable %s is not set", envVar)
+			log.Fatal("Server cannot start without required environment variables")
+		}
+	}
+	log.Println("✓ All required environment variables are set")
+
 	// Connect to database
+	log.Println("🔌 Connecting to database...")
 	if err := database.Connect(); err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		log.Printf("❌ Failed to connect to database: %v", err)
+		log.Fatal("Database connection failed")
 	}
 
 	// Run migrations
+	log.Println("🔄 Running database migrations...")
 	if err := database.AutoMigrate(); err != nil {
-		log.Fatal("Failed to run migrations:", err)
+		log.Printf("❌ Failed to run migrations: %v", err)
+		log.Fatal("Migration failed")
 	}
 
 	// Initialize storage
+	log.Println("☁️  Initializing Supabase storage...")
 	if err := storage.InitStorage(); err != nil {
-		log.Fatal("Failed to initialize storage:", err)
+		log.Printf("❌ Failed to initialize storage: %v", err)
+		log.Fatal("Storage initialization failed")
 	}
+	log.Println("✓ Supabase storage initialized")
 
 	// Initialize services
+	log.Println("🔌 Initializing WebSocket service...")
 	handlers.InitWebSocket()
+	log.Println("✓ WebSocket service initialized")
 
 	// Setup router
 	router := setupRouter()
@@ -46,8 +67,12 @@ func main() {
 	}
 
 	log.Printf("🚀 Server starting on port %s", port)
+	log.Printf("🌍 CORS Origins: %s", os.Getenv("CORS_ORIGINS"))
+	log.Println("✅ Server is ready to accept connections!")
+
 	if err := router.Run(":" + port); err != nil {
-		log.Fatal("Failed to start server:", err)
+		log.Printf("❌ Failed to start server: %v", err)
+		log.Fatal("Server startup failed")
 	}
 }
 
