@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/components/ToastContainer";
 import { apiClient } from "@/lib/api-client";
+import Breadcrumb from "@/components/Breadcrumb";
 
 interface Submission {
   id: string;
@@ -25,22 +26,9 @@ interface Submission {
   changesDone: boolean;
   accountPostedIn?: string;
   createdAt: string;
-  contributor?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  tester?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  reviewer?: {
-    id: string;
-    name: string;
-    email: string;
-  };
-  // Processing fields
+  contributor?: { id: string; name: string; email: string };
+  tester?: { id: string; name: string; email: string };
+  reviewer?: { id: string; name: string; email: string };
   processingLogs?: string;
   processingComplete?: boolean;
   cloneSuccess?: boolean;
@@ -88,6 +76,8 @@ export default function ProjectVContributor() {
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -109,12 +99,17 @@ export default function ProjectVContributor() {
     }
   }, [user, loading, router, fetchSubmissions]);
 
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchSubmissions();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [fetchSubmissions]);
+
   const validateDescription = (text: string): boolean => {
-    // Check for non-ASCII characters
     for (let i = 0; i < text.length; i++) {
-      if (text.charCodeAt(i) > 127) {
-        return false;
-      }
+      if (text.charCodeAt(i) > 127) return false;
     }
     return true;
   };
@@ -122,25 +117,16 @@ export default function ProjectVContributor() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate description
     if (!validateDescription(formData.description)) {
       showToast("Description must contain only ASCII characters", "error");
       return;
     }
 
-    // Validate all fields are filled
     if (
-      !formData.title ||
-      !formData.language ||
-      !formData.category ||
-      !formData.difficulty ||
-      !formData.description ||
-      !formData.githubRepo ||
-      !formData.commitHash ||
-      !formData.issueUrl ||
-      !files.testPatch ||
-      !files.dockerfile ||
-      !files.solutionPatch
+      !formData.title || !formData.language || !formData.category ||
+      !formData.difficulty || !formData.description || !formData.githubRepo ||
+      !formData.commitHash || !formData.issueUrl || !files.testPatch ||
+      !files.dockerfile || !files.solutionPatch
     ) {
       showToast("All fields are required", "error");
       return;
@@ -163,31 +149,16 @@ export default function ProjectVContributor() {
       formDataToSend.append("solutionPatch", files.solutionPatch);
 
       await apiClient.createProjectVSubmission(formDataToSend);
+      showToast("✨ Submission created successfully!", "success");
 
-      showToast("Submission created successfully!", "success");
-
-      // Reset form
       setFormData({
-        title: "",
-        language: "",
-        category: "",
-        difficulty: "Easy",
-        description: "",
-        githubRepo: "",
-        commitHash: "",
-        issueUrl: "",
+        title: "", language: "", category: "", difficulty: "Easy",
+        description: "", githubRepo: "", commitHash: "", issueUrl: "",
       });
-      setFiles({
-        testPatch: null,
-        dockerfile: null,
-        solutionPatch: null,
-      });
-
-      // Refresh submissions
+      setFiles({ testPatch: null, dockerfile: null, solutionPatch: null });
       fetchSubmissions();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to create submission";
-      showToast(errorMessage, "error");
+      showToast(error.response?.data?.error || "Failed to create submission", "error");
     } finally {
       setSubmitting(false);
     }
@@ -197,21 +168,18 @@ export default function ProjectVContributor() {
     setProcessing(true);
     try {
       await apiClient.markChangesDone(submissionId);
-      showToast("Marked as changes done successfully", "success");
+      showToast("✅ Marked as changes done successfully", "success");
       setSelectedSubmission(null);
       fetchSubmissions();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to mark changes as done";
-      showToast(errorMessage, "error");
+      showToast(error.response?.data?.error || "Failed to mark changes as done", "error");
     } finally {
       setProcessing(false);
     }
   };
 
   const handleDeleteSubmission = async (submissionId: string) => {
-    if (!confirm("Are you sure you want to delete this submission?")) {
-      return;
-    }
+    if (!confirm("Are you sure you want to delete this submission?")) return;
 
     setProcessing(true);
     try {
@@ -220,119 +188,192 @@ export default function ProjectVContributor() {
       setSelectedSubmission(null);
       fetchSubmissions();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.error || "Failed to delete submission";
-      showToast(errorMessage, "error");
+      showToast(error.response?.data?.error || "Failed to delete submission", "error");
     } finally {
       setProcessing(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "TASK_SUBMITTED":
-        return "bg-blue-100 text-blue-800 border-blue-300";
-      case "IN_TESTING":
-        return "bg-yellow-100 text-yellow-800 border-yellow-300";
-      case "PENDING_REVIEW":
-        return "bg-purple-100 text-purple-800 border-purple-300";
-      case "CHANGES_REQUESTED":
-        return "bg-orange-100 text-orange-800 border-orange-300";
-      case "CHANGES_DONE":
-        return "bg-indigo-100 text-indigo-800 border-indigo-300";
-      case "FINAL_CHECKS":
-        return "bg-cyan-100 text-cyan-800 border-cyan-300";
-      case "APPROVED":
-        return "bg-green-100 text-green-800 border-green-300";
-      case "REJECTED":
-        return "bg-red-100 text-red-800 border-red-300";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-300";
-    }
+  const handleLogout = async () => {
+    await useAuth().logout();
+    router.push("/");
   };
+
+  const getStatusColor = (status: string) => {
+    const statusMap: Record<string, string> = {
+      TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
+      IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
+      PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
+      CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
+      CHANGES_DONE: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
+      FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
+      APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
+      REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
+    };
+    return statusMap[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const filteredSubmissions = submissions.filter(s =>
+    searchQuery ? (
+      s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.language.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.category.toLowerCase().includes(searchQuery.toLowerCase())
+    ) : true
+  );
 
   if (loading || loadingSubmissions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-          <p className="mt-4 text-gray-300">Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-semibold text-gray-300">Loading amazing content...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-white">Project V - Contributor</h1>
-            <p className="text-gray-300 mt-1">Submit your task solutions</p>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
+      {/* Animated Background Circles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      {/* Header */}
+      <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 animate-slide-in-left">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 flex items-center justify-center shadow-xl animate-pulse-glow">
+                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+              </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-purple-400 via-pink-400 to-red-400 bg-clip-text text-transparent">
+                  Project V - Contributor Hub
+                </h1>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Advanced Task Submission</p>
+              </div>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex gap-3 animate-slide-in-right">
+              <button
+                onClick={() => router.push('/select-project')}
+                className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
+              >
+                Switch Project
+              </button>
+              <button
+                onClick={() => router.push('/profile')}
+                className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600"
+              >
+                Profile
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
+              >
+                Logout
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
-          <button
-            onClick={() => router.push("/select-project")}
-            className="px-4 py-2 text-gray-300 hover:text-white font-medium"
-          >
-            ← Back to Projects
-          </button>
+
+          {/* Mobile Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
+                className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600">
+                Switch Project
+              </button>
+              <button onClick={() => { router.push('/profile'); setMobileMenuOpen(false); }}
+                className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600">
+                Profile
+              </button>
+              <button onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                className="w-full px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md">
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
+        {/* Breadcrumb */}
+        <Breadcrumb />
+
+        {/* Search Bar */}
+        <div className="mb-8 animate-slide-up">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="🔍 Search submissions by title, language, or category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
+            />
+            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
         </div>
 
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Submission Form */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-4">New Submission</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in hover-lift">
+            <h2 className="text-2xl font-black mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+              ✨ New Submission
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Title *
-                </label>
-                <input
-                  type="text"
-                  value={formData.title}
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Title *</label>
+                <input type="text" required value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Fix authentication bug in login"
-                />
+                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
+                  placeholder="e.g., Fix authentication bug in login" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Language *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.language}
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Language *</label>
+                  <input type="text" required value={formData.language}
                     onChange={(e) => setFormData({ ...formData, language: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., JavaScript, Python"
-                  />
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
+                    placeholder="e.g., Python, JavaScript" />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
-                    Category *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.category}
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Category *</label>
+                  <input type="text" required value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="e.g., Backend, Frontend"
-                  />
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
+                    placeholder="e.g., Backend, Frontend" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Difficulty *
-                </label>
-                <select
-                  value={formData.difficulty}
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">Difficulty *</label>
+                <select value={formData.difficulty}
                   onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
+                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium">
                   <option value="Easy">Easy</option>
                   <option value="Medium">Medium</option>
                   <option value="Hard">Hard</option>
@@ -340,116 +381,93 @@ export default function ProjectVContributor() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Description (ASCII only) *
-                </label>
-                <textarea
-                  value={formData.description}
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">Description (ASCII only) *</label>
+                <textarea required value={formData.description} rows={4}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Describe the task and solution..."
-                />
+                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium"
+                  placeholder="Describe the task and your solution..." />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  GitHub Repository URL *
-                </label>
-                <input
-                  type="url"
-                  value={formData.githubRepo}
+                <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Repository URL *</label>
+                <input type="url" required value={formData.githubRepo}
                   onChange={(e) => setFormData({ ...formData, githubRepo: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://github.com/username/repo"
-                />
+                  className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium font-mono text-sm"
+                  placeholder="https://github.com/username/repo" />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Commit Hash *
-                </label>
-                <input
-                  type="text"
-                  value={formData.commitHash}
-                  onChange={(e) => setFormData({ ...formData, commitHash: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
-                  placeholder="e.g., abc123def456..."
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Commit Hash *</label>
+                  <input type="text" required value={formData.commitHash}
+                    onChange={(e) => setFormData({ ...formData, commitHash: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-mono text-sm"
+                    placeholder="abc123def456..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL *</label>
+                  <input type="url" required value={formData.issueUrl}
+                    onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium text-sm"
+                    placeholder="https://github.com/.../issues/123" />
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  GitHub Issue URL *
-                </label>
-                <input
-                  type="url"
-                  value={formData.issueUrl}
-                  onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="https://github.com/username/repo/issues/123"
-                />
+              <div className="space-y-4 pt-2">
+                <FileInput label="Test Patch" file={files.testPatch}
+                  onChange={(file) => setFiles({ ...files, testPatch: file })} />
+                <FileInput label="Dockerfile" file={files.dockerfile}
+                  onChange={(file) => setFiles({ ...files, dockerfile: file })} />
+                <FileInput label="Solution Patch" file={files.solutionPatch}
+                  onChange={(file) => setFiles({ ...files, solutionPatch: file })} />
               </div>
 
-              <div className="space-y-3">
-                <FileInput
-                  label="Test Patch"
-                  file={files.testPatch}
-                  onChange={(file) => setFiles({ ...files, testPatch: file })}
-                />
-                <FileInput
-                  label="Dockerfile"
-                  file={files.dockerfile}
-                  onChange={(file) => setFiles({ ...files, dockerfile: file })}
-                />
-                <FileInput
-                  label="Solution Patch"
-                  file={files.solutionPatch}
-                  onChange={(file) => setFiles({ ...files, solutionPatch: file })}
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+              <button type="submit" disabled={submitting}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-black text-lg rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed animate-pulse-glow">
                 {submitting ? "Submitting..." : "Submit Task"}
               </button>
             </form>
           </div>
 
           {/* Submissions List */}
-          <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-4">My Submissions</h2>
-            <div className="space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto">
-              {submissions.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">No submissions yet</p>
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in" style={{ animationDelay: '0.1s' }}>
+            <h2 className="text-2xl font-black mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              📋 My Submissions ({filteredSubmissions.length})
+            </h2>
+            <div className="space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto custom-scrollbar">
+              {filteredSubmissions.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📝</div>
+                  <p className="text-gray-400 font-medium">No submissions yet</p>
+                  <p className="text-gray-500 text-sm mt-2">Create your first submission to get started!</p>
+                </div>
               ) : (
-                submissions.map((submission) => (
-                  <div
-                    key={submission.id}
-                    className="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:bg-gray-650 transition-colors cursor-pointer"
+                filteredSubmissions.map((submission) => (
+                  <div key={submission.id}
                     onClick={() => setSelectedSubmission(submission)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-white">{submission.title}</h3>
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
-                          submission.status
-                        )}`}
-                      >
+                    className="bg-gray-700/50 backdrop-blur-sm border-2 border-gray-600/50 rounded-2xl p-5 hover:bg-gray-700/70 hover:border-purple-500/50 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover-lift">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-bold text-white text-lg">{submission.title}</h3>
+                      <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full shadow-lg ${getStatusColor(submission.status)}`}>
                         {submission.status.replace(/_/g, " ")}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-300">
-                      {submission.language} • {submission.difficulty}
+                    <div className="flex flex-wrap gap-2 text-sm mb-2">
+                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg font-semibold border border-blue-500/30">
+                        {submission.language}
+                      </span>
+                      <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg font-semibold border border-purple-500/30">
+                        {submission.category}
+                      </span>
+                      <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-lg font-semibold border border-pink-500/30">
+                        {submission.difficulty}
+                      </span>
                     </div>
-                    <div className="text-xs text-gray-400 mt-2">
-                      {new Date(submission.createdAt).toLocaleDateString()}
+                    <div className="text-xs text-gray-400 font-medium mt-3">
+                      📅 {new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
                     {submission.status === "CHANGES_REQUESTED" && (
-                      <div className="mt-2 text-xs text-orange-400 font-semibold">
+                      <div className="mt-3 px-3 py-2 bg-orange-500/20 border border-orange-500/40 rounded-lg text-xs text-orange-300 font-bold">
                         ⚠️ Changes requested by reviewer
                       </div>
                     )}
@@ -462,16 +480,14 @@ export default function ProjectVContributor() {
 
         {/* Submission Details Modal */}
         {selectedSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-white">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Submission Details
                 </h3>
-                <button
-                  onClick={() => setSelectedSubmission(null)}
-                  className="text-gray-400 hover:text-white"
-                >
+                <button onClick={() => setSelectedSubmission(null)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
@@ -479,139 +495,97 @@ export default function ProjectVContributor() {
               </div>
 
               <div className="space-y-6">
-                {/* Status */}
+                {/* Title & Status */}
                 <div>
-                  <h4 className="font-semibold text-gray-300 mb-2">Status:</h4>
-                  <span
-                    className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(
-                      selectedSubmission.status
-                    )}`}
-                  >
+                  <h4 className="text-lg font-bold text-white mb-3">{selectedSubmission.title}</h4>
+                  <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-lg ${getStatusColor(selectedSubmission.status)}`}>
                     {selectedSubmission.status.replace(/_/g, " ")}
                   </span>
                 </div>
 
-                {/* Repository */}
-                <div>
-                  <h4 className="font-semibold text-gray-300">Repository:</h4>
-                  <a
-                    href={selectedSubmission.githubRepo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    {selectedSubmission.githubRepo}
-                  </a>
+                {/* Metadata Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
+                    <div className="text-xs text-gray-400 font-semibold mb-1">Language</div>
+                    <div className="text-white font-bold">{selectedSubmission.language}</div>
+                  </div>
+                  <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
+                    <div className="text-xs text-gray-400 font-semibold mb-1">Category</div>
+                    <div className="text-white font-bold">{selectedSubmission.category}</div>
+                  </div>
+                  <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
+                    <div className="text-xs text-gray-400 font-semibold mb-1">Difficulty</div>
+                    <div className="text-white font-bold">{selectedSubmission.difficulty}</div>
+                  </div>
                 </div>
 
                 {/* Description */}
-                <div>
-                  <h4 className="font-semibold text-gray-300">Description:</h4>
-                  <p className="text-gray-200">
-                    {selectedSubmission.description}
-                  </p>
+                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                  <h4 className="font-bold text-gray-200 mb-2">Description:</h4>
+                  <p className="text-gray-300 leading-relaxed">{selectedSubmission.description}</p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold text-gray-300">
-                      Commit Hash:
-                    </h4>
-                    <code className="text-sm bg-gray-900 text-gray-200 px-2 py-1 rounded border border-gray-600">
-                      {selectedSubmission.commitHash}
-                    </code>
+                {/* GitHub Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-gray-200 mb-2">Repository:</h4>
+                    <a href={selectedSubmission.githubRepo} target="_blank" rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 text-sm break-all hover:underline font-medium">
+                      {selectedSubmission.githubRepo}
+                    </a>
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-gray-300">Issue:</h4>
-                    <a
-                      href={selectedSubmission.issueUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-yellow-400 hover:underline text-sm"
-                    >
-                      View Issue
+                  <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-gray-200 mb-2">Issue:</h4>
+                    <a href={selectedSubmission.issueUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-yellow-400 hover:text-yellow-300 text-sm break-all hover:underline font-medium">
+                      View Issue →
                     </a>
                   </div>
                 </div>
 
-                <div>
-                  <h4 className="font-semibold text-white mb-2">
-                    Processing Status:
-                  </h4>
+                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                  <h4 className="font-bold text-gray-200 mb-2">Commit Hash:</h4>
+                  <code className="text-sm bg-gray-900/70 text-green-400 px-3 py-2 rounded-lg border border-gray-600 font-mono inline-block">
+                    {selectedSubmission.commitHash}
+                  </code>
+                </div>
+
+                {/* Processing Status */}
+                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                  <h4 className="font-bold text-white mb-4 text-lg">🔄 Processing Pipeline:</h4>
                   <div className="space-y-2">
-                    <StatusItem
-                      label="1. Clone Repository"
-                      success={selectedSubmission.cloneSuccess}
-                      error={selectedSubmission.cloneError}
-                    />
-                    <StatusItem
-                      label="2. Apply Test Patch"
-                      success={selectedSubmission.testPatchSuccess}
-                      error={selectedSubmission.testPatchError}
-                    />
-                    <StatusItem
-                      label="3. Build Docker"
-                      success={selectedSubmission.dockerBuildSuccess}
-                      error={selectedSubmission.dockerBuildError}
-                    />
-                    <StatusItem
-                      label="4. Run Base Tests"
-                      success={selectedSubmission.baseTestSuccess}
-                      error={selectedSubmission.baseTestError}
-                    />
-                    <StatusItem
-                      label="5. Run New Tests (should fail)"
-                      success={selectedSubmission.newTestSuccess}
-                      error={selectedSubmission.newTestError}
-                    />
-                    <StatusItem
-                      label="6. Apply Solution Patch"
-                      success={selectedSubmission.solutionPatchSuccess}
-                      error={selectedSubmission.solutionPatchError}
-                    />
-                    <StatusItem
-                      label="7. Final Base Tests"
-                      success={selectedSubmission.finalBaseTestSuccess}
-                      error={selectedSubmission.finalBaseTestError}
-                    />
-                    <StatusItem
-                      label="8. Final New Tests"
-                      success={selectedSubmission.finalNewTestSuccess}
-                      error={selectedSubmission.finalNewTestError}
-                    />
+                    <ProcessStep label="1. Clone Repository" success={selectedSubmission.cloneSuccess} error={selectedSubmission.cloneError} />
+                    <ProcessStep label="2. Apply Test Patch" success={selectedSubmission.testPatchSuccess} error={selectedSubmission.testPatchError} />
+                    <ProcessStep label="3. Build Docker" success={selectedSubmission.dockerBuildSuccess} error={selectedSubmission.dockerBuildError} />
+                    <ProcessStep label="4. Run Base Tests" success={selectedSubmission.baseTestSuccess} error={selectedSubmission.baseTestError} />
+                    <ProcessStep label="5. Run New Tests" success={selectedSubmission.newTestSuccess} error={selectedSubmission.newTestError} />
+                    <ProcessStep label="6. Apply Solution Patch" success={selectedSubmission.solutionPatchSuccess} error={selectedSubmission.solutionPatchError} />
+                    <ProcessStep label="7. Final Base Tests" success={selectedSubmission.finalBaseTestSuccess} error={selectedSubmission.finalBaseTestError} />
+                    <ProcessStep label="8. Final New Tests" success={selectedSubmission.finalNewTestSuccess} error={selectedSubmission.finalNewTestError} />
                   </div>
                 </div>
 
                 {selectedSubmission.processingLogs && (
-                  <div>
-                    <h4 className="font-semibold text-white mb-2">
-                      Processing Logs:
-                    </h4>
-                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto border border-gray-700">
+                  <div className="bg-gray-900/70 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-white mb-3 text-lg">📜 Processing Logs:</h4>
+                    <pre className="text-green-400 text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono leading-relaxed custom-scrollbar">
                       {selectedSubmission.processingLogs}
                     </pre>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="border-t border-gray-700 pt-4 flex gap-3">
+                <div className="flex gap-3 pt-4 border-t border-gray-700">
                   {selectedSubmission.status === "CHANGES_REQUESTED" && (
-                    <button
-                      onClick={() => handleMarkChangesDone(selectedSubmission.id)}
-                      disabled={processing}
-                      className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {processing ? "Processing..." : "Mark Changes as Done"}
+                    <button onClick={() => handleMarkChangesDone(selectedSubmission.id)} disabled={processing}
+                      className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                      {processing ? "Processing..." : "✅ Mark Changes as Done"}
                     </button>
                   )}
-                  {(selectedSubmission.status === "TASK_SUBMITTED" ||
-                    selectedSubmission.status === "CHANGES_REQUESTED") && (
-                    <button
-                      onClick={() => handleDeleteSubmission(selectedSubmission.id)}
-                      disabled={processing}
-                      className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Delete
+                  {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "CHANGES_REQUESTED") && (
+                    <button onClick={() => handleDeleteSubmission(selectedSubmission.id)} disabled={processing}
+                      className="px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                      🗑️ Delete
                     </button>
                   )}
                 </div>
@@ -624,71 +598,42 @@ export default function ProjectVContributor() {
   );
 }
 
-function FileInput({
-  label,
-  file,
-  onChange,
-}: {
-  label: string;
-  file: File | null;
-  onChange: (file: File | null) => void;
-}) {
+function FileInput({ label, file, onChange }: { label: string; file: File | null; onChange: (file: File | null) => void }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1">
-        {label} *
-      </label>
-      <input
-        type="file"
-        onChange={(e) => {
-          const selectedFile = e.target.files?.[0] || null;
-          onChange(selectedFile);
-        }}
-        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-      />
+      <label className="block text-sm font-bold mb-2.5 text-gray-200">{label} *</label>
+      <div className="relative">
+        <input type="file" required onChange={(e) => onChange(e.target.files?.[0] || null)}
+          className="w-full px-5 py-4 bg-gray-900/50 border-2 border-gray-700 text-white rounded-xl transition-all duration-300 focus:scale-[1.02] focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gradient-to-r file:from-purple-600 file:to-pink-600 file:text-white hover:file:from-purple-700 hover:file:to-pink-700 file:transition-all file:duration-300 file:cursor-pointer" />
+      </div>
       {file && (
-        <p className="mt-1 text-sm text-gray-400">
-          Selected: {file.name}
+        <p className="mt-2 text-sm text-green-400 font-semibold flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          {file.name}
         </p>
       )}
     </div>
   );
 }
 
-function StatusItem({
-  label,
-  success,
-  error,
-}: {
-  label: string;
-  success?: boolean;
-  error?: string;
-}) {
+function ProcessStep({ label, success, error }: { label: string; success?: boolean; error?: string }) {
   return (
-    <div
-      className={`flex items-start justify-between p-3 rounded-lg border ${
-        success
-          ? "bg-green-900 bg-opacity-30 border-green-700"
-          : error
-          ? "bg-red-900 bg-opacity-30 border-red-700"
-          : "bg-gray-700 border-gray-600"
-      }`}
-    >
-      <span className="text-sm text-gray-200 font-medium">{label}</span>
-      <div className="flex items-center">
+    <div className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all duration-300 ${
+      success ? "bg-green-500/10 border-green-500/30" : error ? "bg-red-500/10 border-red-500/30" : "bg-gray-600/20 border-gray-600/30"
+    }`}>
+      <span className="text-sm text-gray-200 font-semibold">{label}</span>
+      <div className="flex items-center gap-2">
         {success ? (
-          <span className="text-green-400 font-bold text-lg">✓</span>
+          <span className="text-green-400 font-bold text-xl">✓</span>
         ) : error ? (
-          <div className="flex flex-col items-end">
-            <span className="text-red-400 font-bold text-lg">✗</span>
-            {error && (
-              <span className="text-xs text-red-300 mt-1 max-w-xs text-right">
-                {error}
-              </span>
-            )}
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-red-400 font-bold text-xl">✗</span>
+            {error && <span className="text-xs text-red-300 max-w-xs text-right">{error}</span>}
           </div>
         ) : (
-          <span className="text-gray-400 text-lg">⏳</span>
+          <span className="text-gray-400 text-xl animate-pulse">⏳</span>
         )}
       </div>
     </div>
