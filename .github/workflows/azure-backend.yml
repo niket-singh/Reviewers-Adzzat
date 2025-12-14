@@ -2,7 +2,10 @@ name: Build and Push Backend to Azure Container Registry
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - master
+      - 'claude/**'
     paths:
       - 'backend/**'
       - '.github/workflows/azure-backend.yml'
