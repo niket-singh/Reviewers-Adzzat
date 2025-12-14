@@ -67,13 +67,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 	}
 	defer testPatchFile.Close()
 
-	dockerFile, dockerHeader, err := c.Request.FormFile("dockerfile")
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Dockerfile is required"})
-		return
-	}
-	defer dockerFile.Close()
-
 	solutionPatchFile, solutionHeader, err := c.Request.FormFile("solutionPatch")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Solution patch file is required"})
@@ -85,12 +78,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 	testPatchData, err := io.ReadAll(testPatchFile)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read test patch"})
-		return
-	}
-
-	dockerData, err := io.ReadAll(dockerFile)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read Dockerfile"})
 		return
 	}
 
@@ -107,12 +94,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	dockerfileURL, err := storage.UploadFile(dockerData, dockerHeader.Filename, "text/plain")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload Dockerfile: %v", err)})
-		return
-	}
-
 	solutionPatchURL, err := storage.UploadFile(solutionPatchData, solutionHeader.Filename, "text/plain")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload solution patch: %v", err)})
@@ -126,7 +107,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 		CommitHash:       commitHash,
 		IssueURL:         issueURL,
 		TestPatchURL:     testPatchURL,
-		DockerfileURL:    dockerfileURL,
 		SolutionPatchURL: solutionPatchURL,
 		ContributorID:    contributorID,
 		Status:           models.ProjectVStatusSubmitted,
@@ -137,11 +117,10 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	// Start async processing
-	go services.ProcessProjectVSubmission(submission.ID)
+	// No async Docker processing needed
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message": "Submission created successfully. Processing started.",
+		"message": "Submission created successfully.",
 		"id":      submission.ID,
 	})
 }
@@ -152,13 +131,13 @@ func GetProjectVSubmissions(c *gin.Context) {
 	userRole := c.GetString("userRole")
 
 	var submissions []models.ProjectVSubmission
-	query := database.DB.Preload("Contributor").Preload("Reviewer")
+	query := database.DB.Preload("Contributor").Preload("Tester")
 
 	if userRole == "CONTRIBUTOR" {
 		contributorID, _ := uuid.Parse(userID)
 		query = query.Where("contributor_id = ?", contributorID)
 	}
-	// Reviewers and admins see all submissions
+	// Testers and admins see all submissions
 
 	if err := query.Order("created_at DESC").Find(&submissions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch submissions"})
@@ -185,7 +164,7 @@ func GetProjectVSubmission(c *gin.Context) {
 	}
 
 	var submission models.ProjectVSubmission
-	if err := database.DB.Preload("Contributor").Preload("Reviewer").First(&submission, submissionID).Error; err != nil {
+	if err := database.DB.Preload("Contributor").Preload("Tester").First(&submission, submissionID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
 		return
 	}
@@ -193,11 +172,11 @@ func GetProjectVSubmission(c *gin.Context) {
 	c.JSON(http.StatusOK, submission)
 }
 
-// UpdateProjectVStatus updates the status of a Project V submission (reviewer/admin only)
+// UpdateProjectVStatus updates the status of a Project V submission (tester/admin only)
 func UpdateProjectVStatus(c *gin.Context) {
 	userRole := c.GetString("userRole")
-	if userRole != "REVIEWER" && userRole != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers and admins can update status"})
+	if userRole != "TESTER" && userRole != "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Only testers and admins can update status"})
 		return
 	}
 
@@ -252,12 +231,12 @@ func UpdateProjectVStatus(c *gin.Context) {
 		return
 	}
 
-	// Update status and assign reviewer if not already assigned
+	// Update status and assign tester if not already assigned
 	submission.Status = models.ProjectVStatus(req.Status)
 
-	if submission.ReviewerID == nil {
-		reviewerID, _ := uuid.Parse(c.GetString("userId"))
-		submission.ReviewerID = &reviewerID
+	if submission.TesterID == nil {
+		testerID, _ := uuid.Parse(c.GetString("userId"))
+		submission.TesterID = &testerID
 	}
 
 	// Update accountPostedIn if provided
@@ -299,7 +278,6 @@ func DeleteProjectVSubmission(c *gin.Context) {
 
 	// Delete files from Supabase
 	storage.DeleteFile(submission.TestPatchURL)
-	storage.DeleteFile(submission.DockerfileURL)
 	storage.DeleteFile(submission.SolutionPatchURL)
 
 	// Delete submission

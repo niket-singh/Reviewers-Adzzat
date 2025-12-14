@@ -211,7 +211,7 @@ export default function AdminDashboard() {
 
   const handleApproveReviewer = async (userId: string) => {
     try {
-      await apiClient.approveReviewer(userId)
+      await apiClient.approveTester(userId)
       fetchData()
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to approve reviewer', 'error')
@@ -236,7 +236,7 @@ export default function AdminDashboard() {
   }
 
   const handleSwitchRole = async (userId: string, currentRole: string) => {
-    const roles = ['CONTRIBUTOR', 'REVIEWER', 'ADMIN']
+    const roles = ['CONTRIBUTOR', 'TESTER', 'ADMIN']
     const roleOptions = roles.filter(r => r !== currentRole).join(', ')
 
     const newRole = prompt(`Switch role to (${roleOptions}):`)?.toUpperCase()
@@ -784,7 +784,7 @@ export default function AdminDashboard() {
                                 <span className="font-semibold">Account Posted:</span> {review.accountPostedIn}
                               </p>
                             )}
-                            <p className="text-xs text-gray-500">by {review.reviewer.name}</p>
+                            <p className="text-xs text-gray-500">by {review.tester.name}</p>
                           </div>
                         ))}
                       </div>
@@ -833,7 +833,7 @@ export default function AdminDashboard() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {user.role === 'REVIEWER' ? (
+                        {user.role === 'TESTER' ? (
                           user.isApproved ? (
                             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
                               Approved
@@ -850,7 +850,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {user.role === 'REVIEWER' && user.isApproved ? (
+                        {user.role === 'TESTER' && user.isApproved ? (
                           <div className="flex items-center gap-2">
                             <div className={`w-3 h-3 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
                             <span className={`text-xs font-semibold ${user.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
@@ -866,7 +866,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex gap-2 justify-end">
-                          {user.role === 'REVIEWER' && !user.isApproved && (
+                          {user.role === 'TESTER' && !user.isApproved && (
                             <button
                               onClick={() => handleApproveReviewer(user.id)}
                               className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
@@ -874,7 +874,7 @@ export default function AdminDashboard() {
                               Approve
                             </button>
                           )}
-                          {user.role === 'REVIEWER' && user.isApproved && (
+                          {user.role === 'TESTER' && user.isApproved && (
                             <button
                               onClick={() => handleToggleGreenLight(user.id, user.name, user.isGreenLight)}
                               className={`px-3 py-1 rounded transition-colors ${
@@ -1014,25 +1014,25 @@ export default function AdminDashboard() {
                   <tbody className="divide-y divide-gray-200">
                     {stats.reviewers && stats.reviewers.length > 0 ? (
                       stats.reviewers.map((reviewer) => (
-                        <tr key={reviewer.userId} className={reviewer.isGreenLight ? '' : 'bg-gray-50'}>
-                          <td className="px-4 py-3 text-sm text-gray-800">{reviewer.name}</td>
+                        <tr key={tester.userId} className={tester.isGreenLight ? '' : 'bg-gray-50'}>
+                          <td className="px-4 py-3 text-sm text-gray-800">{tester.name}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${reviewer.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                              <span className={`text-xs font-semibold ${reviewer.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
-                                {reviewer.isGreenLight ? 'Active' : 'Inactive'}
+                              <div className={`w-3 h-3 rounded-full ${tester.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                              <span className={`text-xs font-semibold ${tester.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
+                                {tester.isGreenLight ? 'Active' : 'Inactive'}
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.tasksInStack}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.reviewedCount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{tester.tasksInStack}</td>
+                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{tester.reviewedCount}</td>
                           <td className="px-4 py-3 text-sm text-right">
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                              reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
-                              reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
+                              tester.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
+                              tester.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-green-100 text-green-800'
                             }`}>
-                              {reviewer.currentWorkload} active
+                              {tester.currentWorkload} active
                             </span>
                           </td>
                         </tr>

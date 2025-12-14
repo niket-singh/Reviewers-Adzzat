@@ -66,35 +66,35 @@ func GetStats(c *gin.Context) {
 		})
 	}
 
-	// Get all reviewers with stats
-	var reviewers []models.User
-	database.DB.Where("role = ?", models.RoleReviewer).Find(&reviewers)
+	// Get all testers with stats
+	var testers []models.User
+	database.DB.Where("role = ?", models.RoleTester).Find(&testers)
 
-	var reviewerStats []gin.H
-	for _, reviewer := range reviewers {
+	var testerStats []gin.H
+	for _, tester := range testers {
 		var assignedTasks, pendingReview, eligible, approved, reviewed int64
-		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ?", reviewer.ID).Count(&assignedTasks)
-		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status IN ?", reviewer.ID, []string{
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ?", tester.ID).Count(&assignedTasks)
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status IN ?", tester.ID, []string{
 			string(models.StatusPending), string(models.StatusClaimed),
 		}).Count(&pendingReview)
-		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", reviewer.ID, models.StatusEligible).Count(&eligible)
-		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", reviewer.ID, models.StatusApproved).Count(&approved)
-		database.DB.Model(&models.Review{}).Where("reviewer_id = ?", reviewer.ID).Count(&reviewed)
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", tester.ID, models.StatusEligible).Count(&eligible)
+		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", tester.ID, models.StatusApproved).Count(&approved)
+		database.DB.Model(&models.Review{}).Where("tester_id = ?", tester.ID).Count(&reviewed)
 
 		// Get assigned tasks
 		var tasks []models.Submission
-		database.DB.Where("claimed_by_id = ?", reviewer.ID).
+		database.DB.Where("claimed_by_id = ?", tester.ID).
 			Select("id, title, status, assigned_at").
 			Order("assigned_at DESC").
 			Find(&tasks)
 
-		reviewerStats = append(reviewerStats, gin.H{
-			"userId":          reviewer.ID,
-			"name":            reviewer.Name,
-			"email":           reviewer.Email,
-			"isApproved":      reviewer.IsApproved,
-			"isGreenLight":    reviewer.IsGreenLight,
-			"joinedAt":        reviewer.CreatedAt,
+		testerStats = append(testerStats, gin.H{
+			"userId":          tester.ID,
+			"name":            tester.Name,
+			"email":           tester.Email,
+			"isApproved":      tester.IsApproved,
+			"isGreenLight":    tester.IsGreenLight,
+			"joinedAt":        tester.CreatedAt,
 			"tasksInStack":    assignedTasks,
 			"pendingReview":   pendingReview,
 			"eligible":        eligible,
@@ -106,14 +106,14 @@ func GetStats(c *gin.Context) {
 	}
 
 	// Overall platform stats
-	var totalUsers, totalContributors, totalReviewers, approvedReviewers, pendingReviewers, activeReviewers, inactiveReviewers, totalSubmissions, pendingReviews, queuedTasks int64
+	var totalUsers, totalContributors, totalTesters, approvedTesters, pendingTesters, activeTesters, inactiveTesters, totalSubmissions, pendingReviews, queuedTasks int64
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleContributor).Count(&totalContributors)
-	database.DB.Model(&models.User{}).Where("role = ?", models.RoleReviewer).Count(&totalReviewers)
-	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, true).Count(&approvedReviewers)
-	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleReviewer, false).Count(&pendingReviewers)
-	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, true).Count(&activeReviewers)
-	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleReviewer, true, false).Count(&inactiveReviewers)
+	database.DB.Model(&models.User{}).Where("role = ?", models.RoleTester).Count(&totalTesters)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleTester, true).Count(&approvedTesters)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ?", models.RoleTester, false).Count(&pendingTesters)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleTester, true, true).Count(&activeTesters)
+	database.DB.Model(&models.User{}).Where("role = ? AND is_approved = ? AND is_green_light = ?", models.RoleTester, true, false).Count(&inactiveTesters)
 	database.DB.Model(&models.Submission{}).Count(&totalSubmissions)
 	database.DB.Model(&models.Submission{}).Where("status IN ?", []string{
 		string(models.StatusPending), string(models.StatusClaimed),
@@ -139,18 +139,18 @@ func GetStats(c *gin.Context) {
 		"overview": gin.H{
 			"totalUsers":        totalUsers,
 			"totalContributors": totalContributors,
-			"totalReviewers":    totalReviewers,
-			"approvedReviewers": approvedReviewers,
-			"pendingReviewers":  pendingReviewers,
-			"activeReviewers":   activeReviewers,
-			"inactiveReviewers": inactiveReviewers,
+			"totalTesters":      totalTesters,
+			"approvedTesters":   approvedTesters,
+			"pendingTesters":    pendingTesters,
+			"activeTesters":     activeTesters,
+			"inactiveTesters":   inactiveTesters,
 			"totalSubmissions":  totalSubmissions,
 			"pendingReviews":    pendingReviews,
 			"queuedTasks":       queuedTasks,
 			"statusCounts":      statusCountsMap,
 		},
 		"contributors": contributorStats,
-		"reviewers":    reviewerStats,
+		"testers":      testerStats,
 	})
 }
 

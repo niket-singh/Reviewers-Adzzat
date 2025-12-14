@@ -163,7 +163,7 @@ export default function ProjectVReviewer() {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white">
-              Project V - Reviewer Dashboard
+              Project V - Tester Dashboard
             </h1>
             <p className="text-gray-400 mt-1">
               Review and manage submissions

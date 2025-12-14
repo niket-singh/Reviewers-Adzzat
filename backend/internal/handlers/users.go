@@ -37,8 +37,8 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"users": response})
 }
 
-// ApproveReviewer approves a reviewer
-func ApproveReviewer(c *gin.Context) {
+// ApproveTester approves a tester
+func ApproveTester(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
 	if err != nil {
@@ -52,14 +52,14 @@ func ApproveReviewer(c *gin.Context) {
 		return
 	}
 
-	if user.Role != models.RoleReviewer {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a reviewer"})
+	if user.Role != models.RoleTester {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a tester"})
 		return
 	}
 
 	user.IsApproved = true
 	if err := database.DB.Save(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve reviewer"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to approve tester"})
 		return
 	}
 
@@ -73,8 +73,8 @@ func ApproveReviewer(c *gin.Context) {
 	targetType := "user"
 
 	services.LogActivity(services.LogActivityParams{
-		Action:      "APPROVE_REVIEWER",
-		Description: "Admin approved reviewer: " + user.Name,
+		Action:      "APPROVE_TESTER",
+		Description: "Admin approved tester: " + user.Name,
 		UserID:      &uid2,
 		UserName:    &userName,
 		UserRole:    &userRole,
@@ -82,10 +82,10 @@ func ApproveReviewer(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"message": "Reviewer approved successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Tester approved successfully"})
 }
 
-// ToggleGreenLight toggles the green light status for a reviewer
+// ToggleGreenLight toggles the green light status for a tester
 func ToggleGreenLight(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
@@ -100,8 +100,8 @@ func ToggleGreenLight(c *gin.Context) {
 		return
 	}
 
-	if user.Role != models.RoleReviewer {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a reviewer"})
+	if user.Role != models.RoleTester {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a tester"})
 		return
 	}
 
@@ -112,7 +112,7 @@ func ToggleGreenLight(c *gin.Context) {
 		return
 	}
 
-	// If green light was turned ON, redistribute all tasks fairly among active reviewers
+	// If green light was turned ON, redistribute all tasks fairly among active testers
 	var redistributedCount int
 	if user.IsGreenLight {
 		count, err := services.RedistributeTasks()
@@ -144,7 +144,7 @@ func ToggleGreenLight(c *gin.Context) {
 
 	services.LogActivity(services.LogActivityParams{
 		Action:      "TOGGLE_GREEN_LIGHT",
-		Description: "Admin turned " + status + " green light for reviewer: " + user.Name,
+		Description: "Admin turned " + status + " green light for tester: " + user.Name,
 		UserID:      &uid2,
 		UserName:    &userName,
 		UserRole:    &userRole,
@@ -170,7 +170,7 @@ func SwitchUserRole(c *gin.Context) {
 	}
 
 	var req struct {
-		NewRole string `json:"newRole" binding:"required,oneof=CONTRIBUTOR REVIEWER ADMIN"`
+		NewRole string `json:"newRole" binding:"required,oneof=CONTRIBUTOR TESTER ADMIN"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -194,8 +194,8 @@ func SwitchUserRole(c *gin.Context) {
 		user.IsApproved = true
 	}
 
-	// Reset approval if switching to reviewer
-	if user.Role == models.RoleReviewer && oldRole != string(models.RoleReviewer) {
+	// Reset approval if switching to tester
+	if user.Role == models.RoleTester && oldRole != string(models.RoleTester) {
 		user.IsApproved = false
 	}
 
@@ -285,8 +285,8 @@ func DeleteUser(c *gin.Context) {
 		deletionSummary["submissionsDeleted"] = len(user.Submissions)
 	}
 
-	// Handle reviewer deletion
-	if user.Role == models.RoleReviewer {
+	// Handle tester deletion
+	if user.Role == models.RoleTester {
 		// Unassign tasks
 		database.DB.Model(&models.Submission{}).
 			Where("claimed_by_id = ?", uid).
@@ -298,7 +298,7 @@ func DeleteUser(c *gin.Context) {
 		deletionSummary["assignmentsUnassigned"] = len(user.ClaimedSubmissions)
 
 		// Delete reviews
-		database.DB.Where("reviewer_id = ?", uid).Delete(&models.Review{})
+		database.DB.Where("tester_id = ?", uid).Delete(&models.Review{})
 		deletionSummary["reviewsDeleted"] = len(user.Reviews)
 	}
 
@@ -418,9 +418,9 @@ func GetProfile(c *gin.Context) {
 			"eligibleSubmissions": eligible,
 			"approvedSubmissions": approved,
 		}
-	} else if user.Role == models.RoleReviewer || user.Role == models.RoleAdmin {
+	} else if user.Role == models.RoleTester || user.Role == models.RoleAdmin {
 		var reviewsCount, claimedTasks, eligibleMarked int64
-		database.DB.Model(&models.Review{}).Where("reviewer_id = ?", uid).Count(&reviewsCount)
+		database.DB.Model(&models.Review{}).Where("tester_id = ?", uid).Count(&reviewsCount)
 		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ?", uid).Count(&claimedTasks)
 		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", uid, models.StatusEligible).Count(&eligibleMarked)
 

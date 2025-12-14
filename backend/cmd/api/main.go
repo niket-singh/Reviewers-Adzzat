@@ -118,7 +118,7 @@ func setupRouter() *gin.Engine {
 			{
 				// User management
 				admin.GET("/users", handlers.GetUsers)
-				admin.PUT("/users/:id/approve", handlers.ApproveReviewer)
+				admin.PUT("/users/:id/approve", handlers.ApproveTester)
 				admin.PUT("/users/:id/greenlight", handlers.ToggleGreenLight)
 				admin.PUT("/users/:id/role", handlers.SwitchUserRole)
 				admin.DELETE("/users/:id", handlers.DeleteUser)
