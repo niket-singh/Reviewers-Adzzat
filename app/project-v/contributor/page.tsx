@@ -425,15 +425,15 @@ export default function ProjectVContributor() {
 
         {/* Submission Details Modal */}
         {selectedSubmission && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
+                <h3 className="text-xl font-bold text-white">
                   Submission Details
                 </h3>
                 <button
                   onClick={() => setSelectedSubmission(null)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-400 hover:text-white"
                 >
                   <svg
                     className="w-6 h-6"
@@ -453,40 +453,40 @@ export default function ProjectVContributor() {
 
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-gray-700">Repository:</h4>
+                  <h4 className="font-semibold text-gray-300">Repository:</h4>
                   <a
                     href={selectedSubmission.githubRepo}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+                    className="text-yellow-400 hover:underline"
                   >
                     {selectedSubmission.githubRepo}
                   </a>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-700">Description:</h4>
-                  <p className="text-gray-600">
+                  <h4 className="font-semibold text-gray-300">Description:</h4>
+                  <p className="text-gray-200">
                     {selectedSubmission.description}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold text-gray-700">
+                    <h4 className="font-semibold text-gray-300">
                       Commit Hash:
                     </h4>
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                    <code className="text-sm bg-gray-900 text-gray-200 px-2 py-1 rounded border border-gray-600">
                       {selectedSubmission.commitHash}
                     </code>
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-700">Issue:</h4>
+                    <h4 className="font-semibold text-gray-300">Issue:</h4>
                     <a
                       href={selectedSubmission.issueUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline text-sm"
+                      className="text-yellow-400 hover:underline text-sm"
                     >
                       View Issue
                     </a>
@@ -494,7 +494,7 @@ export default function ProjectVContributor() {
                 </div>
 
                 <div>
-                  <h4 className="font-semibold text-gray-700 mb-2">
+                  <h4 className="font-semibold text-white mb-2">
                     Processing Status:
                   </h4>
                   <div className="space-y-2">
@@ -543,10 +543,10 @@ export default function ProjectVContributor() {
 
                 {selectedSubmission.processingLogs && (
                   <div>
-                    <h4 className="font-semibold text-gray-700 mb-2">
+                    <h4 className="font-semibold text-white mb-2">
                       Processing Logs:
                     </h4>
-                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto">
+                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto border border-gray-700">
                       {selectedSubmission.processingLogs}
                     </pre>
                   </div>
@@ -570,20 +570,30 @@ function StatusItem({
   error?: string;
 }) {
   return (
-    <div className="flex items-start justify-between p-2 bg-gray-50 rounded">
-      <span className="text-sm text-gray-700">{label}</span>
+    <div
+      className={`flex items-start justify-between p-3 rounded-lg border ${
+        success
+          ? "bg-green-900 bg-opacity-30 border-green-700"
+          : error
+          ? "bg-red-900 bg-opacity-30 border-red-700"
+          : "bg-gray-700 border-gray-600"
+      }`}
+    >
+      <span className="text-sm text-gray-200 font-medium">{label}</span>
       <div className="flex items-center">
         {success ? (
-          <span className="text-green-600 font-semibold text-sm">✓</span>
+          <span className="text-green-400 font-bold text-lg">✓</span>
         ) : error ? (
-          <div className="flex items-center">
-            <span className="text-red-600 font-semibold text-sm mr-2">✗</span>
-            <span className="text-xs text-red-600" title={error}>
-              {error.substring(0, 30)}...
-            </span>
+          <div className="flex flex-col items-end">
+            <span className="text-red-400 font-bold text-lg">✗</span>
+            {error && (
+              <span className="text-xs text-red-300 mt-1 max-w-xs text-right">
+                {error}
+              </span>
+            )}
           </div>
         ) : (
-          <span className="text-gray-400 text-sm">⏳</span>
+          <span className="text-gray-400 text-lg">⏳</span>
         )}
       </div>
     </div>
