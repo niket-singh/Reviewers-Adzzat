@@ -77,12 +77,20 @@ func main() {
 }
 
 func setupRouter() *gin.Engine {
+	// Set Gin to release mode for better performance in production
+	if os.Getenv("GIN_MODE") != "debug" {
+		gin.SetMode(gin.ReleaseMode)
+	}
+
 	router := gin.Default()
 
-	// Apply global middlewares
+	// Apply global middlewares - OPTIMIZED FOR 200+ CONCURRENT USERS
 	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.CompressionMiddleware()) // Gzip compression
-	router.Use(middleware.RateLimitMiddleware(100)) // 100 requests per minute per IP
+	router.Use(middleware.CompressionMiddleware()) // Gzip compression for faster responses
+
+	// CRITICAL: Increased rate limit from 100 to 1000 requests/minute for high concurrency
+	// This allows ~16 requests per second per IP, sufficient for 200+ concurrent users
+	router.Use(middleware.RateLimitMiddleware(1000)) // 1000 requests per minute per IP
 
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
