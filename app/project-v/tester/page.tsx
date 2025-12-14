@@ -68,6 +68,7 @@ export default function ProjectVTester() {
   const [actionType, setActionType] = useState<string | null>(null);
   const [submittedAccount, setSubmittedAccount] = useState("");
   const [taskLink, setTaskLink] = useState("");
+  const [taskLinkSubmitted, setTaskLinkSubmitted] = useState("");
   const [testerFeedback, setTesterFeedback] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
@@ -152,17 +153,18 @@ export default function ProjectVTester() {
 
   const handleTaskSubmitted = async () => {
     if (!selectedSubmission) return;
-    if (!submittedAccount.trim()) {
-      showToast("Please enter the account where task was submitted", "error");
+    if (!submittedAccount.trim() || !taskLinkSubmitted.trim()) {
+      showToast("Please enter both the account and task link", "error");
       return;
     }
 
     setProcessing(true);
     try {
-      await apiClient.markTaskSubmitted(selectedSubmission.id, submittedAccount);
+      await apiClient.markTaskSubmitted(selectedSubmission.id, submittedAccount, taskLinkSubmitted);
       showToast("✅ Task marked as submitted successfully", "success");
       setActionType(null);
       setSubmittedAccount("");
+      setTaskLinkSubmitted("");
       setSelectedSubmission(null);
       fetchSubmissions();
     } catch (error: any) {
@@ -412,7 +414,7 @@ export default function ProjectVTester() {
                   </h3>
                   <p className="text-gray-300">Submitted by <span className="font-semibold text-white">{selectedSubmission.contributor?.name}</span></p>
                 </div>
-                <button onClick={() => { setSelectedSubmission(null); setActionType(null); setSubmittedAccount(""); setTaskLink(""); setTesterFeedback(""); }}
+                <button onClick={() => { setSelectedSubmission(null); setActionType(null); setSubmittedAccount(""); setTaskLink(""); setTaskLinkSubmitted(""); setTesterFeedback(""); }}
                   className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 hover:scale-110">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -555,12 +557,19 @@ export default function ProjectVTester() {
                             className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
                           <p className="text-xs text-gray-400 mt-2">Note: This will only be visible to you and admins</p>
                         </div>
+                        <div>
+                          <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Link: *</label>
+                          <input type="url" value={taskLinkSubmitted} onChange={(e) => setTaskLinkSubmitted(e.target.value)}
+                            placeholder="https://..." disabled={processing}
+                            className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
+                          <p className="text-xs text-gray-400 mt-2">This will be visible to testers, reviewers, and admins</p>
+                        </div>
                         <div className="flex gap-3">
-                          <button onClick={handleTaskSubmitted} disabled={processing || !submittedAccount.trim()}
+                          <button onClick={handleTaskSubmitted} disabled={processing || !submittedAccount.trim() || !taskLinkSubmitted.trim()}
                             className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                             {processing ? "Submitting..." : "Submit"}
                           </button>
-                          <button onClick={() => { setActionType(null); setSubmittedAccount(""); }} disabled={processing}
+                          <button onClick={() => { setActionType(null); setSubmittedAccount(""); setTaskLinkSubmitted(""); }} disabled={processing}
                             className="px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 disabled:opacity-50">
                             Cancel
                           </button>

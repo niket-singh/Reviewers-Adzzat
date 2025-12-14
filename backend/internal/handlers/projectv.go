@@ -196,6 +196,9 @@ func GetProjectVSubmissions(c *gin.Context) {
 			submissions[i].AccountPostedIn = nil
 			submissions[i].SubmittedAccount = nil
 			submissions[i].TaskLink = nil
+			submissions[i].TaskLinkSubmitted = nil
+			submissions[i].Reviewer = nil
+			submissions[i].ReviewerID = nil
 		}
 	}
 
@@ -464,8 +467,8 @@ func MarkChangesDone(c *gin.Context) {
 		return
 	}
 
-	// Update submission - keep the same reviewer
-	submission.Status = models.ProjectVStatusChangesDone
+	// Update submission - send back to tester, keep the same reviewer
+	submission.Status = models.ProjectVStatusInTesting
 	submission.ChangesDone = true
 
 	if err := database.DB.Save(&submission).Error; err != nil {
@@ -530,11 +533,12 @@ func MarkTaskSubmitted(c *gin.Context) {
 	}
 
 	var req struct {
-		SubmittedAccount string `json:"submittedAccount" binding:"required"`
+		SubmittedAccount  string `json:"submittedAccount" binding:"required"`
+		TaskLinkSubmitted string `json:"taskLinkSubmitted" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Submitted account is required"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Submitted account and task link are required"})
 		return
 	}
 
@@ -550,8 +554,10 @@ func MarkTaskSubmitted(c *gin.Context) {
 		submission.TesterID = &userID
 	}
 
-	// Update submission
+	// Update submission - mark as submitted to platform
+	submission.Status = models.ProjectVStatusTaskSubmittedToPlatform
 	submission.SubmittedAccount = &req.SubmittedAccount
+	submission.TaskLinkSubmitted = &req.TaskLinkSubmitted
 
 	if err := database.DB.Save(&submission).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
@@ -601,10 +607,12 @@ func MarkEligibleForManualReview(c *gin.Context) {
 	submission.Status = models.ProjectVStatusEligible
 	submission.TaskLink = &req.TaskLink
 
-	// Auto-assign reviewer
-	reviewerID, err := services.AutoAssignReviewer(submissionID)
-	if err == nil && reviewerID != nil {
-		submission.ReviewerID = reviewerID
+	// Auto-assign reviewer only if not already assigned (preserve reviewer for changes done flow)
+	if submission.ReviewerID == nil {
+		reviewerID, err := services.AutoAssignReviewer(submissionID)
+		if err == nil && reviewerID != nil {
+			submission.ReviewerID = reviewerID
+		}
 	}
 
 	if err := database.DB.Save(&submission).Error; err != nil {
