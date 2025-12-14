@@ -31,11 +31,7 @@ jobs:
           output_location: ".next" # Built app content directory
           app_build_command: "npm run build"
 
-      - name: Configure Custom Domain
-        uses: azure/CLI@v1
-        with:
-          inlineScript: |
-            az staticwebapp hostname set \
-              --name reviewers-adzzat-frontend \
-              --resource-group adzzat-reviewers-rg \
-              --hostname reviewer.adzzat.com
+      - name: Deployment complete
+        run: |
+          echo "✅ Frontend deployed successfully to Azure Static Web Apps!"
+          echo "🌐 Configure custom domain manually in Azure Portal"
