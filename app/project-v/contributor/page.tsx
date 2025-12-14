@@ -50,7 +50,7 @@ interface Submission {
 }
 
 export default function ProjectVContributor() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -195,7 +195,7 @@ export default function ProjectVContributor() {
   };
 
   const handleLogout = async () => {
-    await useAuth().logout();
+    await logout();
     router.push("/");
   };
 
