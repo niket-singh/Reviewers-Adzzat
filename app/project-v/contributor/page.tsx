@@ -445,13 +445,10 @@ export default function ProjectVContributor() {
         {selectedSubmission && (
           <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 border border-gray-700 rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-6">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-2xl font-bold text-white">{selectedSubmission.title}</h3>
-                  <p className="text-sm text-gray-300 mt-1">
-                    {selectedSubmission.language} • {selectedSubmission.category} • {selectedSubmission.difficulty}
-                  </p>
-                </div>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-bold text-white">
+                  Submission Details
+                </h3>
                 <button
                   onClick={() => setSelectedSubmission(null)}
                   className="text-gray-400 hover:text-white"
@@ -465,11 +462,12 @@ export default function ProjectVContributor() {
               <div className="space-y-6">
                 {/* Status */}
                 <div>
-                  <h4 className="font-semibold text-white mb-2">Status:</h4>
-                  <span
-                    className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getStatusColor(
-                      selectedSubmission.status
-                    )}`}
+                  <h4 className="font-semibold text-gray-300">Repository:</h4>
+                  <a
+                    href={selectedSubmission.githubRepo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-yellow-400 hover:underline"
                   >
                     {selectedSubmission.status.replace(/_/g, " ")}
                   </span>
@@ -477,50 +475,90 @@ export default function ProjectVContributor() {
 
                 {/* Description */}
                 <div>
-                  <h4 className="font-semibold text-white mb-2">Description:</h4>
-                  <p className="text-gray-200 whitespace-pre-wrap">{selectedSubmission.description}</p>
+                  <h4 className="font-semibold text-gray-300">Description:</h4>
+                  <p className="text-gray-200">
+                    {selectedSubmission.description}
+                  </p>
                 </div>
 
-                {/* Repository Info */}
-                <div className="bg-gray-700 border border-gray-600 p-4 rounded-lg">
-                  <h4 className="font-semibold text-white mb-3">Repository Information:</h4>
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-gray-400">Repository: </span>
-                      <a
-                        href={selectedSubmission.githubRepo}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        {selectedSubmission.githubRepo}
-                      </a>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Commit: </span>
-                      <code className="bg-gray-900 text-gray-200 px-2 py-1 rounded">
-                        {selectedSubmission.commitHash}
-                      </code>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Issue: </span>
-                      <a
-                        href={selectedSubmission.issueUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        View Issue
-                      </a>
-                    </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-300">
+                      Commit Hash:
+                    </h4>
+                    <code className="text-sm bg-gray-900 text-gray-200 px-2 py-1 rounded border border-gray-600">
+                      {selectedSubmission.commitHash}
+                    </code>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-300">Issue:</h4>
+                    <a
+                      href={selectedSubmission.issueUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-yellow-400 hover:underline text-sm"
+                    >
+                      View Issue
+                    </a>
                   </div>
                 </div>
 
-                {/* Reviewer Feedback */}
-                {selectedSubmission.reviewerFeedback && (
-                  <div className="bg-orange-900 bg-opacity-30 border border-orange-700 rounded-lg p-4">
-                    <h4 className="font-semibold text-white mb-2">Reviewer Feedback:</h4>
-                    <p className="text-gray-200 whitespace-pre-wrap">{selectedSubmission.reviewerFeedback}</p>
+                <div>
+                  <h4 className="font-semibold text-white mb-2">
+                    Processing Status:
+                  </h4>
+                  <div className="space-y-2">
+                    <StatusItem
+                      label="1. Clone Repository"
+                      success={selectedSubmission.cloneSuccess}
+                      error={selectedSubmission.cloneError}
+                    />
+                    <StatusItem
+                      label="2. Apply Test Patch"
+                      success={selectedSubmission.testPatchSuccess}
+                      error={selectedSubmission.testPatchError}
+                    />
+                    <StatusItem
+                      label="3. Build Docker"
+                      success={selectedSubmission.dockerBuildSuccess}
+                      error={selectedSubmission.dockerBuildError}
+                    />
+                    <StatusItem
+                      label="4. Run Base Tests"
+                      success={selectedSubmission.baseTestSuccess}
+                      error={selectedSubmission.baseTestError}
+                    />
+                    <StatusItem
+                      label="5. Run New Tests (should fail)"
+                      success={selectedSubmission.newTestSuccess}
+                      error={selectedSubmission.newTestError}
+                    />
+                    <StatusItem
+                      label="6. Apply Solution Patch"
+                      success={selectedSubmission.solutionPatchSuccess}
+                      error={selectedSubmission.solutionPatchError}
+                    />
+                    <StatusItem
+                      label="7. Final Base Tests"
+                      success={selectedSubmission.finalBaseTestSuccess}
+                      error={selectedSubmission.finalBaseTestError}
+                    />
+                    <StatusItem
+                      label="8. Final New Tests"
+                      success={selectedSubmission.finalNewTestSuccess}
+                      error={selectedSubmission.finalNewTestError}
+                    />
+                  </div>
+                </div>
+
+                {selectedSubmission.processingLogs && (
+                  <div>
+                    <h4 className="font-semibold text-white mb-2">
+                      Processing Logs:
+                    </h4>
+                    <pre className="bg-gray-900 text-green-400 p-4 rounded text-xs overflow-x-auto max-h-64 overflow-y-auto border border-gray-700">
+                      {selectedSubmission.processingLogs}
+                    </pre>
                   </div>
                 )}
 
@@ -565,30 +603,31 @@ function FileInput({
   onChange: (file: File | null) => void;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1">{label} *</label>
-      <div className="relative">
-        <input
-          type="file"
-          onChange={(e) => onChange(e.target.files?.[0] || null)}
-          className="hidden"
-          id={`file-${label}`}
-          accept=".patch,.txt,.dockerfile,Dockerfile"
-        />
-        <label
-          htmlFor={`file-${label}`}
-          className="flex items-center justify-between w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg cursor-pointer hover:bg-gray-650 transition-colors"
-        >
-          <span className="text-sm truncate">{file ? file.name : `Choose ${label.toLowerCase()}...`}</span>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-            />
-          </svg>
-        </label>
+    <div
+      className={`flex items-start justify-between p-3 rounded-lg border ${
+        success
+          ? "bg-green-900 bg-opacity-30 border-green-700"
+          : error
+          ? "bg-red-900 bg-opacity-30 border-red-700"
+          : "bg-gray-700 border-gray-600"
+      }`}
+    >
+      <span className="text-sm text-gray-200 font-medium">{label}</span>
+      <div className="flex items-center">
+        {success ? (
+          <span className="text-green-400 font-bold text-lg">✓</span>
+        ) : error ? (
+          <div className="flex flex-col items-end">
+            <span className="text-red-400 font-bold text-lg">✗</span>
+            {error && (
+              <span className="text-xs text-red-300 mt-1 max-w-xs text-right">
+                {error}
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="text-gray-400 text-lg">⏳</span>
+        )}
       </div>
     </div>
   );
