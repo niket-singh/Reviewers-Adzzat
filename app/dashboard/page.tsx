@@ -3,7 +3,7 @@
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { apiClient } from "@/lib/api-client";
 
 interface Stats {
   totalSubmissions: number;
@@ -39,21 +39,11 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem("authToken");
+      // Fetch Project X stats using apiClient
+      const projectXData = await apiClient.getSubmissions();
 
-      // Fetch Project X stats
-      const projectXResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/submissions`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const projectXData = projectXResponse.data || [];
-
-      // Fetch Project V stats
-      const projectVResponse = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/projectv/submissions`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const projectVData = projectVResponse.data || [];
+      // Fetch Project V stats using apiClient
+      const projectVData = await apiClient.getProjectVSubmissions();
 
       // Calculate stats
       const statsData: Stats = {
@@ -249,7 +239,9 @@ export default function Dashboard() {
             <button
               onClick={() => {
                 if (user?.role === "CONTRIBUTOR") router.push("/project-v/contributor");
-                else router.push("/project-v/reviewer");
+                else if (user?.role === "TESTER") router.push("/project-v/tester");
+                else if (user?.role === "REVIEWER") router.push("/project-v/reviewer");
+                else if (user?.role === "ADMIN") router.push("/project-v/admin");
               }}
               className="mt-6 w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-2 rounded-lg transition-colors"
             >
