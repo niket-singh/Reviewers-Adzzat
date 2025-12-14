@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function SelectProject() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -44,6 +44,11 @@ export default function SelectProject() {
       }
     }
     // Project Z is paused, no navigation
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/");
   };
 
   return (
@@ -185,10 +190,7 @@ export default function SelectProject() {
         {/* Logout Button */}
         <div className="mt-12 text-center">
           <button
-            onClick={() => {
-              localStorage.removeItem("authToken");
-              router.push("/");
-            }}
+            onClick={handleLogout}
             className="text-gray-300 hover:text-white font-medium transition-colors"
           >
             Logout
