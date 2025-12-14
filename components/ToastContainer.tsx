@@ -3,14 +3,21 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 import Toast, { ToastType } from './Toast'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastMessage {
   id: string
   message: string
   type: ToastType
+  action?: ToastAction
+  duration?: number
 }
 
 interface ToastContextType {
-  showToast: (message: string, type: ToastType) => void
+  showToast: (message: string, type: ToastType, action?: ToastAction, duration?: number) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -18,9 +25,9 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined)
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMessage[]>([])
 
-  const showToast = (message: string, type: ToastType) => {
+  const showToast = (message: string, type: ToastType, action?: ToastAction, duration: number = 5000) => {
     const id = Math.random().toString(36).substring(7)
-    setToasts((prev) => [...prev, { id, message, type }])
+    setToasts((prev) => [...prev, { id, message, type, action, duration }])
   }
 
   const removeToast = (id: string) => {
@@ -36,6 +43,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             message={toast.message}
             type={toast.type}
+            action={toast.action}
+            duration={toast.duration}
             onClose={() => removeToast(toast.id)}
           />
         ))}
