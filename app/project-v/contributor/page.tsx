@@ -4,34 +4,42 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/components/ToastContainer";
-import axios from "axios";
+import { apiClient } from "@/lib/api-client";
 
 interface Submission {
   id: string;
+  title: string;
+  language: string;
+  category: string;
+  difficulty: string;
   description: string;
   githubRepo: string;
   commitHash: string;
   issueUrl: string;
+  testPatchUrl: string;
+  dockerfileUrl: string;
+  solutionPatchUrl: string;
   status: string;
-  processingComplete: boolean;
-  cloneSuccess: boolean;
-  cloneError?: string;
-  testPatchSuccess: boolean;
-  testPatchError?: string;
-  dockerBuildSuccess: boolean;
-  dockerBuildError?: string;
-  baseTestSuccess: boolean;
-  baseTestError?: string;
-  newTestSuccess: boolean;
-  newTestError?: string;
-  solutionPatchSuccess: boolean;
-  solutionPatchError?: string;
-  finalBaseTestSuccess: boolean;
-  finalBaseTestError?: string;
-  finalNewTestSuccess: boolean;
-  finalNewTestError?: string;
-  processingLogs?: string;
+  reviewerFeedback?: string;
+  hasChangesRequested: boolean;
+  changesDone: boolean;
+  accountPostedIn?: string;
   createdAt: string;
+  contributor?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  tester?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  reviewer?: {
+    id: string;
+    name: string;
+    email: string;
+  };
 }
 
 export default function ProjectVContributor() {
@@ -40,6 +48,10 @@ export default function ProjectVContributor() {
   const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
+    title: "",
+    language: "",
+    category: "",
+    difficulty: "Easy",
     description: "",
     githubRepo: "",
     commitHash: "",
@@ -56,17 +68,12 @@ export default function ProjectVContributor() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [processing, setProcessing] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      const token = localStorage.getItem("authToken");
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/projectv/submissions`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setSubmissions(response.data || []);
+      const data = await apiClient.getProjectVSubmissions();
+      setSubmissions(data || []);
     } catch (error: any) {
       console.error("Error fetching submissions:", error);
       showToast("Failed to fetch submissions", "error");
@@ -104,6 +111,10 @@ export default function ProjectVContributor() {
 
     // Validate all fields are filled
     if (
+      !formData.title ||
+      !formData.language ||
+      !formData.category ||
+      !formData.difficulty ||
       !formData.description ||
       !formData.githubRepo ||
       !formData.commitHash ||
@@ -119,8 +130,11 @@ export default function ProjectVContributor() {
     setSubmitting(true);
 
     try {
-      const token = localStorage.getItem("authToken");
       const formDataToSend = new FormData();
+      formDataToSend.append("title", formData.title);
+      formDataToSend.append("language", formData.language);
+      formDataToSend.append("category", formData.category);
+      formDataToSend.append("difficulty", formData.difficulty);
       formDataToSend.append("description", formData.description);
       formDataToSend.append("githubRepo", formData.githubRepo);
       formDataToSend.append("commitHash", formData.commitHash);
@@ -129,24 +143,16 @@ export default function ProjectVContributor() {
       formDataToSend.append("dockerfile", files.dockerfile);
       formDataToSend.append("solutionPatch", files.solutionPatch);
 
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/projectv/submissions`,
-        formDataToSend,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await apiClient.createProjectVSubmission(formDataToSend);
 
-      showToast(
-        "Submission created successfully! Processing started.",
-        "success"
-      );
+      showToast("Submission created successfully!", "success");
 
       // Reset form
       setFormData({
+        title: "",
+        language: "",
+        category: "",
+        difficulty: "Easy",
         description: "",
         githubRepo: "",
         commitHash: "",
@@ -161,50 +167,75 @@ export default function ProjectVContributor() {
       // Refresh submissions
       fetchSubmissions();
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.error || "Failed to create submission";
+      const errorMessage = error.response?.data?.error || "Failed to create submission";
       showToast(errorMessage, "error");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "TASK_SUBMITTED":
-        return "bg-blue-100 text-blue-800";
-      case "ELIGIBLE_FOR_MANUAL_REVIEW":
-        return "bg-yellow-100 text-yellow-800";
-      case "FINAL_CHECKS":
-        return "bg-purple-100 text-purple-800";
-      case "APPROVED":
-        return "bg-green-100 text-green-800";
-      case "REJECTED":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const handleMarkChangesDone = async (submissionId: string) => {
+    setProcessing(true);
+    try {
+      await apiClient.markChangesDone(submissionId);
+      showToast("Marked as changes done successfully", "success");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || "Failed to mark changes as done";
+      showToast(errorMessage, "error");
+    } finally {
+      setProcessing(false);
     }
   };
 
-  const canSubmit = (submission: Submission) => {
-    return (
-      submission.processingComplete &&
-      submission.cloneSuccess &&
-      submission.testPatchSuccess &&
-      submission.dockerBuildSuccess &&
-      submission.baseTestSuccess &&
-      submission.newTestSuccess &&
-      submission.solutionPatchSuccess &&
-      submission.finalBaseTestSuccess &&
-      submission.finalNewTestSuccess
-    );
+  const handleDeleteSubmission = async (submissionId: string) => {
+    if (!confirm("Are you sure you want to delete this submission?")) {
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      await apiClient.deleteProjectVSubmission(submissionId);
+      showToast("Submission deleted successfully", "success");
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.error || "Failed to delete submission";
+      showToast(errorMessage, "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "TASK_SUBMITTED":
+        return "bg-blue-100 text-blue-800 border-blue-300";
+      case "IN_TESTING":
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
+      case "PENDING_REVIEW":
+        return "bg-purple-100 text-purple-800 border-purple-300";
+      case "CHANGES_REQUESTED":
+        return "bg-orange-100 text-orange-800 border-orange-300";
+      case "CHANGES_DONE":
+        return "bg-indigo-100 text-indigo-800 border-indigo-300";
+      case "FINAL_CHECKS":
+        return "bg-cyan-100 text-cyan-800 border-cyan-300";
+      case "APPROVED":
+        return "bg-green-100 text-green-800 border-green-300";
+      case "REJECTED":
+        return "bg-red-100 text-red-800 border-red-300";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-300";
+    }
   };
 
   if (loading || loadingSubmissions) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
           <p className="mt-4 text-gray-300">Loading...</p>
         </div>
       </div>
@@ -217,12 +248,8 @@ export default function ProjectVContributor() {
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-white">
-              Project V - Contributor
-            </h1>
-            <p className="text-gray-300 mt-1">
-              Submit your Docker-based solutions
-            </p>
+            <h1 className="text-3xl font-bold text-white">Project V - Contributor</h1>
+            <p className="text-gray-300 mt-1">Submit your task solutions</p>
           </div>
           <button
             onClick={() => router.push("/select-project")}
@@ -235,185 +262,176 @@ export default function ProjectVContributor() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Submission Form */}
           <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-4">
-              New Submission
-            </h2>
+            <h2 className="text-xl font-bold text-white mb-4">New Submission</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Description (ASCII only)
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., Fix authentication bug in login"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Language *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.language}
+                    onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., JavaScript, Python"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Category *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g., Backend, Frontend"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Difficulty *
+                </label>
+                <select
+                  value={formData.difficulty}
+                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="Easy">Easy</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Hard">Hard</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Description (ASCII only) *
                 </label>
                 <textarea
                   value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={4}
-                  required
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Describe the task and solution..."
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  GitHub Repository URL
+                  GitHub Repository URL *
                 </label>
                 <input
                   type="url"
                   value={formData.githubRepo}
-                  onChange={(e) =>
-                    setFormData({ ...formData, githubRepo: e.target.value })
-                  }
-                  placeholder="https://github.com/user/repo"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
-                  required
+                  onChange={(e) => setFormData({ ...formData, githubRepo: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="https://github.com/username/repo"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Commit Hash
+                  Commit Hash *
                 </label>
                 <input
                   type="text"
                   value={formData.commitHash}
-                  onChange={(e) =>
-                    setFormData({ ...formData, commitHash: e.target.value })
-                  }
-                  placeholder="abc123def456"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
-                  required
+                  onChange={(e) => setFormData({ ...formData, commitHash: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono"
+                  placeholder="e.g., abc123def456..."
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Issue URL
+                  GitHub Issue URL *
                 </label>
                 <input
                   type="url"
                   value={formData.issueUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, issueUrl: e.target.value })
-                  }
-                  placeholder="https://github.com/user/repo/issues/123"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent placeholder-gray-400"
-                  required
+                  onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="https://github.com/username/repo/issues/123"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Test Patch (.patch)
-                </label>
-                <input
-                  type="file"
-                  accept=".patch"
-                  onChange={(e) =>
-                    setFiles({
-                      ...files,
-                      testPatch: e.target.files?.[0] || null,
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
-                  required
+              <div className="space-y-3">
+                <FileInput
+                  label="Test Patch"
+                  file={files.testPatch}
+                  onChange={(file) => setFiles({ ...files, testPatch: file })}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Dockerfile
-                </label>
-                <input
-                  type="file"
-                  onChange={(e) =>
-                    setFiles({
-                      ...files,
-                      dockerfile: e.target.files?.[0] || null,
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
-                  required
+                <FileInput
+                  label="Dockerfile"
+                  file={files.dockerfile}
+                  onChange={(file) => setFiles({ ...files, dockerfile: file })}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Solution Patch (.patch)
-                </label>
-                <input
-                  type="file"
-                  accept=".patch"
-                  onChange={(e) =>
-                    setFiles({
-                      ...files,
-                      solutionPatch: e.target.files?.[0] || null,
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-white rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-yellow-500 file:text-white file:cursor-pointer hover:file:bg-yellow-600"
-                  required
+                <FileInput
+                  label="Solution Patch"
+                  file={files.solutionPatch}
+                  onChange={(file) => setFiles({ ...files, solutionPatch: file })}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {submitting ? "Submitting..." : "Submit"}
+                {submitting ? "Submitting..." : "Submit Task"}
               </button>
             </form>
           </div>
 
           {/* Submissions List */}
           <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-bold text-white mb-4">
-              My Submissions
-            </h2>
-            <div className="space-y-3 max-h-[800px] overflow-y-auto">
+            <h2 className="text-xl font-bold text-white mb-4">My Submissions</h2>
+            <div className="space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto">
               {submissions.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">
-                  No submissions yet
-                </p>
+                <p className="text-gray-400 text-center py-8">No submissions yet</p>
               ) : (
                 submissions.map((submission) => (
                   <div
                     key={submission.id}
+                    className="bg-gray-700 border border-gray-600 rounded-lg p-4 hover:bg-gray-650 transition-colors cursor-pointer"
                     onClick={() => setSelectedSubmission(submission)}
-                    className="border border-gray-600 bg-gray-700 rounded-lg p-4 hover:border-yellow-500 cursor-pointer transition-colors"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-sm font-medium text-white">
-                        {submission.githubRepo.split("/").slice(-2).join("/")}
-                      </span>
+                      <h3 className="font-semibold text-white">{submission.title}</h3>
                       <span
-                        className={`text-xs font-semibold px-2 py-1 rounded ${getStatusColor(
+                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${getStatusColor(
                           submission.status
                         )}`}
                       >
                         {submission.status.replace(/_/g, " ")}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                      {submission.description}
-                    </p>
-                    <div className="flex justify-between items-center text-xs text-gray-400">
-                      <span>{submission.commitHash.substring(0, 7)}</span>
-                      <span>
-                        {new Date(submission.createdAt).toLocaleDateString()}
-                      </span>
+                    <div className="text-sm text-gray-300">
+                      {submission.language} • {submission.difficulty}
                     </div>
-                    {submission.processingComplete && (
-                      <div className="mt-2">
-                        {canSubmit(submission) ? (
-                          <span className="text-xs text-green-400 font-semibold">
-                            ✓ All tests passed
-                          </span>
-                        ) : (
-                          <span className="text-xs text-red-600 font-semibold">
-                            ✗ Some tests failed
-                          </span>
-                        )}
+                    <div className="text-xs text-gray-400 mt-2">
+                      {new Date(submission.createdAt).toLocaleDateString()}
+                    </div>
+                    {submission.status === "CHANGES_REQUESTED" && (
+                      <div className="mt-2 text-xs text-orange-400 font-semibold">
+                        ⚠️ Changes requested by reviewer
                       </div>
                     )}
                   </div>
@@ -435,23 +453,14 @@ export default function ProjectVContributor() {
                   onClick={() => setSelectedSubmission(null)}
                   className="text-gray-400 hover:text-white"
                 >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Status */}
                 <div>
                   <h4 className="font-semibold text-gray-300">Repository:</h4>
                   <a
@@ -460,10 +469,11 @@ export default function ProjectVContributor() {
                     rel="noopener noreferrer"
                     className="text-yellow-400 hover:underline"
                   >
-                    {selectedSubmission.githubRepo}
-                  </a>
+                    {selectedSubmission.status.replace(/_/g, " ")}
+                  </span>
                 </div>
 
+                {/* Description */}
                 <div>
                   <h4 className="font-semibold text-gray-300">Description:</h4>
                   <p className="text-gray-200">
@@ -551,6 +561,29 @@ export default function ProjectVContributor() {
                     </pre>
                   </div>
                 )}
+
+                {/* Actions */}
+                <div className="border-t border-gray-700 pt-4 flex gap-3">
+                  {selectedSubmission.status === "CHANGES_REQUESTED" && (
+                    <button
+                      onClick={() => handleMarkChangesDone(selectedSubmission.id)}
+                      disabled={processing}
+                      className="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {processing ? "Processing..." : "Mark Changes as Done"}
+                    </button>
+                  )}
+                  {(selectedSubmission.status === "TASK_SUBMITTED" ||
+                    selectedSubmission.status === "CHANGES_REQUESTED") && (
+                    <button
+                      onClick={() => handleDeleteSubmission(selectedSubmission.id)}
+                      disabled={processing}
+                      className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -560,14 +593,14 @@ export default function ProjectVContributor() {
   );
 }
 
-function StatusItem({
+function FileInput({
   label,
-  success,
-  error,
+  file,
+  onChange,
 }: {
   label: string;
-  success: boolean;
-  error?: string;
+  file: File | null;
+  onChange: (file: File | null) => void;
 }) {
   return (
     <div

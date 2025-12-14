@@ -13,6 +13,7 @@ type UserRole string
 const (
 	RoleAdmin       UserRole = "ADMIN"
 	RoleTester      UserRole = "TESTER"
+	RoleReviewer    UserRole = "REVIEWER"
 	RoleContributor UserRole = "CONTRIBUTOR"
 )
 
@@ -31,7 +32,10 @@ type ProjectVStatus string
 
 const (
 	ProjectVStatusSubmitted            ProjectVStatus = "TASK_SUBMITTED"
-	ProjectVStatusEligibleManualReview ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
+	ProjectVStatusInTesting            ProjectVStatus = "IN_TESTING"
+	ProjectVStatusPendingReview        ProjectVStatus = "PENDING_REVIEW"
+	ProjectVStatusChangesRequested     ProjectVStatus = "CHANGES_REQUESTED"
+	ProjectVStatusChangesDone          ProjectVStatus = "CHANGES_DONE"
 	ProjectVStatusFinalChecks          ProjectVStatus = "FINAL_CHECKS"
 	ProjectVStatusApproved             ProjectVStatus = "APPROVED"
 	ProjectVStatusRejected             ProjectVStatus = "REJECTED"
@@ -137,21 +141,29 @@ type AuditLog struct {
 
 // ProjectVSubmission model - for Project V workflow
 type ProjectVSubmission struct {
-	ID            uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	Description   string         `gorm:"type:text;not null" json:"description"`
-	GithubRepo    string         `gorm:"not null" json:"githubRepo"`
-	CommitHash    string         `gorm:"not null" json:"commitHash"`
-	IssueURL      string         `gorm:"not null" json:"issueUrl"`
-	TestPatchURL  string         `gorm:"not null" json:"testPatchUrl"`
-	SolutionPatchURL string      `gorm:"not null" json:"solutionPatchUrl"`
-	Status        ProjectVStatus `gorm:"type:varchar(50);not null;default:'TASK_SUBMITTED';index" json:"status"`
-	ContributorID uuid.UUID      `gorm:"type:uuid;not null;index" json:"contributorId"`
-	TesterID      *uuid.UUID     `gorm:"type:uuid;index" json:"testerId,omitempty"`
-	AccountPostedIn *string      `gorm:"type:text" json:"accountPostedIn,omitempty"` // Only visible to testers/admins
+	ID               uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	Title            string         `gorm:"not null;index" json:"title"`
+	Language         string         `gorm:"not null;index" json:"language"`
+	Category         string         `gorm:"not null;index" json:"category"`
+	Difficulty       string         `gorm:"not null;index" json:"difficulty"`
+	Description      string         `gorm:"type:text;not null" json:"description"`
+	GithubRepo       string         `gorm:"not null" json:"githubRepo"`
+	CommitHash       string         `gorm:"not null" json:"commitHash"`
+	IssueURL         string         `gorm:"not null" json:"issueUrl"`
+	TestPatchURL     string         `gorm:"not null" json:"testPatchUrl"`
+	DockerfileURL    string         `gorm:"not null" json:"dockerfileUrl"`
+	SolutionPatchURL string         `gorm:"not null" json:"solutionPatchUrl"`
 
-	// Processing results (simplified - no Docker testing)
-	ValidationComplete bool   `gorm:"default:false" json:"validationComplete"`
-	ValidationNotes    string `gorm:"type:text" json:"validationNotes,omitempty"`
+	Status           ProjectVStatus `gorm:"type:varchar(50);not null;default:'TASK_SUBMITTED';index" json:"status"`
+	ContributorID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"contributorId"`
+	TesterID         *uuid.UUID     `gorm:"type:uuid;index" json:"testerId,omitempty"`
+	ReviewerID       *uuid.UUID     `gorm:"type:uuid;index" json:"reviewerId,omitempty"`
+
+	// Reviewer workflow fields
+	ReviewerFeedback    string  `gorm:"type:text" json:"reviewerFeedback,omitempty"`
+	HasChangesRequested bool    `gorm:"default:false" json:"hasChangesRequested"`
+	ChangesDone         bool    `gorm:"default:false" json:"changesDone"`
+	AccountPostedIn     *string `gorm:"type:text" json:"accountPostedIn,omitempty"`
 
 	CreatedAt time.Time `gorm:"index" json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -159,6 +171,7 @@ type ProjectVSubmission struct {
 	// Relations
 	Contributor *User `gorm:"foreignKey:ContributorID" json:"contributor,omitempty"`
 	Tester      *User `gorm:"foreignKey:TesterID" json:"tester,omitempty"`
+	Reviewer    *User `gorm:"foreignKey:ReviewerID" json:"reviewer,omitempty"`
 }
 
 // BeforeCreate hook for User

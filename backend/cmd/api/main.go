@@ -109,6 +109,9 @@ func setupRouter() *gin.Engine {
 				projectv.GET("/submissions", handlers.GetProjectVSubmissions)
 				projectv.GET("/submissions/:id", handlers.GetProjectVSubmission)
 				projectv.PUT("/submissions/:id/status", handlers.UpdateProjectVStatus)
+				projectv.PUT("/submissions/:id/changes-requested", handlers.MarkChangesRequested)
+				projectv.PUT("/submissions/:id/final-checks", handlers.MarkFinalChecks)
+				projectv.PUT("/submissions/:id/changes-done", handlers.MarkChangesDone)
 				projectv.DELETE("/submissions/:id", handlers.DeleteProjectVSubmission)
 			}
 
