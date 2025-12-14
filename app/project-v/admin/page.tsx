@@ -25,6 +25,8 @@ interface Submission {
   hasChangesRequested: boolean;
   changesDone: boolean;
   accountPostedIn?: string;
+  taskLink?: string;
+  taskLinkSubmitted?: string;
   createdAt: string;
   contributor?: { id: string; name: string; email: string };
   tester?: { id: string; name: string; email: string };
@@ -57,13 +59,11 @@ export default function ProjectVAdmin() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>("ALL");
   const [feedback, setFeedback] = useState<string>("");
   const [accountPosted, setAccountPosted] = useState<string>("");
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -156,48 +156,19 @@ export default function ProjectVAdmin() {
 
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
-      TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
-      IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
-      PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
-      CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
-      CHANGES_DONE: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
+      TASK_SUBMITTED_TO_PLATFORM: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
+      ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
       FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
-      REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
 
-  const getFilteredSubmissions = () => {
-    let filtered = submissions;
-
-    // Admins see everything
-    if (filterStatus !== "ALL") {
-      filtered = filtered.filter((s) => s.status === filterStatus);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (s) =>
-          s.title.toLowerCase().includes(query) ||
-          s.language.toLowerCase().includes(query) ||
-          s.category.toLowerCase().includes(query) ||
-          s.contributor?.name.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  };
-
-  const filteredSubmissions = getFilteredSubmissions();
-
-  const getStatusCount = (status: string) => {
-    if (status === "ALL") {
-      return submissions.length;
-    }
-    return submissions.filter((s) => s.status === status).length;
-  };
+  // Filter submissions by status for each column
+  const submittedTasks = submissions.filter(s => s.status === "TASK_SUBMITTED_TO_PLATFORM");
+  const eligibleTasks = submissions.filter(s => s.status === "ELIGIBLE_FOR_MANUAL_REVIEW");
+  const finalChecksTasks = submissions.filter(s => s.status === "FINAL_CHECKS");
+  const approvedTasks = submissions.filter(s => s.status === "APPROVED");
 
   if (loading || loadingSubmissions) {
     return (
@@ -231,9 +202,9 @@ export default function ProjectVAdmin() {
               </div>
               <div>
                 <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
-                  Project V - Admin Control Center
+                  Project V - Admin Dashboard
                 </h1>
-                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Full System Oversight & Management</p>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Manage All Tasks Across Workflow</p>
               </div>
             </div>
 
@@ -286,7 +257,7 @@ export default function ProjectVAdmin() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
+      <div className="max-w-[1920px] mx-auto px-4 md:px-6 py-8 relative z-10">
         {/* Breadcrumb */}
         <Breadcrumb />
 
@@ -296,103 +267,50 @@ export default function ProjectVAdmin() {
             <div className="text-3xl">👑</div>
             <div>
               <h3 className="text-lg font-bold text-red-300">Administrator Mode Active</h3>
-              <p className="text-sm text-gray-300">You have full access to all submissions and management functions</p>
+              <p className="text-sm text-gray-300">4-Column Dashboard View - Full Task Workflow Management</p>
             </div>
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-8 animate-slide-up">
-          <div className="relative">
-            <input type="text" placeholder="🔍 Search by title, language, category, or contributor..."
-              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium" />
-            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
+        {/* 4-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
 
-        {/* Status Filter Tabs */}
-        <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50 overflow-x-auto">
-            {[
-              { label: "All", value: "ALL" },
-              { label: "Task Submitted", value: "TASK_SUBMITTED" },
-              { label: "In Testing", value: "IN_TESTING" },
-              { label: "Pending Review", value: "PENDING_REVIEW" },
-              { label: "Changes Done", value: "CHANGES_DONE" },
-              { label: "Final Checks", value: "FINAL_CHECKS" },
-              { label: "Approved", value: "APPROVED" },
-            ].map((tab) => (
-              <button key={tab.value} onClick={() => setFilterStatus(tab.value)}
-                className={`px-4 md:px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all duration-300 whitespace-nowrap ${
-                  filterStatus === tab.value
-                    ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg scale-105 glow'
-                    : 'text-gray-300 hover:bg-gray-700/50'
-                }`}>
-                {tab.label} ({getStatusCount(tab.value)})
-              </button>
-            ))}
-          </div>
-        </div>
+          {/* Column 1: Submitted Tasks */}
+          <TaskColumn
+            title="📥 Submitted Tasks"
+            count={submittedTasks.length}
+            color="blue"
+            tasks={submittedTasks}
+            onTaskClick={setSelectedSubmission}
+          />
 
-        {/* Submissions Grid */}
-        <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          {filteredSubmissions.length === 0 ? (
-            <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 border-2 border-gray-700/50 text-center">
-              <div className="text-6xl mb-4">📊</div>
-              <p className="text-gray-400 font-medium text-lg">No submissions found</p>
-              <p className="text-gray-500 text-sm mt-2">All Project V submissions will appear here</p>
-            </div>
-          ) : (
-            filteredSubmissions.map((submission) => (
-              <div key={submission.id}
-                className="bg-gray-800/40 backdrop-blur-xl rounded-2xl shadow-xl p-6 border-2 border-gray-700/50 hover:border-red-500/50 transition-all duration-300 hover:scale-[1.01] hover-lift cursor-pointer"
-                onClick={() => setSelectedSubmission(submission)}>
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white mb-1">{submission.title}</h3>
-                        <p className="text-sm text-gray-400">by {submission.contributor?.name || "Unknown"}</p>
-                      </div>
-                      <span className={`inline-flex px-3 py-1.5 text-xs font-bold rounded-full shadow-lg ${getStatusColor(submission.status)}`}>
-                        {submission.status.replace(/_/g, " ")}
-                      </span>
-                    </div>
+          {/* Column 2: Eligible for Manual Review */}
+          <TaskColumn
+            title="🔍 Eligible for Review"
+            count={eligibleTasks.length}
+            color="purple"
+            tasks={eligibleTasks}
+            onTaskClick={setSelectedSubmission}
+          />
 
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg font-semibold border border-blue-500/30 text-sm">
-                        {submission.language}
-                      </span>
-                      <span className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg font-semibold border border-purple-500/30 text-sm">
-                        {submission.category}
-                      </span>
-                      <span className="px-3 py-1 bg-pink-500/20 text-pink-300 rounded-lg font-semibold border border-pink-500/30 text-sm">
-                        {submission.difficulty}
-                      </span>
-                    </div>
+          {/* Column 3: Final Checks */}
+          <TaskColumn
+            title="✅ Final Checks"
+            count={finalChecksTasks.length}
+            color="cyan"
+            tasks={finalChecksTasks}
+            onTaskClick={setSelectedSubmission}
+          />
 
-                    <div className="text-xs text-gray-400 font-medium">
-                      📅 {new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
+          {/* Column 4: Approved */}
+          <TaskColumn
+            title="🎉 Approved"
+            count={approvedTasks.length}
+            color="green"
+            tasks={approvedTasks}
+            onTaskClick={setSelectedSubmission}
+          />
 
-                  <button onClick={(e) => { e.stopPropagation(); setSelectedSubmission(submission); }}
-                    className="px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105 whitespace-nowrap">
-                    Manage →
-                  </button>
-                </div>
-
-                {submission.changesDone && (
-                  <div className="mt-3 px-3 py-2 bg-blue-500/20 border border-blue-500/40 rounded-lg text-xs text-blue-300 font-bold">
-                    ✓ Contributor marked changes as done
-                  </div>
-                )}
-              </div>
-            ))
-          )}
         </div>
 
         {/* Submission Details Modal */}
@@ -437,6 +355,31 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
+                {/* Task Information */}
+                {selectedSubmission.taskLink && (
+                  <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-gray-200 mb-3">🔗 Task Link:</h4>
+                    <a href={selectedSubmission.taskLink} target="_blank" rel="noopener noreferrer"
+                      className="text-cyan-400 hover:text-cyan-300 text-sm break-all hover:underline font-medium">
+                      {selectedSubmission.taskLink}
+                    </a>
+                  </div>
+                )}
+
+                {selectedSubmission.accountPostedIn && (
+                  <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-gray-200 mb-2">📱 Account Posted In:</h4>
+                    <p className="text-white font-medium">{selectedSubmission.accountPostedIn}</p>
+                  </div>
+                )}
+
+                {selectedSubmission.reviewer && (
+                  <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
+                    <h4 className="font-bold text-gray-200 mb-2">👤 Reviewer:</h4>
+                    <p className="text-white font-medium">{selectedSubmission.reviewer.name}</p>
+                  </div>
+                )}
+
                 {/* Description */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-gray-200 mb-2 text-lg">📝 Description:</h4>
@@ -461,57 +404,6 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
-                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
-                  <h4 className="font-bold text-gray-200 mb-2">💻 Commit Hash:</h4>
-                  <code className="text-sm bg-gray-900/70 text-green-400 px-3 py-2 rounded-lg border border-gray-600 font-mono inline-block">
-                    {selectedSubmission.commitHash}
-                  </code>
-                </div>
-
-                {/* Processing Pipeline */}
-                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
-                  <h4 className="font-bold text-white mb-4 text-lg">🔄 Testing Pipeline Status:</h4>
-                  <div className="space-y-2">
-                    <ProcessStep label="1. Clone Repository" success={selectedSubmission.cloneSuccess} error={selectedSubmission.cloneError} />
-                    <ProcessStep label="2. Apply Test Patch" success={selectedSubmission.testPatchSuccess} error={selectedSubmission.testPatchError} />
-                    <ProcessStep label="3. Build Docker" success={selectedSubmission.dockerBuildSuccess} error={selectedSubmission.dockerBuildError} />
-                    <ProcessStep label="4. Run Base Tests" success={selectedSubmission.baseTestSuccess} error={selectedSubmission.baseTestError} />
-                    <ProcessStep label="5. Run New Tests" success={selectedSubmission.newTestSuccess} error={selectedSubmission.newTestError} />
-                    <ProcessStep label="6. Apply Solution Patch" success={selectedSubmission.solutionPatchSuccess} error={selectedSubmission.solutionPatchError} />
-                    <ProcessStep label="7. Final Base Tests" success={selectedSubmission.finalBaseTestSuccess} error={selectedSubmission.finalBaseTestError} />
-                    <ProcessStep label="8. Final New Tests" success={selectedSubmission.finalNewTestSuccess} error={selectedSubmission.finalNewTestError} />
-                  </div>
-                </div>
-
-                {selectedSubmission.processingLogs && (
-                  <div className="bg-gray-900/70 rounded-xl p-5 border border-gray-600/50">
-                    <h4 className="font-bold text-white mb-3 text-lg">📜 Processing Logs:</h4>
-                    <pre className="text-green-400 text-xs overflow-x-auto max-h-64 overflow-y-auto font-mono leading-relaxed custom-scrollbar">
-                      {selectedSubmission.processingLogs}
-                    </pre>
-                  </div>
-                )}
-
-                {/* Files */}
-                <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
-                  <h4 className="font-bold text-white mb-4 text-lg">📎 Submitted Files:</h4>
-                  <div className="space-y-2">
-                    {[
-                      { label: "Test Patch", url: selectedSubmission.testPatchUrl },
-                      { label: "Dockerfile", url: selectedSubmission.dockerfileUrl },
-                      { label: "Solution Patch", url: selectedSubmission.solutionPatchUrl },
-                    ].map((file) => (
-                      <div key={file.label} className="flex justify-between items-center p-3 bg-gray-600/30 rounded-lg hover:bg-gray-600/50 transition-colors">
-                        <span className="text-gray-200 font-medium">{file.label}</span>
-                        <a href={file.url} target="_blank" rel="noopener noreferrer"
-                          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-all duration-300 hover:scale-105">
-                          Download
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
                 {/* Previous Feedback */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
@@ -521,7 +413,7 @@ export default function ProjectVAdmin() {
                 )}
 
                 {/* Admin Actions */}
-                {(selectedSubmission.status === "PENDING_REVIEW" || selectedSubmission.status === "CHANGES_DONE" || selectedSubmission.status === "FINAL_CHECKS") && (
+                {(selectedSubmission.status === "ELIGIBLE_FOR_MANUAL_REVIEW" || selectedSubmission.status === "FINAL_CHECKS") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">👑 Admin Actions:</h4>
 
@@ -586,22 +478,124 @@ export default function ProjectVAdmin() {
   );
 }
 
-function ProcessStep({ label, success, error }: { label: string; success?: boolean; error?: string }) {
+// Task Column Component
+function TaskColumn({
+  title,
+  count,
+  color,
+  tasks,
+  onTaskClick
+}: {
+  title: string;
+  count: number;
+  color: string;
+  tasks: Submission[];
+  onTaskClick: (task: Submission) => void;
+}) {
+  const colorClasses = {
+    blue: {
+      gradient: "from-blue-600 to-cyan-600",
+      border: "border-blue-500/30",
+      bg: "bg-blue-500/10",
+      text: "text-blue-300",
+    },
+    purple: {
+      gradient: "from-purple-600 to-pink-600",
+      border: "border-purple-500/30",
+      bg: "bg-purple-500/10",
+      text: "text-purple-300",
+    },
+    cyan: {
+      gradient: "from-cyan-600 to-blue-600",
+      border: "border-cyan-500/30",
+      bg: "bg-cyan-500/10",
+      text: "text-cyan-300",
+    },
+    green: {
+      gradient: "from-green-600 to-emerald-600",
+      border: "border-green-500/30",
+      bg: "bg-green-500/10",
+      text: "text-green-300",
+    },
+  };
+
+  const colors = colorClasses[color as keyof typeof colorClasses];
+
   return (
-    <div className={`flex items-start justify-between p-4 rounded-xl border-2 transition-all duration-300 ${
-      success ? "bg-green-500/10 border-green-500/30" : error ? "bg-red-500/10 border-red-500/30" : "bg-gray-600/20 border-gray-600/30"
-    }`}>
-      <span className="text-sm text-gray-200 font-semibold">{label}</span>
-      <div className="flex items-center gap-2">
-        {success ? (
-          <span className="text-green-400 font-bold text-xl">✓</span>
-        ) : error ? (
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-red-400 font-bold text-xl">✗</span>
-            {error && <span className="text-xs text-red-300 max-w-xs text-right">{error}</span>}
+    <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border-2 border-gray-700/50 overflow-hidden shadow-xl">
+      {/* Column Header */}
+      <div className={`bg-gradient-to-r ${colors.gradient} p-4 border-b-2 ${colors.border}`}>
+        <h3 className="text-lg font-black text-white mb-1">{title}</h3>
+        <p className="text-sm text-white/80 font-semibold">{count} task{count !== 1 ? 's' : ''}</p>
+      </div>
+
+      {/* Column Content */}
+      <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+        {tasks.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-4xl mb-3">📭</div>
+            <p className="text-gray-400 text-sm font-medium">No tasks</p>
           </div>
         ) : (
-          <span className="text-gray-400 text-xl animate-pulse">⏳</span>
+          tasks.map((task) => (
+            <div key={task.id}
+              onClick={() => onTaskClick(task)}
+              className={`bg-gray-700/50 rounded-xl p-4 border-2 ${colors.border} hover:bg-gray-700/70 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg`}>
+
+              {/* Task Link */}
+              {task.taskLink && (
+                <div className="mb-2">
+                  <a href={task.taskLink} target="_blank" rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className={`text-xs ${colors.text} hover:underline font-semibold break-all`}>
+                    🔗 {task.taskLink.length > 40 ? task.taskLink.substring(0, 40) + '...' : task.taskLink}
+                  </a>
+                </div>
+              )}
+
+              {/* Title */}
+              <h4 className="text-white font-bold mb-2 line-clamp-2">{task.title}</h4>
+
+              {/* Author */}
+              <div className="text-xs text-gray-300 mb-1">
+                <span className="font-semibold">Author:</span> {task.contributor?.name || "Unknown"}
+              </div>
+
+              {/* Account */}
+              {task.accountPostedIn && (
+                <div className="text-xs text-gray-300 mb-2">
+                  <span className="font-semibold">Account:</span> {task.accountPostedIn}
+                </div>
+              )}
+
+              {/* Reviewer */}
+              {task.reviewer && (
+                <div className="text-xs text-gray-300 mb-2">
+                  <span className="font-semibold">Reviewer:</span> {task.reviewer.name}
+                </div>
+              )}
+
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {task.hasChangesRequested && (
+                  <span className="px-2 py-1 bg-orange-500/20 border border-orange-500/40 text-orange-300 rounded-lg text-xs font-bold">
+                    ⚠️ Changes Requested
+                  </span>
+                )}
+                {task.changesDone && (
+                  <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/40 text-blue-300 rounded-lg text-xs font-bold">
+                    ✓ Changes Done
+                  </span>
+                )}
+              </div>
+
+              {/* Metadata */}
+              <div className="mt-3 pt-3 border-t border-gray-600/30 flex gap-2 text-xs">
+                <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.language}</span>
+                <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.difficulty}</span>
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
