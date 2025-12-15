@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, lazy, ComponentType, ReactNode } from 'react'
-import LoadingSkeleton from './LoadingSkeleton'
+import { Skeleton } from './Skeleton'
 
 interface LazyLoadProps {
   fallback?: ReactNode
@@ -38,7 +38,7 @@ interface LazyLoadProps {
  */
 export default function LazyLoad({ fallback, children }: LazyLoadProps) {
   return (
-    <Suspense fallback={fallback || <LoadingSkeleton variant="card" />}>
+    <Suspense fallback={fallback || <Skeleton className="h-64 w-full rounded-xl" />}>
       {children}
     </Suspense>
   )
