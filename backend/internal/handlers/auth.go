@@ -116,10 +116,29 @@ func Signin(c *gin.Context) {
 		return
 	}
 
-	// Generate JWT
-	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
+	// Generate short-lived access token (15 minutes)
+	accessToken, err := utils.GenerateShortLivedJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
+		return
+	}
+
+	// Generate refresh token (30 days)
+	refreshTokenString, err := utils.GenerateRefreshToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
+		return
+	}
+
+	// Store refresh token in database
+	refreshToken := models.RefreshToken{
+		UserID:    user.ID,
+		Token:     refreshTokenString,
+		ExpiresAt: utils.GetRefreshTokenExpiry(),
+	}
+
+	if err := database.DB.Create(&refreshToken).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store refresh token"})
 		return
 	}
 
@@ -131,7 +150,8 @@ func Signin(c *gin.Context) {
 			"role":       user.Role,
 			"isApproved": user.IsApproved,
 		},
-		"token": token,
+		"accessToken":  accessToken,
+		"refreshToken": refreshTokenString,
 	})
 }
 
@@ -294,4 +314,124 @@ func ResetPassword(c *gin.Context) {
 	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successful"})
+}
+
+// RefreshTokenRequest represents refresh token request body
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
+// RefreshToken handles token refresh using a valid refresh token
+func RefreshToken(c *gin.Context) {
+	var req RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Find valid refresh token in database
+	var refreshToken models.RefreshToken
+	if err := database.DB.Where("token = ? AND revoked_at IS NULL AND expires_at > ?",
+		req.RefreshToken, time.Now()).Preload("User").First(&refreshToken).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired refresh token"})
+		return
+	}
+
+	user := refreshToken.User
+	if user == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Generate new access token (15 minutes)
+	accessToken, err := utils.GenerateShortLivedJWT(user.ID.String(), user.Email, string(user.Role))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
+		return
+	}
+
+	// Optionally implement refresh token rotation for enhanced security
+	// This creates a new refresh token and revokes the old one
+	// Uncomment the block below to enable rotation
+
+	/*
+	// Generate new refresh token
+	newRefreshTokenString, err := utils.GenerateRefreshToken()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate new refresh token"})
+		return
+	}
+
+	// Revoke old refresh token
+	now := time.Now()
+	if err := database.DB.Model(&refreshToken).Update("revoked_at", &now).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke old refresh token"})
+		return
+	}
+
+	// Store new refresh token
+	newRefreshToken := models.RefreshToken{
+		UserID:    user.ID,
+		Token:     newRefreshTokenString,
+		ExpiresAt: utils.GetRefreshTokenExpiry(),
+	}
+
+	if err := database.DB.Create(&newRefreshToken).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store new refresh token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"accessToken":  accessToken,
+		"refreshToken": newRefreshTokenString, // Return new refresh token
+	})
+	*/
+
+	// Without rotation (simpler, but less secure)
+	c.JSON(http.StatusOK, gin.H{
+		"accessToken": accessToken,
+	})
+}
+
+// Logout handles user logout by revoking refresh tokens
+func RevokeRefreshToken(c *gin.Context) {
+	var req RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Find and revoke refresh token
+	var refreshToken models.RefreshToken
+	if err := database.DB.Where("token = ?", req.RefreshToken).First(&refreshToken).Error; err != nil {
+		// Don't reveal if token exists - just return success
+		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+		return
+	}
+
+	// Revoke the token
+	now := time.Now()
+	if err := database.DB.Model(&refreshToken).Update("revoked_at", &now).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke token"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
+}
+
+// CleanupExpiredRefreshTokens removes expired refresh tokens from the database
+// This should be called periodically (e.g., via cron job)
+func CleanupExpiredRefreshTokens() error {
+	// Delete tokens that expired more than 7 days ago
+	result := database.DB.Where("expires_at < ?", time.Now().AddDate(0, 0, -7)).Delete(&models.RefreshToken{})
+	if result.Error != nil {
+		return result.Error
+	}
+
+	// Log the number of deleted tokens
+	if result.RowsAffected > 0 {
+		database.DB.Exec("SELECT pg_notify('refresh_tokens_cleaned', ?)", result.RowsAffected)
+	}
+
+	return nil
 }

@@ -106,6 +106,8 @@ func setupRouter() *gin.Engine {
 			auth.POST("/signup", handlers.Signup)
 			auth.POST("/signin", handlers.Signin)
 			auth.POST("/logout", handlers.Logout)
+			auth.POST("/refresh", handlers.RefreshToken)       // JWT refresh token endpoint
+			auth.POST("/revoke", handlers.RevokeRefreshToken) // Revoke refresh token
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetMe)
 			auth.POST("/forgot-password", handlers.ForgotPassword)
 			auth.POST("/reset-password", handlers.ResetPassword)

@@ -44,6 +44,19 @@ const (
 	ProjectVStatusEligible                ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
 )
 
+// RefreshToken model for JWT refresh token rotation
+type RefreshToken struct {
+	ID        uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	UserID    uuid.UUID `gorm:"type:uuid;not null;index" json:"userId"`     // Index for user lookup
+	Token     string    `gorm:"type:text;uniqueIndex;not null" json:"token"` // Index for token validation
+	ExpiresAt time.Time `gorm:"not null;index" json:"expiresAt"`            // Index for cleanup queries
+	CreatedAt time.Time `gorm:"index" json:"createdAt"`
+	RevokedAt *time.Time `gorm:"index" json:"revokedAt,omitempty"` // Index for filtering active tokens
+
+	// Relations
+	User *User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
+}
+
 // User model
 type User struct {
 	ID           uuid.UUID `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
@@ -57,9 +70,10 @@ type User struct {
 	UpdatedAt    time.Time `json:"updatedAt"`
 
 	// Relations
-	Submissions        []Submission `gorm:"foreignKey:ContributorID" json:"submissions,omitempty"`
-	ClaimedSubmissions []Submission `gorm:"foreignKey:ClaimedByID" json:"claimedSubmissions,omitempty"`
-	Reviews            []Review     `gorm:"foreignKey:TesterID" json:"reviews,omitempty"`
+	Submissions        []Submission   `gorm:"foreignKey:ContributorID" json:"submissions,omitempty"`
+	ClaimedSubmissions []Submission   `gorm:"foreignKey:ClaimedByID" json:"claimedSubmissions,omitempty"`
+	Reviews            []Review       `gorm:"foreignKey:TesterID" json:"reviews,omitempty"`
+	RefreshTokens      []RefreshToken `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"refreshTokens,omitempty"`
 }
 
 // Submission model
