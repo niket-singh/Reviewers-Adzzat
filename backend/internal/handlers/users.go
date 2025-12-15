@@ -443,3 +443,115 @@ func GetProfile(c *gin.Context) {
 		"stats": stats,
 	})
 }
+
+// DeleteMyAccount allows users to delete their own account
+func DeleteMyAccount(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	uid, _ := uuid.Parse(userID.(string))
+
+	var req struct {
+		Password string `json:"password" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Password is required"})
+		return
+	}
+
+	var user models.User
+	if err := database.DB.Preload("Submissions").Preload("ClaimedSubmissions").Preload("Reviews").First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	// Verify password
+	if !utils.CheckPasswordHash(req.Password, user.PasswordHash) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+		return
+	}
+
+	// Admins cannot delete their own account
+	if user.Role == models.RoleAdmin {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admins cannot delete their own account. Contact another admin."})
+		return
+	}
+
+	deletionSummary := gin.H{
+		"userName":              user.Name,
+		"userEmail":             user.Email,
+		"userRole":              user.Role,
+		"submissionsDeleted":    0,
+		"filesDeleted":          0,
+		"reviewsDeleted":        0,
+		"assignmentsUnassigned": 0,
+	}
+
+	// Handle contributor deletion
+	if user.Role == models.RoleContributor {
+		for _, submission := range user.Submissions {
+			storage.DeleteFile(submission.FileURL)
+			deletionSummary["filesDeleted"] = deletionSummary["filesDeleted"].(int) + 1
+		}
+		database.DB.Where("contributor_id = ?", uid).Delete(&models.Submission{})
+		deletionSummary["submissionsDeleted"] = len(user.Submissions)
+
+		// Delete ProjectV submissions
+		var projectVSubmissions []models.ProjectVSubmission
+		database.DB.Where("contributor_id = ?", uid).Find(&projectVSubmissions)
+		for _, submission := range projectVSubmissions {
+			storage.DeleteFile(submission.TestPatchURL)
+			storage.DeleteFile(submission.DockerfileURL)
+			storage.DeleteFile(submission.SolutionPatchURL)
+			deletionSummary["filesDeleted"] = deletionSummary["filesDeleted"].(int) + 3
+		}
+		database.DB.Where("contributor_id = ?", uid).Delete(&models.ProjectVSubmission{})
+	}
+
+	// Handle tester deletion
+	if user.Role == models.RoleTester {
+		// Unassign tasks
+		database.DB.Model(&models.Submission{}).
+			Where("claimed_by_id = ?", uid).
+			Updates(map[string]interface{}{
+				"claimed_by_id": nil,
+				"assigned_at":   nil,
+				"status":        models.StatusPending,
+			})
+		deletionSummary["assignmentsUnassigned"] = len(user.ClaimedSubmissions)
+
+		// Delete reviews
+		database.DB.Where("tester_id = ?", uid).Delete(&models.Review{})
+		deletionSummary["reviewsDeleted"] = len(user.Reviews)
+	}
+
+	// Handle reviewer deletion (for ProjectV)
+	if user.Role == models.RoleReviewer {
+		// Unassign ProjectV submissions
+		database.DB.Model(&models.ProjectVSubmission{}).
+			Where("reviewer_id = ?", uid).
+			Update("reviewer_id", nil)
+	}
+
+	// Delete user
+	if err := database.DB.Delete(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete account"})
+		return
+	}
+
+	// Log activity
+	targetType := "user"
+	services.LogActivity(services.LogActivityParams{
+		Action:      "DELETE_OWN_ACCOUNT",
+		Description: string(user.Role) + " deleted their own account: " + user.Name,
+		UserID:      &uid,
+		UserName:    &user.Name,
+		UserRole:    (*string)(&user.Role),
+		TargetID:    &uid,
+		TargetType:  &targetType,
+		Metadata:    deletionSummary,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":         "Account deleted successfully",
+		"deletionSummary": deletionSummary,
+	})
+}

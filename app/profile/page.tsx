@@ -44,13 +44,16 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [uploadingPfp, setUploadingPfp] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     password: '',
     confirmPassword: '',
   })
   const router = useRouter()
-  const { user: authUser, loading: authLoading } = useAuth()
+  const { user: authUser, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
   useEffect(() => {
@@ -111,6 +114,24 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await apiClient.logout()
     router.push('/')
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!deletePassword) {
+      showToast('Please enter your password', 'error')
+      return
+    }
+
+    setDeleting(true)
+    try {
+      await apiClient.deleteMyAccount(deletePassword)
+      showToast('Account deleted successfully', 'success')
+      await logout()
+      router.push('/')
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Failed to delete account', 'error')
+      setDeleting(false)
+    }
   }
 
   const handlePfpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -498,6 +519,73 @@ export default function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Danger Zone - Delete Account */}
+        {user.role !== 'ADMIN' && (
+          <div className="bg-red-900/20 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 mt-8 border-2 border-red-500/30 animate-slide-up hover-lift" style={{ animationDelay: '0.2s' }}>
+            <h3 className="text-2xl font-black mb-4 bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">
+              <svg className="w-7 h-7 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              Danger Zone
+            </h3>
+            <p className="text-gray-300 mb-6 font-medium">
+              Once you delete your account, there is no going back. This will permanently delete all your data including submissions, reviews, and files.
+            </p>
+
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 transition-all duration-300 font-bold shadow-md hover:shadow-xl hover:scale-105"
+              >
+                Delete My Account
+              </button>
+            ) : (
+              <div className="space-y-4 animate-slide-up">
+                <div className="bg-red-950/50 border-2 border-red-500/50 rounded-xl p-4">
+                  <p className="text-red-300 font-bold mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Are you absolutely sure? This action cannot be undone!
+                  </p>
+                  <div className="mb-4">
+                    <label className="block text-sm font-bold mb-2 text-gray-200">
+                      Enter your password to confirm
+                    </label>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Your password"
+                      className="w-full px-5 py-4 rounded-xl border-2 border-red-500/50 bg-gray-900/50 text-white placeholder-gray-400 focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition-all duration-300 font-medium"
+                      disabled={deleting}
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={deleting || !deletePassword}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl hover:from-red-700 hover:to-pink-700 transition-all duration-300 font-bold shadow-md hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {deleting ? 'Deleting...' : 'Yes, Delete My Account'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false)
+                        setDeletePassword('')
+                      }}
+                      disabled={deleting}
+                      className="flex-1 px-6 py-3 bg-gray-700 text-white rounded-xl hover:bg-gray-600 transition-all duration-300 font-bold shadow-md hover:shadow-xl disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

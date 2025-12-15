@@ -160,6 +160,11 @@ class ApiClient {
     return response.data
   }
 
+  async deleteMyAccount(password: string) {
+    const response = await this.client.delete('/profile', { data: { password } })
+    return response.data
+  }
+
   // Submissions
   async uploadSubmission(formData: FormData) {
     const response = await this.client.post('/submissions', formData, {

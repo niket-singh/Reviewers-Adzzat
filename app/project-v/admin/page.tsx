@@ -247,6 +247,22 @@ export default function ProjectVAdmin() {
     }
   };
 
+  const handleDeleteProjectVSubmission = async (submissionId: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete submission "${title}"? This action cannot be undone and will delete all associated files.`)) {
+      return;
+    }
+    setProcessing(true);
+    try {
+      await apiClient.deleteProjectVSubmission(submissionId);
+      showToast("✅ Submission deleted successfully", "success");
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to delete submission", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleToggleUsersSection = () => {
     const newState = !showUsersSection;
     setShowUsersSection(newState);
@@ -416,6 +432,7 @@ export default function ProjectVAdmin() {
             color="blue"
             tasks={submittedTasks}
             onTaskClick={setSelectedSubmission}
+            onDelete={handleDeleteProjectVSubmission}
           />
 
           {/* Column 2: Eligible for Manual Review */}
@@ -425,6 +442,7 @@ export default function ProjectVAdmin() {
             color="purple"
             tasks={eligibleTasks}
             onTaskClick={setSelectedSubmission}
+            onDelete={handleDeleteProjectVSubmission}
           />
 
           {/* Column 3: Final Checks */}
@@ -434,6 +452,7 @@ export default function ProjectVAdmin() {
             color="cyan"
             tasks={finalChecksTasks}
             onTaskClick={setSelectedSubmission}
+            onDelete={handleDeleteProjectVSubmission}
           />
 
           {/* Column 4: Approved */}
@@ -443,6 +462,7 @@ export default function ProjectVAdmin() {
             color="green"
             tasks={approvedTasks}
             onTaskClick={setSelectedSubmission}
+            onDelete={handleDeleteProjectVSubmission}
           />
 
         </div>
@@ -810,13 +830,15 @@ function TaskColumn({
   count,
   color,
   tasks,
-  onTaskClick
+  onTaskClick,
+  onDelete
 }: {
   title: string;
   count: number;
   color: string;
   tasks: Submission[];
   onTaskClick: (task: Submission) => void;
+  onDelete: (id: string, title: string) => void;
 }) {
   const colorClasses = {
     blue: {
@@ -915,10 +937,22 @@ function TaskColumn({
                 )}
               </div>
 
-              {/* Metadata */}
-              <div className="mt-3 pt-3 border-t border-gray-600/30 flex gap-2 text-xs">
-                <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.language}</span>
-                <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.difficulty}</span>
+              {/* Metadata & Actions */}
+              <div className="mt-3 pt-3 border-t border-gray-600/30 flex justify-between items-center gap-2 text-xs">
+                <div className="flex gap-2">
+                  <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.language}</span>
+                  <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.difficulty}</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(task.id, task.title);
+                  }}
+                  className="px-3 py-1.5 bg-red-600/80 hover:bg-red-700/80 text-white rounded-lg transition-all duration-300 font-bold"
+                  title="Delete submission"
+                >
+                  🗑️ Delete
+                </button>
               </div>
             </div>
           ))

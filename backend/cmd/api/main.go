@@ -124,6 +124,7 @@ func setupRouter() *gin.Engine {
 			// Profile routes
 			protected.GET("/profile", handlers.GetProfile)
 			protected.PUT("/profile", handlers.UpdateProfile)
+			protected.DELETE("/profile", handlers.DeleteMyAccount)
 
 			// Submission routes (Project X)
 			submissions := protected.Group("/submissions")
