@@ -9,7 +9,7 @@ export function useAutoSave<T>(
   data: T,
   delay: number = 1000
 ) {
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
     // Clear existing timeout
