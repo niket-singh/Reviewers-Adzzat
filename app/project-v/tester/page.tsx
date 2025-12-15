@@ -247,7 +247,7 @@ export default function ProjectVTester() {
               Approval Pending
             </h2>
             <p className="text-gray-300 leading-relaxed mb-6">
-              Your tester account is awaiting approval from an administrator. You'll receive access to the Project V testing dashboard once your account has been approved.
+              Your tester account is awaiting approval from an administrator. You will receive access to the Project V testing dashboard once your account has been approved.
             </p>
             <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
               <p className="text-sm text-gray-400">
