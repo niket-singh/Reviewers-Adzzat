@@ -560,6 +560,11 @@ export default function ProjectVContributor() {
                     <div className="text-xs text-gray-400 font-medium mt-3">
                       📅 {new Date(submission.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </div>
+                    {submission.status === "REWORK" && (
+                      <div className="mt-3 px-3 py-2 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-xs text-yellow-300 font-bold">
+                        🔄 Rework required - Tester feedback received
+                      </div>
+                    )}
                     {submission.status === "CHANGES_REQUESTED" && (
                       <div className="mt-3 px-3 py-2 bg-orange-500/20 border border-orange-500/40 rounded-lg text-xs text-orange-300 font-bold">
                         ⚠️ Changes requested by reviewer
@@ -592,9 +597,16 @@ export default function ProjectVContributor() {
                 {/* Title & Status */}
                 <div>
                   <h4 className="text-lg font-bold text-white mb-3">{selectedSubmission.title}</h4>
-                  <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-lg ${getStatusColor(selectedSubmission.status)}`}>
-                    {selectedSubmission.status.replace(/_/g, " ")}
-                  </span>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <span className={`inline-flex px-4 py-2 text-sm font-bold rounded-full shadow-lg ${getStatusColor(selectedSubmission.status)}`}>
+                      {selectedSubmission.status.replace(/_/g, " ")}
+                    </span>
+                    {(selectedSubmission.status === "REWORK" || selectedSubmission.status === "CHANGES_REQUESTED") && (
+                      <span className="px-3 py-1 bg-green-500/20 border border-green-500/40 rounded-lg text-xs text-green-300 font-bold">
+                        ✅ Can Resubmit
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Metadata Grid */}
