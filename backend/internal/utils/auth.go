@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"os"
 	"time"
@@ -76,4 +78,44 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return nil, errors.New("invalid token")
+}
+
+// GenerateRefreshToken generates a secure random refresh token
+func GenerateRefreshToken() (string, error) {
+	// Generate 32 random bytes (256 bits)
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	// Encode to base64 for safe transmission
+	return base64.URLEncoding.EncodeToString(bytes), nil
+}
+
+// GenerateShortLivedJWT generates a short-lived access token (15 minutes)
+// This is used with refresh tokens for better security
+func GenerateShortLivedJWT(userID, email, role string) (string, error) {
+	jwtSecret := getJWTSecret()
+	if len(jwtSecret) == 0 {
+		return "", errors.New("JWT_SECRET not set")
+	}
+
+	claims := &Claims{
+		UserID: userID,
+		Email:  email,
+		Role:   role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), // 15 minutes
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			NotBefore: jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString(jwtSecret)
+}
+
+// GetRefreshTokenExpiry returns the expiration time for refresh tokens (30 days)
+func GetRefreshTokenExpiry() time.Time {
+	return time.Now().Add(30 * 24 * time.Hour)
 }

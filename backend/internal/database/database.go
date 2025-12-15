@@ -97,6 +97,7 @@ func AutoMigrate() error {
 		&models.Review{},
 		&models.ActivityLog{},
 		&models.PasswordResetToken{},
+		&models.RefreshToken{}, // JWT refresh tokens for enhanced security
 		&models.AuditLog{},
 		&models.ProjectVSubmission{},
 	)
