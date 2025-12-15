@@ -884,7 +884,7 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 	if submission.Status == models.ProjectVStatusRework {
 		submission.Status = models.ProjectVStatusReworkDone
 	} else if submission.Status == models.ProjectVStatusChangesRequested {
-		submission.Status = models.ProjectVStatusChangesDone
+		submission.Status = models.ProjectVStatusInTesting
 		submission.ChangesDone = true
 	}
 

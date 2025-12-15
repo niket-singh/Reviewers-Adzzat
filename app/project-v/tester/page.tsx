@@ -575,7 +575,23 @@ export default function ProjectVTester() {
                   selectedSubmission.status === "REWORK_DONE") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">⚡ Tester Actions:</h4>
+                    {selectedSubmission.status === "IN_TESTING" && selectedSubmission.changesDone && (
+                      <div className="mb-4 p-4 bg-indigo-500/10 border-2 border-indigo-500/30 rounded-xl">
+                        <p className="text-indigo-300 text-sm font-semibold">
 
+                          🔄 Contributor has made changes after reviewer feedback. Please verify the changes:
+                        </p>
+                        <ul className="mt-2 ml-4 text-sm text-gray-300 space-y-1">
+                          <li>• Review the updated submission</li>
+
+                          <li>• Test the changes made by the contributor</li>
+
+                          <li>• If satisfied, mark as <strong>Eligible for Manual Review</strong> to send back to the same reviewer</li>
+
+                          <li>• If more work needed, provide additional <strong>Feedback</strong></li>
+                        </ul>
+                      </div>
+                    )}
                     {selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM" && (
                       <div className="mb-4 p-4 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-xl">
                         <p className="text-emerald-300 text-sm font-semibold">
