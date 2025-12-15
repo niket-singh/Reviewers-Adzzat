@@ -313,6 +313,15 @@ class ApiClient {
     return response.data
   }
 
+  async resubmitProjectVSubmission(id: string, formData: FormData) {
+    const response = await this.client.put(`/projectv/submissions/${id}/resubmit`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  }
+
   async deleteProjectVSubmission(id: string) {
     const response = await this.client.delete(`/projectv/submissions/${id}`)
     return response.data

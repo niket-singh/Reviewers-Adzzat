@@ -309,6 +309,89 @@ func RedistributeTasks() (int, error) {
 	return redistributedCount, nil
 }
 
+// AutoAssignTester automatically assigns a Project V submission to the tester with the least tasks
+func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
+	// Get all approved testers with green light ON (active)
+	var testers []models.User
+	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
+		models.RoleTester, true, true).Find(&testers).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(testers) == 0 {
+		// No active testers available - task stays without tester
+		return nil, nil
+	}
+
+	// Count tasks for each tester across active Project V statuses
+	type TesterTaskCount struct {
+		TesterID uuid.UUID
+		Count    int64
+	}
+
+	var testerCounts []TesterTaskCount
+	for _, tester := range testers {
+		var count int64
+		database.DB.Model(&models.ProjectVSubmission{}).
+			Where("tester_id = ? AND status IN ?", tester.ID, []string{
+				string(models.ProjectVStatusInTesting),
+				string(models.ProjectVStatusTaskSubmittedToPlatform),
+				string(models.ProjectVStatusEligible),
+				string(models.ProjectVStatusRework),
+				string(models.ProjectVStatusReworkDone),
+			}).
+			Count(&count)
+
+		testerCounts = append(testerCounts, TesterTaskCount{
+			TesterID: tester.ID,
+			Count:    count,
+		})
+	}
+
+	// Find tester with least tasks
+	minCount := testerCounts[0].Count
+	selectedTesterID := testerCounts[0].TesterID
+
+	for _, tc := range testerCounts {
+		if tc.Count < minCount {
+			minCount = tc.Count
+			selectedTesterID = tc.TesterID
+		}
+	}
+
+	// Get submission details for logging
+	var submission models.ProjectVSubmission
+	database.DB.Preload("Contributor").First(&submission, submissionID)
+
+	// Get tester details
+	var tester models.User
+	database.DB.First(&tester, selectedTesterID)
+
+	// Log the activity
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
+	userName := "System"
+	userRole := "SYSTEM"
+	targetType := "projectv_submission"
+
+	LogActivity(LogActivityParams{
+		Action:      "AUTO_ASSIGN_TESTER",
+		Description: "Project V task \"" + submission.Title + "\" auto-assigned to tester " + tester.Name,
+		UserID:      &userID,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &submissionID,
+		TargetType:  &targetType,
+		Metadata: map[string]interface{}{
+			"testerId":        selectedTesterID.String(),
+			"testerName":      tester.Name,
+			"contributorName": submission.Contributor.Name,
+		},
+	})
+
+	return &selectedTesterID, nil
+}
+
 // AutoAssignReviewer automatically assigns a Project V submission to the reviewer with the least tasks
 func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 	// Get all approved reviewers with green light ON (active)

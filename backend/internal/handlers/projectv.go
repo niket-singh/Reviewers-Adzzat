@@ -145,7 +145,13 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	// No async Docker processing needed
+	// Auto-assign tester based on workload
+	testerID, err := services.AutoAssignTester(submission.ID)
+	if err == nil && testerID != nil {
+		submission.TesterID = testerID
+		submission.Status = models.ProjectVStatusInTesting
+		database.DB.Save(&submission)
+	}
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Submission created successfully.",
@@ -723,6 +729,151 @@ func MarkRejected(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task rejected successfully", "submission": submission})
+}
+
+// ResubmitProjectVSubmission allows contributors to resubmit a task with feedback
+func ResubmitProjectVSubmission(c *gin.Context) {
+	userID := c.GetString("userId")
+	userRole := c.GetString("userRole")
+
+	id := c.Param("id")
+	submissionID, err := uuid.Parse(id)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid submission ID"})
+		return
+	}
+
+	var submission models.ProjectVSubmission
+	if err := database.DB.First(&submission, submissionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Submission not found"})
+		return
+	}
+
+	// Verify user is the contributor or admin
+	if userRole != "ADMIN" && submission.ContributorID.String() != userID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this submission"})
+		return
+	}
+
+	// Verify task has feedback (REWORK or CHANGES_REQUESTED)
+	if submission.Status != models.ProjectVStatusRework && submission.Status != models.ProjectVStatusChangesRequested {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Task does not have feedback to address"})
+		return
+	}
+
+	// Parse multipart form
+	if err := c.Request.ParseMultipartForm(50 << 20); err != nil { // 50MB max
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form data"})
+		return
+	}
+
+	// Get form values (only update if provided)
+	title := c.PostForm("title")
+	language := c.PostForm("language")
+	category := c.PostForm("category")
+	difficulty := c.PostForm("difficulty")
+	description := c.PostForm("description")
+	githubRepo := c.PostForm("githubRepo")
+	commitHash := c.PostForm("commitHash")
+	issueURL := c.PostForm("issueUrl")
+
+	// Update fields if provided
+	if title != "" {
+		submission.Title = title
+	}
+	if language != "" {
+		submission.Language = language
+	}
+	if category != "" {
+		submission.Category = category
+	}
+	if difficulty != "" {
+		submission.Difficulty = difficulty
+	}
+	if description != "" {
+		// Validate description (no non-ASCII characters)
+		if !isASCII(description) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Description must contain only ASCII characters"})
+			return
+		}
+		submission.Description = description
+	}
+	if githubRepo != "" {
+		// Validate GitHub repo URL format
+		if !isValidGitHubURL(githubRepo) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid GitHub repository URL"})
+			return
+		}
+		submission.GithubRepo = githubRepo
+	}
+	if commitHash != "" {
+		submission.CommitHash = commitHash
+	}
+	if issueURL != "" {
+		submission.IssueURL = issueURL
+	}
+
+	// Handle file uploads (optional - only if provided)
+	testPatchFile, testPatchHeader, err := c.Request.FormFile("testPatch")
+	if err == nil {
+		defer testPatchFile.Close()
+		testPatchData, err := io.ReadAll(testPatchFile)
+		if err == nil {
+			// Delete old file and upload new one
+			storage.DeleteFile(submission.TestPatchURL)
+			testPatchURL, err := storage.UploadFile(testPatchData, testPatchHeader.Filename, "text/plain")
+			if err == nil {
+				submission.TestPatchURL = testPatchURL
+			}
+		}
+	}
+
+	dockerFile, dockerHeader, err := c.Request.FormFile("dockerfile")
+	if err == nil {
+		defer dockerFile.Close()
+		dockerData, err := io.ReadAll(dockerFile)
+		if err == nil {
+			// Delete old file and upload new one
+			storage.DeleteFile(submission.DockerfileURL)
+			dockerfileURL, err := storage.UploadFile(dockerData, dockerHeader.Filename, "text/plain")
+			if err == nil {
+				submission.DockerfileURL = dockerfileURL
+			}
+		}
+	}
+
+	solutionPatchFile, solutionHeader, err := c.Request.FormFile("solutionPatch")
+	if err == nil {
+		defer solutionPatchFile.Close()
+		solutionPatchData, err := io.ReadAll(solutionPatchFile)
+		if err == nil {
+			// Delete old file and upload new one
+			storage.DeleteFile(submission.SolutionPatchURL)
+			solutionPatchURL, err := storage.UploadFile(solutionPatchData, solutionHeader.Filename, "text/plain")
+			if err == nil {
+				submission.SolutionPatchURL = solutionPatchURL
+			}
+		}
+	}
+
+	// Update status based on current state
+	if submission.Status == models.ProjectVStatusRework {
+		submission.Status = models.ProjectVStatusReworkDone
+	} else if submission.Status == models.ProjectVStatusChangesRequested {
+		submission.Status = models.ProjectVStatusChangesDone
+		submission.ChangesDone = true
+	}
+
+	// Save the updated submission
+	if err := database.DB.Save(&submission).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":    "Submission resubmitted successfully",
+		"submission": submission,
+	})
 }
 
 // Helper function to check if string contains only ASCII characters
