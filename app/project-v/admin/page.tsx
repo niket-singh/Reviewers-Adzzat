@@ -52,6 +52,17 @@ interface Submission {
   finalNewTestError?: string;
 }
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  isApproved: boolean;
+  isGreenLight: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function ProjectVAdmin() {
   const { user, loading, logout } = useAuth();
   const router = useRouter();
@@ -66,6 +77,12 @@ export default function ProjectVAdmin() {
   const [processing, setProcessing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Users state
+  const [users, setUsers] = useState<User[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [showUsersSection, setShowUsersSection] = useState(true);
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+
   const fetchSubmissions = useCallback(async () => {
     try {
       const data = await apiClient.getProjectVSubmissions();
@@ -78,13 +95,27 @@ export default function ProjectVAdmin() {
     }
   }, [showToast]);
 
+  const fetchUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const data = await apiClient.getUsers();
+      setUsers(data || []);
+    } catch (error: any) {
+      console.error("Error fetching users:", error);
+      showToast("Failed to fetch users", "error");
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, [showToast]);
+
   useEffect(() => {
     if (!loading && (!user || user.role !== "ADMIN")) {
       router.push("/");
     } else if (user) {
       fetchSubmissions();
+      fetchUsers();
     }
-  }, [user, loading, router, fetchSubmissions]);
+  }, [user, loading, router, fetchSubmissions, fetchUsers]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -155,6 +186,62 @@ export default function ProjectVAdmin() {
     router.push("/");
   };
 
+  // User management handlers
+  const handleApproveUser = async (userId: string) => {
+    setProcessing(true);
+    try {
+      await apiClient.approveTester(userId);
+      showToast("✅ User approved successfully", "success");
+      fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to approve user", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleToggleGreenLight = async (userId: string) => {
+    setProcessing(true);
+    try {
+      await apiClient.toggleGreenLight(userId);
+      showToast("✅ Green light status updated", "success");
+      fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to update green light status", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleSwitchRole = async (userId: string, newRole: string) => {
+    setProcessing(true);
+    try {
+      await apiClient.switchRole(userId, newRole);
+      showToast("✅ Role switched successfully", "success");
+      fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to switch role", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user "${userName}"? This action cannot be undone.`)) {
+      return;
+    }
+    setProcessing(true);
+    try {
+      await apiClient.deleteUser(userId);
+      showToast("✅ User deleted successfully", "success");
+      fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to delete user", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
       TASK_SUBMITTED_TO_PLATFORM: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
@@ -170,6 +257,18 @@ export default function ProjectVAdmin() {
   const eligibleTasks = submissions.filter(s => s.status === "ELIGIBLE_FOR_MANUAL_REVIEW");
   const finalChecksTasks = submissions.filter(s => s.status === "FINAL_CHECKS");
   const approvedTasks = submissions.filter(s => s.status === "APPROVED");
+
+  // Filter users based on search query
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    u.role.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+
+  // Group users by role
+  const contributors = filteredUsers.filter(u => u.role === "CONTRIBUTOR");
+  const reviewers = filteredUsers.filter(u => u.role === "REVIEWER");
+  const testers = filteredUsers.filter(u => u.role === "TESTER");
 
   if (loading || loadingSubmissions) {
     return (
@@ -331,6 +430,195 @@ export default function ProjectVAdmin() {
             onTaskClick={setSelectedSubmission}
           />
 
+        </div>
+
+        {/* Users Management Section */}
+        <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          {/* Section Header */}
+          <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border-2 border-gray-700/50 overflow-hidden shadow-xl">
+            <button
+              onClick={() => setShowUsersSection(!showUsersSection)}
+              className="w-full p-6 flex justify-between items-center hover:bg-gray-700/30 transition-all duration-300"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div className="text-left">
+                  <h2 className="text-2xl font-black bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                    User Management
+                  </h2>
+                  <p className="text-sm text-gray-400 font-medium">
+                    {users.length} total users • {contributors.length} Contributors • {reviewers.length} Reviewers • {testers.length} Testers
+                  </p>
+                </div>
+              </div>
+              <svg
+                className={`w-6 h-6 text-gray-400 transition-transform duration-300 ${showUsersSection ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Users Content */}
+            {showUsersSection && (
+              <div className="p-6 border-t-2 border-gray-700/50 space-y-6">
+                {/* Search Bar */}
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      placeholder="Search users by name, email, or role..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full px-5 py-3 pl-12 rounded-xl border-2 border-gray-700 bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300"
+                    />
+                    <svg className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <button
+                    onClick={fetchUsers}
+                    disabled={loadingUsers}
+                    className="px-5 py-3 bg-purple-600/80 hover:bg-purple-700/80 text-white rounded-xl font-semibold transition-all duration-300 disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <svg className={`w-5 h-5 ${loadingUsers ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Refresh
+                  </button>
+                </div>
+
+                {loadingUsers ? (
+                  <div className="flex justify-center py-12">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-gray-400 font-medium">Loading users...</p>
+                    </div>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-5xl mb-4">👥</div>
+                    <p className="text-gray-400 font-medium">No users found</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b-2 border-gray-700/50">
+                          <th className="text-left py-4 px-4 text-sm font-bold text-gray-300">Name</th>
+                          <th className="text-left py-4 px-4 text-sm font-bold text-gray-300">Email</th>
+                          <th className="text-left py-4 px-4 text-sm font-bold text-gray-300">Role</th>
+                          <th className="text-center py-4 px-4 text-sm font-bold text-gray-300">Status</th>
+                          <th className="text-center py-4 px-4 text-sm font-bold text-gray-300">Green Light</th>
+                          <th className="text-left py-4 px-4 text-sm font-bold text-gray-300">Joined</th>
+                          <th className="text-center py-4 px-4 text-sm font-bold text-gray-300">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredUsers.map((u) => (
+                          <tr key={u.id} className="border-b border-gray-700/30 hover:bg-gray-700/20 transition-colors duration-200">
+                            <td className="py-4 px-4">
+                              <div className="font-semibold text-white">{u.name}</div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="text-gray-300 text-sm">{u.email}</div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex px-3 py-1 text-xs font-bold rounded-full ${
+                                u.role === "CONTRIBUTOR" ? "bg-blue-500/20 text-blue-300 border border-blue-500/30" :
+                                u.role === "REVIEWER" ? "bg-purple-500/20 text-purple-300 border border-purple-500/30" :
+                                "bg-green-500/20 text-green-300 border border-green-500/30"
+                              }`}>
+                                {u.role}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              {u.role === "TESTER" && !u.isApproved ? (
+                                <span className="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-orange-500/20 text-orange-300 border border-orange-500/30">
+                                  Pending
+                                </span>
+                              ) : (
+                                <span className="inline-flex px-3 py-1 text-xs font-bold rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                                  Active
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4 text-center">
+                              {u.role === "REVIEWER" && u.isApproved ? (
+                                <button
+                                  onClick={() => handleToggleGreenLight(u.id)}
+                                  disabled={processing}
+                                  className={`p-2 rounded-lg transition-all duration-300 ${
+                                    u.isGreenLight
+                                      ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                      : "bg-gray-600/20 text-gray-400 hover:bg-gray-600/30"
+                                  }`}
+                                  title={u.isGreenLight ? "Deactivate (turn off green light)" : "Activate (turn on green light)"}
+                                >
+                                  {u.isGreenLight ? "🟢" : "⚫"}
+                                </button>
+                              ) : (
+                                <span className="text-gray-500 text-sm">-</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="text-gray-400 text-sm">
+                                {new Date(u.createdAt).toLocaleDateString()}
+                              </div>
+                            </td>
+                            <td className="py-4 px-4">
+                              <div className="flex gap-2 justify-center">
+                                {u.role === "TESTER" && !u.isApproved && (
+                                  <button
+                                    onClick={() => handleApproveUser(u.id)}
+                                    disabled={processing}
+                                    className="px-3 py-1.5 bg-green-600/80 hover:bg-green-700/80 text-white text-xs font-semibold rounded-lg transition-all duration-300 disabled:opacity-50"
+                                    title="Approve tester"
+                                  >
+                                    Approve
+                                  </button>
+                                )}
+                                <select
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleSwitchRole(u.id, e.target.value);
+                                      e.target.value = "";
+                                    }
+                                  }}
+                                  disabled={processing}
+                                  className="px-3 py-1.5 bg-gray-700/80 hover:bg-gray-600/80 text-white text-xs font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 cursor-pointer"
+                                  title="Switch user role"
+                                >
+                                  <option value="">Switch Role</option>
+                                  {u.role !== "CONTRIBUTOR" && <option value="CONTRIBUTOR">→ Contributor</option>}
+                                  {u.role !== "REVIEWER" && <option value="REVIEWER">→ Reviewer</option>}
+                                  {u.role !== "TESTER" && <option value="TESTER">→ Tester</option>}
+                                </select>
+                                <button
+                                  onClick={() => handleDeleteUser(u.id, u.name)}
+                                  disabled={processing}
+                                  className="px-3 py-1.5 bg-red-600/80 hover:bg-red-700/80 text-white text-xs font-semibold rounded-lg transition-all duration-300 disabled:opacity-50"
+                                  title="Delete user"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Submission Details Modal */}
