@@ -80,6 +80,22 @@ export default function ProjectVContributor() {
   const [processing, setProcessing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showResubmitModal, setShowResubmitModal] = useState(false);
+  const [resubmitData, setResubmitData] = useState({
+    title: "",
+    language: "",
+    category: "",
+    difficulty: "",
+    description: "",
+    githubRepo: "",
+    commitHash: "",
+    issueUrl: "",
+  });
+  const [resubmitFiles, setResubmitFiles] = useState({
+    testPatch: null as File | null,
+    dockerfile: null as File | null,
+    solutionPatch: null as File | null,
+  });
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -180,6 +196,70 @@ export default function ProjectVContributor() {
     }
   };
 
+  const handleOpenResubmitModal = (submission: Submission) => {
+    setResubmitData({
+      title: submission.title,
+      language: submission.language,
+      category: submission.category,
+      difficulty: submission.difficulty,
+      description: submission.description,
+      githubRepo: submission.githubRepo,
+      commitHash: submission.commitHash,
+      issueUrl: submission.issueUrl,
+    });
+    setResubmitFiles({
+      testPatch: null,
+      dockerfile: null,
+      solutionPatch: null,
+    });
+    setShowResubmitModal(true);
+  };
+
+  const handleResubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedSubmission) return;
+
+    if (!validateDescription(resubmitData.description)) {
+      showToast("Description must contain only ASCII characters", "error");
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("title", resubmitData.title);
+      formDataToSend.append("language", resubmitData.language);
+      formDataToSend.append("category", resubmitData.category);
+      formDataToSend.append("difficulty", resubmitData.difficulty);
+      formDataToSend.append("description", resubmitData.description);
+      formDataToSend.append("githubRepo", resubmitData.githubRepo);
+      formDataToSend.append("commitHash", resubmitData.commitHash);
+      formDataToSend.append("issueUrl", resubmitData.issueUrl);
+
+      if (resubmitFiles.testPatch) {
+        formDataToSend.append("testPatch", resubmitFiles.testPatch);
+      }
+      if (resubmitFiles.dockerfile) {
+        formDataToSend.append("dockerfile", resubmitFiles.dockerfile);
+      }
+      if (resubmitFiles.solutionPatch) {
+        formDataToSend.append("solutionPatch", resubmitFiles.solutionPatch);
+      }
+
+      await apiClient.resubmitProjectVSubmission(selectedSubmission.id, formDataToSend);
+      showToast("✅ Task resubmitted successfully!", "success");
+      setShowResubmitModal(false);
+      setSelectedSubmission(null);
+      fetchSubmissions();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Failed to resubmit task", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handleDeleteSubmission = async (submissionId: string) => {
     if (!confirm("Are you sure you want to delete this submission?")) return;
 
@@ -213,6 +293,7 @@ export default function ProjectVContributor() {
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
       REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
       REWORK: "bg-gradient-to-r from-yellow-500 to-orange-600 text-white",
+      REWORK_DONE: "bg-gradient-to-r from-teal-500 to-cyan-500 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
@@ -613,13 +694,13 @@ export default function ProjectVContributor() {
 
                 {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-700">
-                  {selectedSubmission.status === "CHANGES_REQUESTED" && (
-                    <button onClick={() => handleMarkChangesDone(selectedSubmission.id)} disabled={processing}
-                      className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                      {processing ? "Processing..." : "✅ Mark Changes as Done"}
+                  {(selectedSubmission.status === "REWORK" || selectedSubmission.status === "CHANGES_REQUESTED") && (
+                    <button onClick={() => handleOpenResubmitModal(selectedSubmission)} disabled={processing}
+                      className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                      🔄 Resubmit Task
                     </button>
                   )}
-                  {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "CHANGES_REQUESTED") && (
+                  {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "CHANGES_REQUESTED" || selectedSubmission.status === "REWORK") && (
                     <button onClick={() => handleDeleteSubmission(selectedSubmission.id)} disabled={processing}
                       className="px-6 py-4 bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                       🗑️ Delete
@@ -630,17 +711,137 @@ export default function ProjectVContributor() {
             </div>
           </div>
         )}
+
+        {/* Resubmit Modal */}
+        {showResubmitModal && selectedSubmission && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+            <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="text-2xl font-black bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                  🔄 Resubmit Task
+                </h3>
+                <button onClick={() => setShowResubmitModal(false)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-red-500/20 rounded-xl transition-all duration-300 hover:scale-110">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleResubmit} className="space-y-5">
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Title *</label>
+                  <input type="text" required value={resubmitData.title}
+                    onChange={(e) => setResubmitData({ ...resubmitData, title: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium"
+                    placeholder="e.g., Fix authentication bug in login" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold mb-2.5 text-gray-200">Language *</label>
+                    <select required value={resubmitData.language}
+                      onChange={(e) => setResubmitData({ ...resubmitData, language: e.target.value })}
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium">
+                      <option value="">Select Language</option>
+                      <option value="Python">Python</option>
+                      <option value="TypeScript">TypeScript</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-2.5 text-gray-200">Category *</label>
+                    <select required value={resubmitData.category}
+                      onChange={(e) => setResubmitData({ ...resubmitData, category: e.target.value })}
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium">
+                      <option value="">Select Category</option>
+                      <option value="Bug Fixing">Bug Fixing</option>
+                      <option value="Feature Request">Feature Request</option>
+                      <option value="Enhancement">Enhancement</option>
+                      <option value="Refactor">Refactor</option>
+                      <option value="Optimization">Optimization</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Difficulty *</label>
+                  <select value={resubmitData.difficulty}
+                    onChange={(e) => setResubmitData({ ...resubmitData, difficulty: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium">
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">Description (ASCII only) *</label>
+                  <textarea required value={resubmitData.description} rows={4}
+                    onChange={(e) => setResubmitData({ ...resubmitData, description: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium"
+                    placeholder="Describe the task and your solution..." />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Repository URL *</label>
+                  <input type="url" required value={resubmitData.githubRepo}
+                    onChange={(e) => setResubmitData({ ...resubmitData, githubRepo: e.target.value })}
+                    className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium font-mono text-sm"
+                    placeholder="https://github.com/username/repo" />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div>
+                    <label className="block text-sm font-bold mb-2.5 text-gray-200">Commit Hash *</label>
+                    <input type="text" required value={resubmitData.commitHash}
+                      onChange={(e) => setResubmitData({ ...resubmitData, commitHash: e.target.value })}
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-mono text-sm"
+                      placeholder="abc123def456..." />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL *</label>
+                    <input type="url" required value={resubmitData.issueUrl}
+                      onChange={(e) => setResubmitData({ ...resubmitData, issueUrl: e.target.value })}
+                      className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium text-sm"
+                      placeholder="https://github.com/.../issues/123" />
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-2 bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                  <p className="text-sm text-blue-300 font-semibold">📎 Upload new files (optional - only if you need to update them)</p>
+                  <FileInput label="Test Patch (optional)" file={resubmitFiles.testPatch}
+                    onChange={(file) => setResubmitFiles({ ...resubmitFiles, testPatch: file })} required={false} />
+                  <FileInput label="Dockerfile (optional)" file={resubmitFiles.dockerfile}
+                    onChange={(file) => setResubmitFiles({ ...resubmitFiles, dockerfile: file })} required={false} />
+                  <FileInput label="Solution Patch (optional)" file={resubmitFiles.solutionPatch}
+                    onChange={(file) => setResubmitFiles({ ...resubmitFiles, solutionPatch: file })} required={false} />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button type="submit" disabled={processing}
+                    className="flex-1 py-4 bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-black text-lg rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                    {processing ? "Resubmitting..." : "🔄 Resubmit Task"}
+                  </button>
+                  <button type="button" onClick={() => setShowResubmitModal(false)}
+                    className="px-8 py-4 bg-gray-700 hover:bg-gray-600 text-white font-bold rounded-xl transition-all duration-300">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function FileInput({ label, file, onChange }: { label: string; file: File | null; onChange: (file: File | null) => void }) {
+function FileInput({ label, file, onChange, required = true }: { label: string; file: File | null; onChange: (file: File | null) => void; required?: boolean }) {
   return (
     <div>
-      <label className="block text-sm font-bold mb-2.5 text-gray-200">{label} *</label>
+      <label className="block text-sm font-bold mb-2.5 text-gray-200">{label} {required && '*'}</label>
       <div className="relative">
-        <input type="file" required onChange={(e) => onChange(e.target.files?.[0] || null)}
+        <input type="file" required={required} onChange={(e) => onChange(e.target.files?.[0] || null)}
           className="w-full px-5 py-4 bg-gray-900/50 border-2 border-gray-700 text-white rounded-xl transition-all duration-300 focus:scale-[1.02] focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 file:mr-4 file:py-2.5 file:px-5 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-gradient-to-r file:from-purple-600 file:to-pink-600 file:text-white hover:file:from-purple-700 hover:file:to-pink-700 file:transition-all file:duration-300 file:cursor-pointer" />
       </div>
       {file && (

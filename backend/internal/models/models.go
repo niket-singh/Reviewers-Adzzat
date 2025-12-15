@@ -41,6 +41,7 @@ const (
 	ProjectVStatusApproved                ProjectVStatus = "APPROVED"
 	ProjectVStatusRejected                ProjectVStatus = "REJECTED"
 	ProjectVStatusRework                  ProjectVStatus = "REWORK"
+	ProjectVStatusReworkDone              ProjectVStatus = "REWORK_DONE"
 	ProjectVStatusEligible                ProjectVStatus = "ELIGIBLE_FOR_MANUAL_REVIEW"
 )
 

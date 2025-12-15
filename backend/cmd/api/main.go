@@ -145,6 +145,7 @@ func setupRouter() *gin.Engine {
 				projectv.PUT("/submissions/:id/changes-requested", handlers.MarkChangesRequested)
 				projectv.PUT("/submissions/:id/final-checks", handlers.MarkFinalChecks)
 				projectv.PUT("/submissions/:id/changes-done", handlers.MarkChangesDone)
+				projectv.PUT("/submissions/:id/resubmit", handlers.ResubmitProjectVSubmission)
 				projectv.PUT("/submissions/:id/task-submitted", handlers.MarkTaskSubmitted)
 				projectv.PUT("/submissions/:id/eligible", handlers.MarkEligibleForManualReview)
 				projectv.PUT("/submissions/:id/tester-feedback", handlers.SendTesterFeedback)
