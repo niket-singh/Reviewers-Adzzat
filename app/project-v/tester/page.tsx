@@ -108,6 +108,7 @@ export default function ProjectVTester() {
     const statusMap: Record<string, string> = {
       TASK_SUBMITTED: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
       IN_TESTING: "bg-gradient-to-r from-yellow-400 to-orange-400 text-white",
+      TASK_SUBMITTED_TO_PLATFORM: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white glow",
       PENDING_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
       ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white glow-purple",
       CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
@@ -116,6 +117,7 @@ export default function ProjectVTester() {
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
       REJECTED: "bg-gradient-to-r from-red-500 to-pink-600 text-white",
       REWORK: "bg-gradient-to-r from-yellow-500 to-orange-600 text-white",
+      REWORK_DONE: "bg-gradient-to-r from-teal-500 to-cyan-500 text-white",
     };
     return statusMap[status] || "bg-gray-100 text-gray-800";
   };
@@ -529,16 +531,31 @@ export default function ProjectVTester() {
                 )}
 
                 {/* Tester Actions */}
-                {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "IN_TESTING") && (
+                {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "IN_TESTING" || selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">⚡ Tester Actions:</h4>
 
+                    {selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM" && (
+                      <div className="mb-4 p-4 bg-emerald-500/10 border-2 border-emerald-500/30 rounded-xl">
+                        <p className="text-emerald-300 text-sm font-semibold">
+                          ✅ Task has been submitted to the platform. Check post-checks results:
+                        </p>
+                        <ul className="mt-2 ml-4 text-sm text-gray-300 space-y-1">
+                          <li>• If post-checks <strong>passed</strong>: Mark as <strong>Eligible for Manual Review</strong></li>
+                          <li>• If post-checks <strong>failed</strong>: Send <strong>Feedback</strong> to contributor</li>
+                        </ul>
+                      </div>
+                    )}
+
                     {!actionType ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <button onClick={() => setActionType("submitted")} disabled={processing}
-                          className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
-                          ✓ Task Submitted
-                        </button>
+                        {/* Only show Task Submitted button if not already submitted */}
+                        {selectedSubmission.status !== "TASK_SUBMITTED_TO_PLATFORM" && (
+                          <button onClick={() => setActionType("submitted")} disabled={processing}
+                            className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                            ✓ Task Submitted
+                          </button>
+                        )}
                         <button onClick={() => setActionType("eligible")} disabled={processing}
                           className="px-6 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                           → Eligible for Manual Review

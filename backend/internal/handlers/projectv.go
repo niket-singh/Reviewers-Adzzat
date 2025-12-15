@@ -347,7 +347,11 @@ func UpdateProjectVStatus(c *gin.Context) {
 func MarkChangesRequested(c *gin.Context) {
 	userRole := c.GetString("userRole")
 	if userRole != "REVIEWER" && userRole != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can request changes"})
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":        "Only reviewers can request changes",
+			"receivedRole": userRole,
+			"expectedRole": "REVIEWER or ADMIN",
+		})
 		return
 	}
 
@@ -403,7 +407,11 @@ func MarkChangesRequested(c *gin.Context) {
 func MarkFinalChecks(c *gin.Context) {
 	userRole := c.GetString("userRole")
 	if userRole != "REVIEWER" && userRole != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can mark for final checks"})
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":        "Only reviewers can mark for final checks",
+			"receivedRole": userRole,
+			"expectedRole": "REVIEWER or ADMIN",
+		})
 		return
 	}
 
@@ -681,7 +689,11 @@ func SendTesterFeedback(c *gin.Context) {
 func MarkRejected(c *gin.Context) {
 	userRole := c.GetString("userRole")
 	if userRole != "REVIEWER" && userRole != "ADMIN" {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Only reviewers can reject tasks"})
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":        "Only reviewers can reject tasks",
+			"receivedRole": userRole,
+			"expectedRole": "REVIEWER or ADMIN",
+		})
 		return
 	}
 
