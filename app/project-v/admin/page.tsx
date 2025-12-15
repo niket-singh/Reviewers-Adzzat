@@ -212,6 +212,14 @@ export default function ProjectVAdmin() {
             {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right items-center">
               <CompactThemeToggle />
+              <button onClick={() => router.push('/admin')}
+                className="px-5 py-2.5 bg-purple-600/80 backdrop-blur-sm text-white rounded-xl hover:bg-purple-700/80 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-purple-500/50 flex items-center gap-2"
+                title="Manage users, view stats, and access admin tools">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Manage Users
+              </button>
               <button onClick={() => router.push('/select-project')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600">
                 Switch Project
@@ -245,6 +253,13 @@ export default function ProjectVAdmin() {
               <div className="flex justify-center mb-2">
                 <CompactThemeToggle />
               </div>
+              <button onClick={() => { router.push('/admin'); setMobileMenuOpen(false); }}
+                className="w-full px-5 py-2.5 bg-purple-600/80 backdrop-blur-sm text-white rounded-xl hover:bg-purple-700/80 transition-all duration-300 font-semibold shadow-md border border-purple-500/50 flex items-center justify-center gap-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Manage Users
+              </button>
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
                 className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600">
                 Switch Project
