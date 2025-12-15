@@ -378,8 +378,14 @@ func MarkChangesRequested(c *gin.Context) {
 	}
 
 	// Verify task is in correct status
-	if submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
+	if submission.Status != models.ProjectVStatusEligible &&
+		submission.Status != models.ProjectVStatusPendingReview &&
+		submission.Status != models.ProjectVStatusChangesDone {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":         "Task is not in a reviewable state",
+			"currentStatus": submission.Status,
+			"allowedStates": "ELIGIBLE_FOR_MANUAL_REVIEW, PENDING_REVIEW, or CHANGES_DONE",
+		})
 		return
 	}
 
@@ -429,8 +435,14 @@ func MarkFinalChecks(c *gin.Context) {
 	}
 
 	// Verify task is in correct status
-	if submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
+	if submission.Status != models.ProjectVStatusEligible &&
+		submission.Status != models.ProjectVStatusPendingReview &&
+		submission.Status != models.ProjectVStatusChangesDone {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error":         "Task is not in a reviewable state",
+			"currentStatus": submission.Status,
+			"allowedStates": "ELIGIBLE_FOR_MANUAL_REVIEW, PENDING_REVIEW, or CHANGES_DONE",
+		})
 		return
 	}
 
