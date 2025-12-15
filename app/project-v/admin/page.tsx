@@ -588,7 +588,7 @@ export default function ProjectVAdmin() {
                               )}
                             </td>
                             <td className="py-4 px-4 text-center">
-                              {u.role === "REVIEWER" && u.isApproved ? (
+                              {(u.role === "REVIEWER" || u.role === "TESTER") && u.isApproved ? (
                                 <button
                                   onClick={() => handleToggleGreenLight(u.id)}
                                   disabled={processing}
