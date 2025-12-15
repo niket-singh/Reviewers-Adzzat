@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useToast } from "@/components/ToastContainer";
 import { apiClient } from "@/lib/api-client";
 import Breadcrumb from "@/components/Breadcrumb";
+import { CompactThemeToggle } from "@/components/ThemeToggle";
 
 interface Submission {
   id: string;
@@ -209,7 +210,8 @@ export default function ProjectVAdmin() {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex gap-3 animate-slide-in-right">
+            <div className="hidden md:flex gap-3 animate-slide-in-right items-center">
+              <CompactThemeToggle />
               <button onClick={() => router.push('/select-project')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600">
                 Switch Project
@@ -240,6 +242,9 @@ export default function ProjectVAdmin() {
           {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <div className="flex justify-center mb-2">
+                <CompactThemeToggle />
+              </div>
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
                 className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600">
                 Switch Project
