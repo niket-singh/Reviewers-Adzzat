@@ -464,7 +464,7 @@ func DeleteMyAccount(c *gin.Context) {
 	}
 
 	// Verify password
-	if !utils.CheckPasswordHash(req.Password, user.PasswordHash) {
+	if !utils.CheckPassword(req.Password, user.PasswordHash) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
 		return
 	}
