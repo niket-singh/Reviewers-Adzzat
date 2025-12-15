@@ -80,8 +80,9 @@ export default function ProjectVAdmin() {
   // Users state
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [showUsersSection, setShowUsersSection] = useState(true);
+  const [showUsersSection, setShowUsersSection] = useState(false); // Collapsed by default to improve performance
   const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [usersLoaded, setUsersLoaded] = useState(false); // Track if users have been loaded
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -100,9 +101,13 @@ export default function ProjectVAdmin() {
     try {
       const data = await apiClient.getUsers();
       setUsers(data || []);
+      setUsersLoaded(true);
     } catch (error: any) {
       console.error("Error fetching users:", error);
-      showToast("Failed to fetch users", "error");
+      const errorMsg = error.response?.data?.error || error.message || "Failed to fetch users";
+      showToast(`Failed to fetch users: ${errorMsg}`, "error");
+      setUsers([]); // Set empty array on error
+      setUsersLoaded(false);
     } finally {
       setLoadingUsers(false);
     }
@@ -113,9 +118,9 @@ export default function ProjectVAdmin() {
       router.push("/");
     } else if (user) {
       fetchSubmissions();
-      fetchUsers();
+      // Don't fetch users on mount - only when section is expanded
     }
-  }, [user, loading, router, fetchSubmissions, fetchUsers]);
+  }, [user, loading, router, fetchSubmissions]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -239,6 +244,16 @@ export default function ProjectVAdmin() {
       showToast(error.response?.data?.error || "Failed to delete user", "error");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleToggleUsersSection = () => {
+    const newState = !showUsersSection;
+    setShowUsersSection(newState);
+
+    // Fetch users when section is opened for the first time
+    if (newState && !usersLoaded) {
+      fetchUsers();
     }
   };
 
@@ -437,7 +452,7 @@ export default function ProjectVAdmin() {
           {/* Section Header */}
           <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border-2 border-gray-700/50 overflow-hidden shadow-xl">
             <button
-              onClick={() => setShowUsersSection(!showUsersSection)}
+              onClick={handleToggleUsersSection}
               className="w-full p-6 flex justify-between items-center hover:bg-gray-700/30 transition-all duration-300"
             >
               <div className="flex items-center gap-4">
@@ -451,7 +466,10 @@ export default function ProjectVAdmin() {
                     User Management
                   </h2>
                   <p className="text-sm text-gray-400 font-medium">
-                    {users.length} total users • {contributors.length} Contributors • {reviewers.length} Reviewers • {testers.length} Testers
+                    {usersLoaded
+                      ? `${users.length} total users • ${contributors.length} Contributors • ${reviewers.length} Reviewers • ${testers.length} Testers`
+                      : "Click to load and manage users"
+                    }
                   </p>
                 </div>
               </div>

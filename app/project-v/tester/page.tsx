@@ -86,9 +86,10 @@ export default function ProjectVTester() {
   useEffect(() => {
     if (!loading && (!user || user.role !== "TESTER")) {
       router.push("/");
-    } else if (user) {
+    } else if (user && user.isApproved) {
       fetchSubmissions();
     }
+    // Don't fetch if user is not approved - show pending message instead
   }, [user, loading, router, fetchSubmissions]);
 
   // Auto-refresh every 30 seconds
@@ -218,12 +219,49 @@ export default function ProjectVTester() {
     }
   };
 
-  if (loading || loadingSubmissions) {
+  if (loading || (user?.isApproved && loadingSubmissions)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-lg font-semibold text-gray-300">Loading testing dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show pending approval message for unapproved testers
+  if (user && !user.isApproved) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-gray-800/60 backdrop-blur-xl border-2 border-orange-500/40 rounded-3xl p-8 shadow-2xl text-center animate-slide-up">
+          <div className="mb-6">
+            <div className="w-20 h-20 mx-auto bg-orange-500/20 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-10 h-10 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-black bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent mb-3">
+              Approval Pending
+            </h2>
+            <p className="text-gray-300 leading-relaxed mb-6">
+              Your tester account is awaiting approval from an administrator. You'll receive access to the Project V testing dashboard once your account has been approved.
+            </p>
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-4 mb-6">
+              <p className="text-sm text-gray-400">
+                <span className="font-semibold text-white">Account:</span> {user.email}
+              </p>
+              <p className="text-sm text-gray-400 mt-1">
+                <span className="font-semibold text-white">Role:</span> {user.role}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="w-full px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white font-bold rounded-xl transition-all duration-300 shadow-lg hover:scale-105"
+          >
+            Logout
+          </button>
         </div>
       </div>
     );
