@@ -216,7 +216,7 @@ export default function ProjectVAdmin() {
   const handleSwitchRole = async (userId: string, newRole: string) => {
     setProcessing(true);
     try {
-      await apiClient.switchRole(userId, newRole);
+      await apiClient.switchUserRole(userId, newRole);
       showToast("✅ Role switched successfully", "success");
       fetchUsers();
     } catch (error: any) {
