@@ -100,8 +100,8 @@ func ToggleGreenLight(c *gin.Context) {
 		return
 	}
 
-	if user.Role != models.RoleTester {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "User is not a tester"})
+	if user.Role != models.RoleTester && user.Role != models.RoleReviewer {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User must be a tester or reviewer"})
 		return
 	}
 
@@ -170,7 +170,7 @@ func SwitchUserRole(c *gin.Context) {
 	}
 
 	var req struct {
-		NewRole string `json:"newRole" binding:"required,oneof=CONTRIBUTOR TESTER ADMIN"`
+		NewRole string `json:"newRole" binding:"required,oneof=CONTRIBUTOR REVIEWER TESTER ADMIN"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
