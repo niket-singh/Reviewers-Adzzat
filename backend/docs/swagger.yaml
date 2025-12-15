@@ -1,0 +1,727 @@
+openapi: 3.0.3
+info:
+  title: Reviewers-Adzzat Platform API
+  description: |
+    Comprehensive API documentation for the Reviewers-Adzzat task submission and review platform.
+
+    ## Authentication
+
+    Most endpoints require JWT authentication. Include the access token in the Authorization header:
+    ```
+    Authorization: Bearer <access_token>
+    ```
+
+    ## Token Refresh
+
+    Access tokens expire after 15 minutes. Use the refresh token to obtain a new access token without re-authenticating.
+
+    ## Rate Limiting
+
+    - Rate limit: 1000 requests per minute per IP
+    - Headers included in response:
+      - `X-RateLimit-Limit`: Maximum requests per minute
+      - `X-RateLimit-Remaining`: Remaining requests
+      - `X-RateLimit-Reset`: Time when limit resets
+
+  version: 2.0.0
+  contact:
+    name: API Support
+    email: support@reviewers-adzzat.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api
+    description: Development server
+  - url: https://api.reviewers-adzzat.com/api
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Users
+    description: User management operations
+  - name: Submissions
+    description: Task submission operations (Project X)
+  - name: Project V
+    description: Project V submission operations
+  - name: Admin
+    description: Admin-only operations
+  - name: WebSocket
+    description: Real-time communication
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token (15-minute expiry)
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        name:
+          type: string
+          example: "John Doe"
+        role:
+          type: string
+          enum: [ADMIN, TESTER, REVIEWER, CONTRIBUTOR]
+          example: "CONTRIBUTOR"
+        isApproved:
+          type: boolean
+          example: true
+        isGreenLight:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Submission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: "Implement user authentication"
+        domain:
+          type: string
+          example: "Backend"
+        language:
+          type: string
+          example: "Go"
+        fileUrl:
+          type: string
+          format: uri
+        fileName:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, CLAIMED, ELIGIBLE, APPROVED]
+        contributorId:
+          type: string
+          format: uuid
+        claimedById:
+          type: string
+          format: uuid
+          nullable: true
+        assignedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        contributor:
+          $ref: '#/components/schemas/User'
+        claimedBy:
+          $ref: '#/components/schemas/User'
+          nullable: true
+
+    ProjectVSubmission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        language:
+          type: string
+        category:
+          type: string
+        difficulty:
+          type: string
+          enum: [EASY, MEDIUM, HARD]
+        description:
+          type: string
+        githubRepo:
+          type: string
+          format: uri
+        commitHash:
+          type: string
+        issueUrl:
+          type: string
+          format: uri
+        testPatchUrl:
+          type: string
+          format: uri
+        dockerfileUrl:
+          type: string
+          format: uri
+        solutionPatchUrl:
+          type: string
+          format: uri
+        status:
+          type: string
+          enum:
+            - TASK_SUBMITTED
+            - IN_TESTING
+            - TASK_SUBMITTED_TO_PLATFORM
+            - PENDING_REVIEW
+            - CHANGES_REQUESTED
+            - CHANGES_DONE
+            - ELIGIBLE_FOR_MANUAL_REVIEW
+            - FINAL_CHECKS
+            - APPROVED
+            - REJECTED
+        taskLink:
+          type: string
+          format: uri
+          nullable: true
+        accountPostedIn:
+          type: string
+          nullable: true
+        hasChangesRequested:
+          type: boolean
+        changesDone:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Invalid credentials"
+      required:
+        - error
+
+paths:
+  # ==================== Authentication ====================
+  /auth/signup:
+    post:
+      tags: [Authentication]
+      summary: Register a new user
+      description: Create a new user account with contributor or reviewer role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "newuser@example.com"
+                password:
+                  type: string
+                  minLength: 6
+                  example: "securepassword123"
+                name:
+                  type: string
+                  example: "Jane Smith"
+                role:
+                  type: string
+                  enum: [CONTRIBUTOR, REVIEWER]
+                  example: "CONTRIBUTOR"
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                    description: Long-lived JWT token (7 days)
+        '400':
+          description: Invalid input or user already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/signin:
+    post:
+      tags: [Authentication]
+      summary: Sign in to get access and refresh tokens
+      description: |
+        Authenticate user and receive both access token (15 min) and refresh token (30 days).
+
+        **Note**: Response format changed in v2.0 - now returns `accessToken` and `refreshToken` instead of `token`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "user@example.com"
+                password:
+                  type: string
+                  example: "password123"
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  accessToken:
+                    type: string
+                    description: Short-lived JWT (15 minutes)
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  refreshToken:
+                    type: string
+                    description: Long-lived refresh token (30 days)
+                    example: "base64-encoded-secure-token"
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Refresh access token
+      description: |
+        Exchange a valid refresh token for a new access token.
+        Use this when the access token expires (every 15 minutes).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+                  description: The refresh token from signin
+                  example: "base64-encoded-refresh-token"
+      responses:
+        '200':
+          description: New access token generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    description: New short-lived JWT (15 minutes)
+        '401':
+          description: Invalid or expired refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /auth/revoke:
+    post:
+      tags: [Authentication]
+      summary: Revoke refresh token (logout)
+      description: Revoke a refresh token to log out from a specific device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token revoked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Logged out successfully"
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user info
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized - invalid or expired token
+
+  /auth/forgot-password:
+    post:
+      tags: [Authentication]
+      summary: Request password reset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset token generated (check email)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  token:
+                    type: string
+                    description: "Development only - remove in production"
+
+  /auth/reset-password:
+    post:
+      tags: [Authentication]
+      summary: Reset password with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                  description: Token from forgot-password endpoint
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+        '400':
+          description: Invalid or expired token
+
+  # ==================== Submissions (Project X) ====================
+  /submissions:
+    get:
+      tags: [Submissions]
+      summary: Get all submissions
+      description: Retrieve submissions based on user role (contributors see their own, reviewers see claimed/eligible)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [PENDING, CLAIMED, ELIGIBLE, APPROVED]
+        - name: search
+          in: query
+          schema:
+            type: string
+            description: Search by title
+      responses:
+        '200':
+          description: List of submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Submission'
+
+    post:
+      tags: [Submissions]
+      summary: Upload a new submission
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, domain, language, file]
+              properties:
+                title:
+                  type: string
+                domain:
+                  type: string
+                language:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Submission created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+
+  /submissions/{id}:
+    get:
+      tags: [Submissions]
+      summary: Get submission by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Submission details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Submission'
+        '404':
+          description: Submission not found
+
+    delete:
+      tags: [Submissions]
+      summary: Delete submission
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Submission deleted
+        '403':
+          description: Not authorized to delete this submission
+
+  # ==================== Project V ====================
+  /projectv/submissions:
+    get:
+      tags: [Project V]
+      summary: Get all Project V submissions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of Project V submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProjectVSubmission'
+
+    post:
+      tags: [Project V]
+      summary: Create Project V submission
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, language, category, difficulty, description, githubRepo, commitHash]
+              properties:
+                title:
+                  type: string
+                language:
+                  type: string
+                category:
+                  type: string
+                difficulty:
+                  type: string
+                  enum: [EASY, MEDIUM, HARD]
+                description:
+                  type: string
+                githubRepo:
+                  type: string
+                  format: uri
+                commitHash:
+                  type: string
+                issueUrl:
+                  type: string
+                testPatchUrl:
+                  type: string
+                dockerfileUrl:
+                  type: string
+                solutionPatchUrl:
+                  type: string
+      responses:
+        '201':
+          description: Project V submission created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectVSubmission'
+
+  /projectv/submissions/{id}/status:
+    put:
+      tags: [Project V]
+      summary: Update submission status
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                accountPostedIn:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  # ==================== Admin ====================
+  /users:
+    get:
+      tags: [Admin]
+      summary: Get all users (Admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '403':
+          description: Admin access required
+
+  /users/{id}/approve:
+    put:
+      tags: [Admin]
+      summary: Approve tester (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User approved
+        '403':
+          description: Admin access required
+
+  /stats:
+    get:
+      tags: [Admin]
+      summary: Get platform statistics (Admin only)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalSubmissions:
+                    type: integer
+                  totalUsers:
+                    type: integer
+                  approvedSubmissions:
+                    type: integer
+                  pendingReviews:
+                    type: integer
+
+  # ==================== WebSocket ====================
+  /ws:
+    get:
+      tags: [WebSocket]
+      summary: WebSocket connection for real-time updates
+      description: |
+        Establish WebSocket connection for real-time notifications.
+
+        **Authentication**: Pass JWT token as query parameter:
+        ```
+        ws://localhost:8080/api/ws?token=<access_token>
+        ```
+
+        **Message Types**:
+        - `SUBMISSION_CLAIMED`: When a submission is claimed
+        - `REVIEW_SUBMITTED`: When feedback is submitted
+        - `STATUS_CHANGED`: When submission status changes
+        - `USER_APPROVED`: When a user is approved (admin)
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+            description: JWT access token
+      responses:
+        '101':
+          description: Switching Protocols - WebSocket established
+        '401':
+          description: Invalid or missing token
