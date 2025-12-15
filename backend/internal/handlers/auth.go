@@ -116,29 +116,10 @@ func Signin(c *gin.Context) {
 		return
 	}
 
-	// Generate short-lived access token (15 minutes)
-	accessToken, err := utils.GenerateShortLivedJWT(user.ID.String(), user.Email, string(user.Role))
+	// Generate JWT token (7 days, consistent with signup)
+	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
-		return
-	}
-
-	// Generate refresh token (30 days)
-	refreshTokenString, err := utils.GenerateRefreshToken()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate refresh token"})
-		return
-	}
-
-	// Store refresh token in database
-	refreshToken := models.RefreshToken{
-		UserID:    user.ID,
-		Token:     refreshTokenString,
-		ExpiresAt: utils.GetRefreshTokenExpiry(),
-	}
-
-	if err := database.DB.Create(&refreshToken).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store refresh token"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
 
@@ -150,8 +131,7 @@ func Signin(c *gin.Context) {
 			"role":       user.Role,
 			"isApproved": user.IsApproved,
 		},
-		"accessToken":  accessToken,
-		"refreshToken": refreshTokenString,
+		"token": token,
 	})
 }
 
