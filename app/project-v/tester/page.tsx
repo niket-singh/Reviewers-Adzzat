@@ -531,7 +531,10 @@ export default function ProjectVTester() {
                 )}
 
                 {/* Tester Actions */}
-                {(selectedSubmission.status === "TASK_SUBMITTED" || selectedSubmission.status === "IN_TESTING" || selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM") && (
+                {(selectedSubmission.status === "TASK_SUBMITTED" ||
+                  selectedSubmission.status === "IN_TESTING" ||
+                  selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM" ||
+                  selectedSubmission.status === "REWORK_DONE") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">⚡ Tester Actions:</h4>
 
@@ -547,9 +550,21 @@ export default function ProjectVTester() {
                       </div>
                     )}
 
+                    {selectedSubmission.status === "REWORK_DONE" && (
+                      <div className="mb-4 p-4 bg-teal-500/10 border-2 border-teal-500/30 rounded-xl">
+                        <p className="text-teal-300 text-sm font-semibold">
+                          ✅ Contributor has resubmitted after addressing feedback. Review the changes and proceed:
+                        </p>
+                        <ul className="mt-2 ml-4 text-sm text-gray-300 space-y-1">
+                          <li>• Test the updated task</li>
+                          <li>• Submit to platform, mark as eligible, or provide additional feedback if needed</li>
+                        </ul>
+                      </div>
+                    )}
+
                     {!actionType ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {/* Only show Task Submitted button if not already submitted */}
+                        {/* Only show Task Submitted button if not already submitted to platform */}
                         {selectedSubmission.status !== "TASK_SUBMITTED_TO_PLATFORM" && (
                           <button onClick={() => setActionType("submitted")} disabled={processing}
                             className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
