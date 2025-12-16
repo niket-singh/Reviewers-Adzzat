@@ -87,6 +87,10 @@ export default function ProjectVAdmin() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [usersLoaded, setUsersLoaded] = useState(false); // Track if users have been loaded
 
+  // View mode state
+  const [viewMode, setViewMode] = useState<"kanban" | "all">("all"); // Default to "all" for god mode
+  const [searchQuery, setSearchQuery] = useState("");
+
   const fetchSubmissions = useCallback(async () => {
     try {
       // Admin God Mode: Use the admin endpoint to get ALL submissions with full details
@@ -279,19 +283,39 @@ export default function ProjectVAdmin() {
 
   const getStatusColor = (status: string) => {
     const statusMap: Record<string, string> = {
+      TASK_SUBMITTED: "bg-gradient-to-r from-gray-500 to-gray-600 text-white",
+      IN_TESTING: "bg-gradient-to-r from-yellow-500 to-orange-500 text-white",
       TASK_SUBMITTED_TO_PLATFORM: "bg-gradient-to-r from-blue-500 to-cyan-500 text-white glow",
+      PENDING_REVIEW: "bg-gradient-to-r from-indigo-500 to-purple-500 text-white",
+      CHANGES_REQUESTED: "bg-gradient-to-r from-orange-500 to-red-500 text-white",
+      CHANGES_DONE: "bg-gradient-to-r from-teal-500 to-cyan-500 text-white",
       ELIGIBLE_FOR_MANUAL_REVIEW: "bg-gradient-to-r from-purple-500 to-pink-500 text-white glow-purple",
       FINAL_CHECKS: "bg-gradient-to-r from-cyan-400 to-blue-500 text-white glow",
       APPROVED: "bg-gradient-to-r from-green-500 to-emerald-500 text-white glow-green",
+      REJECTED: "bg-gradient-to-r from-red-600 to-pink-600 text-white",
+      REWORK: "bg-gradient-to-r from-amber-500 to-orange-600 text-white",
+      REWORK_DONE: "bg-gradient-to-r from-lime-500 to-green-500 text-white",
     };
-    return statusMap[status] || "bg-gray-100 text-gray-800";
+    return statusMap[status] || "bg-gray-500 text-white";
   };
 
-  // Filter submissions by status for each column
+  // Filter submissions by status for each column (Kanban view)
   const submittedTasks = submissions.filter(s => s.status === "TASK_SUBMITTED_TO_PLATFORM");
   const eligibleTasks = submissions.filter(s => s.status === "ELIGIBLE_FOR_MANUAL_REVIEW");
   const finalChecksTasks = submissions.filter(s => s.status === "FINAL_CHECKS");
   const approvedTasks = submissions.filter(s => s.status === "APPROVED");
+
+  // Filter all submissions for "All View"
+  const filteredSubmissions = submissions.filter(s => {
+    const query = searchQuery.toLowerCase();
+    return (
+      s.title.toLowerCase().includes(query) ||
+      s.status.toLowerCase().includes(query) ||
+      s.contributor?.name.toLowerCase().includes(query) ||
+      s.tester?.name.toLowerCase().includes(query) ||
+      s.reviewer?.name.toLowerCase().includes(query)
+    );
+  });
 
   // Filter users based on search query
   const filteredUsers = users.filter(u =>
@@ -420,14 +444,54 @@ export default function ProjectVAdmin() {
           <div className="flex items-center gap-3">
             <div className="text-3xl">👑</div>
             <div>
-              <h3 className="text-lg font-bold text-red-300">Administrator Mode Active</h3>
-              <p className="text-sm text-gray-300">4-Column Dashboard View - Full Task Workflow Management</p>
+              <h3 className="text-lg font-bold text-red-300">Administrator GOD MODE Active</h3>
+              <p className="text-sm text-gray-300">Complete visibility over all submissions and feedback across the platform</p>
             </div>
           </div>
         </div>
 
-        {/* 4-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        {/* View Mode Toggle */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-slide-up" style={{ animationDelay: '0.05s' }}>
+          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-xl shadow-xl p-1.5 border border-gray-700/50">
+            <button
+              onClick={() => setViewMode("all")}
+              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                viewMode === "all"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                  : "text-gray-300 hover:bg-gray-700/50"
+              }`}
+            >
+              📊 All Submissions ({submissions.length})
+            </button>
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                viewMode === "kanban"
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                  : "text-gray-300 hover:bg-gray-700/50"
+              }`}
+            >
+              📋 Kanban View
+            </button>
+          </div>
+
+          {viewMode === "all" && (
+            <div className="relative w-full sm:w-96">
+              <input
+                type="text"
+                placeholder="🔍 Search by title, status, contributor, tester..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-5 py-3 pl-12 border-2 border-gray-700/50 rounded-xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 text-white placeholder-gray-400 font-medium"
+              />
+              <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400">🔍</span>
+            </div>
+          )}
+        </div>
+
+        {/* Kanban View */}
+        {viewMode === "kanban" && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
 
           {/* Column 1: Submitted Tasks */}
           <TaskColumn
@@ -470,6 +534,107 @@ export default function ProjectVAdmin() {
           />
 
         </div>
+        )}
+
+        {/* All Submissions View */}
+        {viewMode === "all" && (
+          <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+            {filteredSubmissions.length === 0 ? (
+              <div className="bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-12 text-center border-2 border-gray-700/50">
+                <div className="text-gray-400 text-6xl mb-4">📭</div>
+                <p className="text-gray-300 text-lg font-semibold">
+                  {searchQuery ? 'No submissions match your search.' : 'No submissions found.'}
+                </p>
+              </div>
+            ) : (
+              filteredSubmissions.map((submission) => (
+                <div key={submission.id} className="bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-6 border-2 border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 cursor-pointer"
+                  onClick={() => setSelectedSubmission(submission)}>
+                  <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-white mb-3">{submission.title}</h3>
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusColor(submission.status)}`}>
+                          {submission.status.replace(/_/g, " ")}
+                        </span>
+                        <span className="px-4 py-2 bg-blue-500/20 text-blue-300 rounded-full text-sm font-semibold border border-blue-500/30">
+                          {submission.language}
+                        </span>
+                        <span className="px-4 py-2 bg-purple-500/20 text-purple-300 rounded-full text-sm font-semibold border border-purple-500/30">
+                          {submission.difficulty}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div className="bg-gray-700/30 rounded-lg p-3 border border-green-500/30">
+                          <div className="text-green-400 font-semibold mb-1">📝 Contributor</div>
+                          <div className="text-white">{submission.contributor?.name || "Unknown"}</div>
+                          <div className="text-gray-400 text-xs">{submission.contributor?.email}</div>
+                        </div>
+
+                        <div className="bg-gray-700/30 rounded-lg p-3 border border-blue-500/30">
+                          <div className="text-blue-400 font-semibold mb-1">🧪 Tester</div>
+                          {submission.tester ? (
+                            <>
+                              <div className="text-white">{submission.tester.name}</div>
+                              <div className="text-gray-400 text-xs">{submission.tester.email}</div>
+                            </>
+                          ) : (
+                            <div className="text-gray-500">Not assigned</div>
+                          )}
+                        </div>
+
+                        <div className="bg-gray-700/30 rounded-lg p-3 border border-orange-500/30">
+                          <div className="text-orange-400 font-semibold mb-1">👁️ Reviewer</div>
+                          {submission.reviewer ? (
+                            <>
+                              <div className="text-white">{submission.reviewer.name}</div>
+                              <div className="text-gray-400 text-xs">{submission.reviewer.email}</div>
+                            </>
+                          ) : (
+                            <div className="text-gray-500">Not assigned</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {(submission.testerFeedback || submission.reviewerFeedback) && (
+                        <div className="mt-4 space-y-2">
+                          {submission.testerFeedback && (
+                            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                              <div className="text-blue-300 font-semibold text-xs mb-1">💬 Tester Feedback</div>
+                              <div className="text-gray-200 text-sm line-clamp-2">{submission.testerFeedback}</div>
+                            </div>
+                          )}
+                          {submission.reviewerFeedback && (
+                            <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3">
+                              <div className="text-orange-300 font-semibold text-xs mb-1">📢 Reviewer Feedback</div>
+                              <div className="text-gray-200 text-sm line-clamp-2">{submission.reviewerFeedback}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <div className="text-sm text-gray-400">
+                        {new Date(submission.createdAt).toLocaleDateString()}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteProjectVSubmission(submission.id);
+                        }}
+                        className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-all duration-300 border border-red-500/30 font-semibold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Users Management Section */}
         <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
