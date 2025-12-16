@@ -622,7 +622,7 @@ export default function ProjectVAdmin() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteProjectVSubmission(submission.id);
+                          handleDeleteProjectVSubmission(submission.id, submission.title);
                         }}
                         className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg transition-all duration-300 border border-red-500/30 font-semibold"
                       >
