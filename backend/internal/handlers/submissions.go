@@ -11,6 +11,7 @@ import (
 	"github.com/adzzatxperts/backend/internal/storage"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // UploadSubmission handles file upload
@@ -175,9 +176,17 @@ func GetReviewedSubmissions(c *gin.Context) {
 	// Get search query
 	search := c.Query("search")
 
-	// Get all reviews by this tester
+	// Get reviews - ADMINS SEE ALL, TESTERS SEE ONLY THEIRS
 	var reviews []models.Review
-	query := database.DB.Where("tester_id = ?", uid)
+	var query *gorm.DB
+
+	if userRole == string(models.RoleAdmin) {
+		// ADMIN GOD MODE: See ALL reviews from ALL testers
+		query = database.DB.Model(&models.Review{})
+	} else {
+		// Testers only see their own reviews
+		query = database.DB.Where("tester_id = ?", uid)
+	}
 
 	if err := query.Find(&reviews).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
@@ -195,8 +204,11 @@ func GetReviewedSubmissions(c *gin.Context) {
 		return
 	}
 
-	// Get submissions
-	submissionQuery := database.DB.Preload("Contributor").Preload("Reviews").Preload("ClaimedBy").
+	// Get submissions with all related data
+	submissionQuery := database.DB.
+		Preload("Contributor").
+		Preload("Reviews.Tester").
+		Preload("ClaimedBy").
 		Where("id IN ?", submissionIDs)
 
 	// Search filter
