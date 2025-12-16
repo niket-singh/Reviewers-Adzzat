@@ -275,6 +275,24 @@ class ApiClient {
     return response.data
   }
 
+  // Admin God Mode - View ALL data
+  async getAllReviews(params?: { limit?: number; offset?: number; testerId?: string; submissionId?: string }) {
+    const response = await this.client.get('/admin/reviews', { params })
+    return response.data
+  }
+
+  async getAllProjectVSubmissions(params?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+    contributorId?: string;
+    testerId?: string;
+    reviewerId?: string
+  }) {
+    const response = await this.client.get('/admin/projectv/submissions', { params })
+    return response.data
+  }
+
   // Project V
   async createProjectVSubmission(formData: FormData) {
     const response = await this.client.post('/projectv/submissions', formData, {
