@@ -641,8 +641,8 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		if sub.RejectionReason != nil {
 			submissionData["rejectionReason"] = *sub.RejectionReason
 		}
-		if sub.GitHubIssueURL != nil {
-			submissionData["githubIssueUrl"] = *sub.GitHubIssueURL
+		if sub.IssueURL != "" {
+			submissionData["issueUrl"] = sub.IssueURL
 		}
 
 		// Add contributor info
