@@ -23,11 +23,14 @@ interface Submission {
   solutionPatchUrl: string;
   status: string;
   reviewerFeedback?: string;
+  testerFeedback?: string;
   hasChangesRequested: boolean;
   changesDone: boolean;
   accountPostedIn?: string;
   taskLink?: string;
   taskLinkSubmitted?: string;
+  submittedAccount?: string;
+  rejectionReason?: string;
   createdAt: string;
   contributor?: { id: string; name: string; email: string };
   tester?: { id: string; name: string; email: string };
@@ -86,8 +89,9 @@ export default function ProjectVAdmin() {
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      const data = await apiClient.getProjectVSubmissions();
-      setSubmissions(data || []);
+      // Admin God Mode: Use the admin endpoint to get ALL submissions with full details
+      const data = await apiClient.getAllProjectVSubmissions({ limit: 500 });
+      setSubmissions(data.submissions || []);
     } catch (error: any) {
       console.error("Error fetching submissions:", error);
       showToast("Failed to fetch submissions", "error");
@@ -701,6 +705,46 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
+                {/* Team & People Involved - Admin God Mode */}
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 rounded-xl p-5">
+                  <h4 className="font-bold text-purple-300 mb-4 text-lg">👥 Team & People Involved</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-800/50 rounded-lg p-4 border border-green-500/30">
+                      <div className="text-xs text-green-400 font-semibold mb-2">📝 Contributor</div>
+                      {selectedSubmission.contributor ? (
+                        <>
+                          <div className="text-white font-bold">{selectedSubmission.contributor.name}</div>
+                          <div className="text-gray-400 text-sm">{selectedSubmission.contributor.email}</div>
+                        </>
+                      ) : (
+                        <div className="text-gray-500 text-sm">Not assigned</div>
+                      )}
+                    </div>
+                    <div className="bg-gray-800/50 rounded-lg p-4 border border-blue-500/30">
+                      <div className="text-xs text-blue-400 font-semibold mb-2">🧪 Tester</div>
+                      {selectedSubmission.tester ? (
+                        <>
+                          <div className="text-white font-bold">{selectedSubmission.tester.name}</div>
+                          <div className="text-gray-400 text-sm">{selectedSubmission.tester.email}</div>
+                        </>
+                      ) : (
+                        <div className="text-gray-500 text-sm">Not assigned</div>
+                      )}
+                    </div>
+                    <div className="bg-gray-800/50 rounded-lg p-4 border border-orange-500/30">
+                      <div className="text-xs text-orange-400 font-semibold mb-2">👁️ Reviewer</div>
+                      {selectedSubmission.reviewer ? (
+                        <>
+                          <div className="text-white font-bold">{selectedSubmission.reviewer.name}</div>
+                          <div className="text-gray-400 text-sm">{selectedSubmission.reviewer.email}</div>
+                        </>
+                      ) : (
+                        <div className="text-gray-500 text-sm">Not assigned</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
                 {/* Task Information */}
                 {selectedSubmission.taskLink && (
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
@@ -750,11 +794,39 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
-                {/* Previous Feedback */}
+                {/* Previous Feedback - Admin God Mode View */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
-                    <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Previous Feedback:</h4>
+                    <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback:</h4>
                     <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.reviewerFeedback}</p>
+                  </div>
+                )}
+
+                {selectedSubmission.testerFeedback && (
+                  <div className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-5">
+                    <h4 className="font-bold text-blue-300 mb-3 text-lg">💬 Tester Feedback:</h4>
+                    <p className="text-gray-200 leading-relaxed whitespace-pre-wrap">{selectedSubmission.testerFeedback}</p>
+                  </div>
+                )}
+
+                {/* Additional Admin Info */}
+                {(selectedSubmission.submittedAccount || selectedSubmission.rejectionReason) && (
+                  <div className="bg-gray-700/30 border border-gray-600 rounded-xl p-5">
+                    <h4 className="font-bold text-gray-200 mb-3 text-lg">ℹ️ Additional Information</h4>
+                    <div className="space-y-2 text-sm">
+                      {selectedSubmission.submittedAccount && (
+                        <div>
+                          <span className="text-gray-400 font-semibold">Submitted Account:</span>
+                          <span className="text-white ml-2">{selectedSubmission.submittedAccount}</span>
+                        </div>
+                      )}
+                      {selectedSubmission.rejectionReason && (
+                        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mt-2">
+                          <span className="text-red-400 font-semibold">Rejection Reason:</span>
+                          <p className="text-gray-200 mt-1 whitespace-pre-wrap">{selectedSubmission.rejectionReason}</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

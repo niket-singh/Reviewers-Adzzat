@@ -182,6 +182,10 @@ func setupRouter() *gin.Engine {
 
 				// Audit logs
 				admin.GET("/admin/audit-logs", handlers.GetAuditLogs)
+
+				// Admin God Mode - View ALL data
+				admin.GET("/admin/reviews", handlers.GetAllReviews)                     // All Project X feedback
+				admin.GET("/admin/projectv/submissions", handlers.GetAllProjectVSubmissions) // All Project V submissions with feedback
 			}
 		}
 	}

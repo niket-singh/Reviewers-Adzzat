@@ -430,3 +430,255 @@ func GetAuditLogs(c *gin.Context) {
 		"actionCounts": actionCountsMap,
 	})
 }
+
+// GetAllReviews returns all reviews/feedback across all submissions (Admin God Mode)
+func GetAllReviews(c *gin.Context) {
+	// Parse query parameters for filtering and pagination
+	limitStr := c.DefaultQuery("limit", "100")
+	offsetStr := c.DefaultQuery("offset", "0")
+	testerIDStr := c.Query("testerId")
+	submissionIDStr := c.Query("submissionId")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	// Build query with all relations preloaded
+	query := database.DB.Model(&models.Review{}).
+		Preload("Tester").
+		Preload("Submission").
+		Preload("Submission.Contributor")
+
+	// Apply filters
+	if testerIDStr != "" {
+		testerID, err := uuid.Parse(testerIDStr)
+		if err == nil {
+			query = query.Where("tester_id = ?", testerID)
+		}
+	}
+
+	if submissionIDStr != "" {
+		submissionID, err := uuid.Parse(submissionIDStr)
+		if err == nil {
+			query = query.Where("submission_id = ?", submissionID)
+		}
+	}
+
+	// Get total count
+	var total int64
+	query.Count(&total)
+
+	// Get reviews with pagination
+	var reviews []models.Review
+	err = query.Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&reviews).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reviews"})
+		return
+	}
+
+	// Transform reviews into detailed response
+	reviewsResponse := make([]gin.H, 0, len(reviews))
+	for _, review := range reviews {
+		reviewData := gin.H{
+			"id":        review.ID,
+			"feedback":  review.Feedback,
+			"createdAt": review.CreatedAt,
+		}
+
+		// Add account posted in if available
+		if review.AccountPostedIn != nil {
+			reviewData["accountPostedIn"] = *review.AccountPostedIn
+		}
+
+		// Add tester info
+		if review.Tester != nil {
+			reviewData["tester"] = gin.H{
+				"id":    review.Tester.ID,
+				"name":  review.Tester.Name,
+				"email": review.Tester.Email,
+			}
+		}
+
+		// Add submission info
+		if review.Submission != nil {
+			submissionData := gin.H{
+				"id":     review.Submission.ID,
+				"title":  review.Submission.Title,
+				"domain": review.Submission.Domain,
+				"status": review.Submission.Status,
+			}
+
+			// Add contributor info if available
+			if review.Submission.Contributor != nil {
+				submissionData["contributor"] = gin.H{
+					"id":    review.Submission.Contributor.ID,
+					"name":  review.Submission.Contributor.Name,
+					"email": review.Submission.Contributor.Email,
+				}
+			}
+
+			reviewData["submission"] = submissionData
+		}
+
+		reviewsResponse = append(reviewsResponse, reviewData)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"reviews": reviewsResponse,
+		"total":   total,
+		"limit":   limit,
+		"offset":  offset,
+	})
+}
+
+// GetAllProjectVSubmissions returns all Project V submissions with full details (Admin God Mode)
+func GetAllProjectVSubmissions(c *gin.Context) {
+	// Parse query parameters for filtering and pagination
+	limitStr := c.DefaultQuery("limit", "100")
+	offsetStr := c.DefaultQuery("offset", "0")
+	statusStr := c.Query("status")
+	contributorIDStr := c.Query("contributorId")
+	testerIDStr := c.Query("testerId")
+	reviewerIDStr := c.Query("reviewerId")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 {
+		limit = 100
+	}
+	if limit > 500 {
+		limit = 500
+	}
+
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
+	// Build query with all relations preloaded
+	query := database.DB.Model(&models.ProjectVSubmission{}).
+		Preload("Contributor").
+		Preload("Tester").
+		Preload("Reviewer")
+
+	// Apply filters
+	if statusStr != "" {
+		query = query.Where("status = ?", statusStr)
+	}
+
+	if contributorIDStr != "" {
+		contributorID, err := uuid.Parse(contributorIDStr)
+		if err == nil {
+			query = query.Where("contributor_id = ?", contributorID)
+		}
+	}
+
+	if testerIDStr != "" {
+		testerID, err := uuid.Parse(testerIDStr)
+		if err == nil {
+			query = query.Where("tester_id = ?", testerID)
+		}
+	}
+
+	if reviewerIDStr != "" {
+		reviewerID, err := uuid.Parse(reviewerIDStr)
+		if err == nil {
+			query = query.Where("reviewer_id = ?", reviewerID)
+		}
+	}
+
+	// Get total count
+	var total int64
+	query.Count(&total)
+
+	// Get submissions with pagination
+	var submissions []models.ProjectVSubmission
+	err = query.Order("created_at DESC").
+		Limit(limit).
+		Offset(offset).
+		Find(&submissions).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch Project V submissions"})
+		return
+	}
+
+	// Transform submissions into detailed response
+	submissionsResponse := make([]gin.H, 0, len(submissions))
+	for _, sub := range submissions {
+		submissionData := gin.H{
+			"id":                  sub.ID,
+			"title":               sub.Title,
+			"status":              sub.Status,
+			"createdAt":           sub.CreatedAt,
+			"updatedAt":           sub.UpdatedAt,
+			"testerFeedback":      sub.TesterFeedback,
+			"reviewerFeedback":    sub.ReviewerFeedback,
+			"hasChangesRequested": sub.HasChangesRequested,
+			"processingComplete":  sub.ProcessingComplete,
+			"processingLogs":      sub.ProcessingLogs,
+		}
+
+		// Add optional fields
+		if sub.SubmittedAccount != nil {
+			submissionData["submittedAccount"] = *sub.SubmittedAccount
+		}
+		if sub.TaskLink != nil {
+			submissionData["taskLink"] = *sub.TaskLink
+		}
+		if sub.RejectionReason != nil {
+			submissionData["rejectionReason"] = *sub.RejectionReason
+		}
+		if sub.GitHubIssueURL != nil {
+			submissionData["githubIssueUrl"] = *sub.GitHubIssueURL
+		}
+
+		// Add contributor info
+		if sub.Contributor != nil {
+			submissionData["contributor"] = gin.H{
+				"id":    sub.Contributor.ID,
+				"name":  sub.Contributor.Name,
+				"email": sub.Contributor.Email,
+			}
+		}
+
+		// Add tester info if assigned
+		if sub.Tester != nil {
+			submissionData["tester"] = gin.H{
+				"id":    sub.Tester.ID,
+				"name":  sub.Tester.Name,
+				"email": sub.Tester.Email,
+			}
+		}
+
+		// Add reviewer info if assigned
+		if sub.Reviewer != nil {
+			submissionData["reviewer"] = gin.H{
+				"id":    sub.Reviewer.ID,
+				"name":  sub.Reviewer.Name,
+				"email": sub.Reviewer.Email,
+			}
+		}
+
+		submissionsResponse = append(submissionsResponse, submissionData)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"submissions": submissionsResponse,
+		"total":       total,
+		"limit":       limit,
+		"offset":      offset,
+	})
+}

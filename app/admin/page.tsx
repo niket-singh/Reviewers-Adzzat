@@ -65,6 +65,29 @@ interface LeaderboardEntry {
   totalCount: number
 }
 
+interface Review {
+  id: string
+  feedback: string
+  accountPostedIn?: string
+  createdAt: string
+  tester: {
+    id: string
+    name: string
+    email: string
+  }
+  submission: {
+    id: string
+    title: string
+    domain: string
+    status: string
+    contributor: {
+      id: string
+      name: string
+      email: string
+    }
+  }
+}
+
 interface Stats {
   contributors?: {
     userId: string
@@ -92,7 +115,7 @@ interface Stats {
   }
 }
 
-type MainTab = 'submissions' | 'users' | 'stats' | 'logs' | 'leaderboard'
+type MainTab = 'submissions' | 'users' | 'stats' | 'logs' | 'leaderboard' | 'feedback'
 type SubmissionFilter = 'all' | 'pending' | 'claimed' | 'eligible' | 'approved'
 type ProjectFilter = 'X' | 'V'
 
@@ -107,6 +130,9 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [stats, setStats] = useState<Stats | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [filteredReviews, setFilteredReviews] = useState<Review[]>([])
+  const [reviewsTotal, setReviewsTotal] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
@@ -151,6 +177,10 @@ export default function AdminDashboard() {
       } else if (activeTab === 'stats') {
         const data = await apiClient.getStats()
         setStats(data || null)
+      } else if (activeTab === 'feedback') {
+        const data = await apiClient.getAllReviews({ limit: 500 })
+        setReviews(data.reviews || [])
+        setReviewsTotal(data.total || 0)
       }
     } catch (err) {
       console.error('Error fetching data:', err)
@@ -192,7 +222,24 @@ export default function AdminDashboard() {
     }
 
     setFilteredUsers(filteredUsr)
-  }, [submissions, submissionFilter, searchQuery, activeTab, users])
+
+    // Filter reviews
+    let filteredRevs = reviews
+
+    if (searchQuery.trim() && activeTab === 'feedback') {
+      const query = searchQuery.toLowerCase()
+      filteredRevs = filteredRevs.filter(
+        r =>
+          r.feedback.toLowerCase().includes(query) ||
+          r.tester.name.toLowerCase().includes(query) ||
+          r.tester.email.toLowerCase().includes(query) ||
+          r.submission.title.toLowerCase().includes(query) ||
+          r.submission.contributor.name.toLowerCase().includes(query)
+      )
+    }
+
+    setFilteredReviews(filteredRevs)
+  }, [submissions, submissionFilter, searchQuery, activeTab, users, reviews])
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -514,7 +561,7 @@ export default function AdminDashboard() {
 
         {/* Main Tabs */}
         <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-gray-700/50 animate-slide-up">
-          {(['submissions', 'users', 'stats', 'logs', 'leaderboard'] as MainTab[]).map((tab) => (
+          {(['submissions', 'users', 'stats', 'logs', 'leaderboard', 'feedback'] as MainTab[]).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -530,7 +577,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Search Bar */}
-        {(activeTab === 'submissions' || activeTab === 'users') && (
+        {(activeTab === 'submissions' || activeTab === 'users' || activeTab === 'feedback') && (
           <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <div className="relative">
               <input
@@ -1153,6 +1200,88 @@ export default function AdminDashboard() {
                 ))
               )}
             </div>
+          </div>
+        )}
+
+        {/* Feedback Tab - Admin God Mode */}
+        {activeTab === 'feedback' && (
+          <div className="space-y-4">
+            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-md p-6 text-white">
+              <h2 className="text-2xl font-bold mb-2">All Reviews & Feedback - God Mode</h2>
+              <p className="text-purple-100">Complete visibility of all feedback given by testers across all submissions</p>
+              <div className="mt-4 text-sm">
+                <span className="font-semibold">Total Reviews:</span> {reviewsTotal}
+              </div>
+            </div>
+
+            {filteredReviews.length === 0 ? (
+              <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                <div className="text-gray-400 text-6xl mb-4">💬</div>
+                <p className="text-gray-500 text-lg">
+                  {searchQuery ? 'No reviews match your search.' : 'No reviews found.'}
+                </p>
+              </div>
+            ) : (
+              <>
+                {filteredReviews.map((review) => (
+                  <div key={review.id} className="bg-white rounded-xl shadow-md p-6">
+                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">
+                          Submission: {review.submission.title}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                          <span>Review ID:</span>
+                          <CopyToClipboard text={review.id}>
+                            <span className="font-mono text-gray-600">{review.id.slice(0, 8)}...</span>
+                          </CopyToClipboard>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                            {review.submission.domain}
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            review.submission.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                            review.submission.status === 'ELIGIBLE' ? 'bg-blue-100 text-blue-800' :
+                            review.submission.status === 'CLAIMED' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {review.submission.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-sm text-gray-600">
+                        {new Date(review.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                      <h4 className="text-sm font-bold text-gray-700 mb-2">Feedback</h4>
+                      <p className="text-gray-800 whitespace-pre-wrap">{review.feedback}</p>
+                      {review.accountPostedIn && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <span className="text-xs font-semibold text-gray-600">Account Posted In: </span>
+                          <span className="text-xs text-gray-700">{review.accountPostedIn}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <h5 className="font-semibold text-blue-800 mb-1">Tester/Reviewer</h5>
+                        <p className="text-gray-800">{review.tester.name}</p>
+                        <p className="text-gray-600">{review.tester.email}</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <h5 className="font-semibold text-green-800 mb-1">Contributor</h5>
+                        <p className="text-gray-800">{review.submission.contributor.name}</p>
+                        <p className="text-gray-600">{review.submission.contributor.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         )}
       </div>
