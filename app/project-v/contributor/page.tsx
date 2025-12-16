@@ -143,10 +143,10 @@ export default function ProjectVContributor() {
     if (
       !formData.title || !formData.language || !formData.category ||
       !formData.difficulty || !formData.description || !formData.githubRepo ||
-      !formData.commitHash || !formData.issueUrl || !files.testPatch ||
+      !formData.commitHash || !files.testPatch ||
       !files.dockerfile || !files.solutionPatch
     ) {
-      showToast("All fields are required", "error");
+      showToast("All required fields must be filled", "error");
       return;
     }
 
@@ -499,8 +499,8 @@ export default function ProjectVContributor() {
                     placeholder="abc123def456..." />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL *</label>
-                  <input type="url" required value={formData.issueUrl}
+                  <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL (optional)</label>
+                  <input type="url" value={formData.issueUrl}
                     onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
                     className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium text-sm"
                     placeholder="https://github.com/.../issues/123" />
@@ -811,8 +811,8 @@ export default function ProjectVContributor() {
                       placeholder="abc123def456..." />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL *</label>
-                    <input type="url" required value={resubmitData.issueUrl}
+                    <label className="block text-sm font-bold mb-2.5 text-gray-200">GitHub Issue URL (optional)</label>
+                    <input type="url" value={resubmitData.issueUrl}
                       onChange={(e) => setResubmitData({ ...resubmitData, issueUrl: e.target.value })}
                       className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium text-sm"
                       placeholder="https://github.com/.../issues/123" />

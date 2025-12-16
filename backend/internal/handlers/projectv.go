@@ -46,8 +46,8 @@ func CreateProjectVSubmission(c *gin.Context) {
 	issueURL := c.PostForm("issueUrl")
 
 	// Validate required fields
-	if title == "" || language == "" || category == "" || difficulty == "" || description == "" || githubRepo == "" || commitHash == "" || issueURL == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
+	if title == "" || language == "" || category == "" || difficulty == "" || description == "" || githubRepo == "" || commitHash == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "All required fields must be filled"})
 		return
 	}
 

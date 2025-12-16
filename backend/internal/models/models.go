@@ -167,7 +167,7 @@ type ProjectVSubmission struct {
 	Description      string    `gorm:"type:text;not null" json:"description"`
 	GithubRepo       string    `gorm:"not null" json:"githubRepo"`
 	CommitHash       string    `gorm:"not null" json:"commitHash"`
-	IssueURL         string    `gorm:"not null" json:"issueUrl"`
+	IssueURL         string    `json:"issueUrl"`
 	TestPatchURL     string    `gorm:"not null" json:"testPatchUrl"`
 	DockerfileURL    string    `gorm:"not null" json:"dockerfileUrl"`
 	SolutionPatchURL string    `gorm:"not null" json:"solutionPatchUrl"`
