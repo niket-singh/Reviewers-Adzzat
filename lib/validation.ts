@@ -177,12 +177,12 @@ export function sanitizeInput(input: string): string {
     .replace(/\//g, '&#x2F;')
 }
 
-// Validate and sanitize search query
+
 export function sanitizeSearchQuery(query: string): string {
-  // Remove potentially dangerous SQL/NoSQL injection attempts
+  
   let sanitized = query.trim()
 
-  // Remove special characters that could be used in injection
+  
   sanitized = sanitized.replace(/[;'"\\${}]/g, '')
 
   
