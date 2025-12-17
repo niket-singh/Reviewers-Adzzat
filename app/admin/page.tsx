@@ -9,7 +9,6 @@ import { useToast } from '@/components/ToastContainer'
 import Breadcrumb from '@/components/Breadcrumb'
 import Pagination from '@/components/Pagination'
 import CopyToClipboard from '@/components/CopyToClipboard'
-import Tooltip from '@/components/Tooltip'
 import { BarChart, DonutChart, StatCard } from '@/components/StatCharts'
 
 interface Submission {
@@ -35,6 +34,24 @@ interface Submission {
       name: string
     }
   }[]
+}
+
+interface ProjectVSubmission {
+  id: string
+  title: string
+  language: string
+  category: string
+  difficulty: string
+  description: string
+  status: string
+  createdAt: string
+  contributor?: { id: string; name: string; email: string }
+  tester?: { id: string; name: string; email: string }
+  reviewer?: { id: string; name: string; email: string }
+  reviewerFeedback?: string
+  testerFeedback?: string
+  accountPostedIn?: string
+  taskLink?: string
 }
 
 interface User {
@@ -116,15 +133,15 @@ interface Stats {
   }
 }
 
-type MainTab = 'submissions' | 'users' | 'stats' | 'logs' | 'leaderboard' | 'feedback'
+type MainSection = 'overview' | 'projectx' | 'projectv' | 'users' | 'logs' | 'leaderboard' | 'feedback'
 type SubmissionFilter = 'all' | 'pending' | 'claimed' | 'eligible' | 'approved'
-type ProjectFilter = 'X' | 'V'
 
-export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<MainTab>('submissions')
+export default function UnifiedAdminDashboard() {
+  const [activeSection, setActiveSection] = useState<MainSection>('overview')
   const [submissionFilter, setSubmissionFilter] = useState<SubmissionFilter>('eligible')
-  const [projectFilter, setProjectFilter] = useState<ProjectFilter>('X')
-  const [submissions, setSubmissions] = useState<Submission[]>([])
+
+  const [projectXSubmissions, setProjectXSubmissions] = useState<Submission[]>([])
+  const [projectVSubmissions, setProjectVSubmissions] = useState<ProjectVSubmission[]>([])
   const [filteredSubmissions, setFilteredSubmissions] = useState<Submission[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
@@ -133,7 +150,7 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
   const [filteredReviews, setFilteredReviews] = useState<Review[]>([])
-  const [reviewsTotal, setReviewsTotal] = useState(0)
+
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
@@ -152,7 +169,6 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
@@ -161,42 +177,51 @@ export default function AdminDashboard() {
     }
   }, [user, authLoading, router])
 
-  const fetchData = useCallback(async () => {
+  const fetchAllData = useCallback(async () => {
     try {
-      if (activeTab === 'submissions') {
-        const data = await apiClient.getSubmissions()
-        setSubmissions(data || [])
-      } else if (activeTab === 'users') {
-        const data = await apiClient.getUsers()
-        setUsers(data || [])
-      } else if (activeTab === 'logs') {
-        const data = await apiClient.getLogs(50)
-        setLogs(data || [])
-      } else if (activeTab === 'leaderboard') {
-        const data = await apiClient.getLeaderboard()
-        setLeaderboard(data || [])
-      } else if (activeTab === 'stats') {
-        const data = await apiClient.getStats()
-        setStats(data || null)
-      } else if (activeTab === 'feedback') {
-        const data = await apiClient.getAllReviews({ limit: 500 })
-        setReviews(data.reviews || [])
-        setReviewsTotal(data.total || 0)
-      }
+      setLoading(true)
+
+      const [
+        projectXData,
+        projectVData,
+        usersData,
+        statsData,
+        logsData,
+        leaderboardData,
+        reviewsData
+      ] = await Promise.all([
+        apiClient.getSubmissions(),
+        apiClient.getAllProjectVSubmissions({ limit: 500 }),
+        apiClient.getUsers(),
+        apiClient.getStats(),
+        apiClient.getLogs(100),
+        apiClient.getLeaderboard(),
+        apiClient.getAllReviews({ limit: 500 })
+      ])
+
+      setProjectXSubmissions(projectXData || [])
+      setProjectVSubmissions(projectVData.submissions || [])
+      setUsers(usersData || [])
+      setStats(statsData || null)
+      setLogs(logsData || [])
+      setLeaderboard(leaderboardData || [])
+      setReviews(reviewsData.reviews || [])
     } catch (err) {
-      console.error('Error fetching data:', err)
+      console.error('Error fetching admin data:', err)
+      showToast('Failed to load dashboard data', 'error')
+    } finally {
+      setLoading(false)
     }
-  }, [activeTab])
+  }, [showToast])
 
   const filterData = useCallback(() => {
-    
-    let filteredSubs = submissions
+    let filteredSubs = projectXSubmissions
 
     if (submissionFilter !== 'all') {
       filteredSubs = filteredSubs.filter(s => s.status.toLowerCase() === submissionFilter)
     }
 
-    if (searchQuery.trim() && activeTab === 'submissions') {
+    if (searchQuery.trim() && activeSection === 'projectx') {
       const query = searchQuery.toLowerCase()
       filteredSubs = filteredSubs.filter(
         s =>
@@ -209,10 +234,9 @@ export default function AdminDashboard() {
 
     setFilteredSubmissions(filteredSubs)
 
-    
     let filteredUsr = users
 
-    if (searchQuery.trim() && activeTab === 'users') {
+    if (searchQuery.trim() && activeSection === 'users') {
       const query = searchQuery.toLowerCase()
       filteredUsr = filteredUsr.filter(
         u =>
@@ -224,10 +248,9 @@ export default function AdminDashboard() {
 
     setFilteredUsers(filteredUsr)
 
-    
     let filteredRevs = reviews
 
-    if (searchQuery.trim() && activeTab === 'feedback') {
+    if (searchQuery.trim() && activeSection === 'feedback') {
       const query = searchQuery.toLowerCase()
       filteredRevs = filteredRevs.filter(
         r =>
@@ -240,29 +263,36 @@ export default function AdminDashboard() {
     }
 
     setFilteredReviews(filteredRevs)
-  }, [submissions, submissionFilter, searchQuery, activeTab, users, reviews])
+  }, [projectXSubmissions, submissionFilter, searchQuery, activeSection, users, reviews])
 
-  
   useEffect(() => {
-    fetchData()
+    if (user && user.role === 'ADMIN') {
+      fetchAllData()
+    }
+  }, [user, fetchAllData])
+
+  useEffect(() => {
     const interval = setInterval(() => {
-      fetchData()
-    }, 30000) 
+      if (user && user.role === 'ADMIN') {
+        fetchAllData()
+      }
+    }, 60000)
 
     return () => clearInterval(interval)
-  }, [activeTab, fetchData])
+  }, [user, fetchAllData])
 
   useEffect(() => {
     filterData()
-    setCurrentPage(1) 
+    setCurrentPage(1)
   }, [filterData])
 
   const handleApproveReviewer = async (userId: string) => {
     try {
       await apiClient.approveTester(userId)
-      fetchData()
+      fetchAllData()
+      showToast('User approved successfully', 'success')
     } catch (err: any) {
-      showToast(err.response?.data?.error || 'Failed to approve reviewer', 'error')
+      showToast(err.response?.data?.error || 'Failed to approve user', 'error')
     }
   }
 
@@ -275,9 +305,11 @@ export default function AdminDashboard() {
     try {
       const response = await apiClient.toggleGreenLight(userId)
       if (response.queuedTasksAssigned > 0) {
-        alert(`Green light ${currentStatus ? 'deactivated' : 'activated'}! ${response.queuedTasksAssigned} queued tasks were assigned.`)
+        showToast(`Green light ${currentStatus ? 'deactivated' : 'activated'}! ${response.queuedTasksAssigned} queued tasks assigned.`, 'success')
+      } else {
+        showToast(`Green light ${currentStatus ? 'deactivated' : 'activated'} successfully!`, 'success')
       }
-      fetchData()
+      fetchAllData()
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to toggle green light', 'error')
     }
@@ -299,7 +331,8 @@ export default function AdminDashboard() {
 
     try {
       await apiClient.switchUserRole(userId, newRole)
-      fetchData()
+      fetchAllData()
+      showToast('Role switched successfully', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to switch role', 'error')
     }
@@ -312,7 +345,8 @@ export default function AdminDashboard() {
 
     try {
       await apiClient.deleteUser(userId)
-      fetchData()
+      fetchAllData()
+      showToast('User deleted successfully', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to delete user', 'error')
     }
@@ -325,7 +359,8 @@ export default function AdminDashboard() {
 
     try {
       await apiClient.deleteSubmission(submissionId)
-      fetchData()
+      fetchAllData()
+      showToast('Submission deleted successfully', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to delete submission', 'error')
     }
@@ -338,7 +373,8 @@ export default function AdminDashboard() {
 
     try {
       await apiClient.approveSubmission(submissionId)
-      fetchData()
+      fetchAllData()
+      showToast('Submission approved successfully', 'success')
     } catch (err: any) {
       showToast(err.response?.data?.error || 'Failed to approve submission', 'error')
     }
@@ -356,7 +392,6 @@ export default function AdminDashboard() {
         link.click()
         document.body.removeChild(link)
 
-        
         setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
         showToast('Download started!', 'success')
@@ -403,8 +438,8 @@ export default function AdminDashboard() {
       setShowUpload(false)
       setFormData({ title: '', domain: '', language: '', customLanguage: '' })
       setFile(null)
-      fetchData()
-      showToast('✨ Task uploaded successfully!', 'success')
+      fetchAllData()
+      showToast('Task uploaded successfully!', 'success')
     } catch (err: any) {
       setUploadError(err.response?.data?.error || 'Upload failed')
     } finally {
@@ -431,70 +466,64 @@ export default function AdminDashboard() {
     const roleMap: Record<string, string> = {
       ADMIN: 'bg-red-100 text-red-800',
       REVIEWER: 'bg-purple-100 text-purple-800',
+      TESTER: 'bg-green-100 text-green-800',
       CONTRIBUTOR: 'bg-blue-100 text-blue-800',
     }
     return roleMap[role] || 'bg-gray-100 text-gray-800'
   }
 
   const getTabCount = (tab: SubmissionFilter) => {
-    if (tab === 'all') return submissions.length
-    return submissions.filter(s => s.status.toLowerCase() === tab).length
+    if (tab === 'all') return projectXSubmissions.length
+    return projectXSubmissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
-  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   )
 
+  const totalPlatformSubmissions = projectXSubmissions.length + projectVSubmissions.length
+  const totalPlatformUsers = users.length
+  const projectVSubmittedTasks = projectVSubmissions.filter(s => s.status === 'TASK_SUBMITTED_TO_PLATFORM')
+  const projectVEligibleTasks = projectVSubmissions.filter(s => s.status === 'ELIGIBLE_FOR_MANUAL_REVIEW')
+  const projectVFinalChecksTasks = projectVSubmissions.filter(s => s.status === 'FINAL_CHECKS')
+  const projectVApprovedTasks = projectVSubmissions.filter(s => s.status === 'APPROVED')
+
   if (authLoading || !user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-lg font-semibold text-gray-300">Loading admin dashboard...</p>
+          <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-lg font-semibold text-gray-300">Loading Platform Control Center...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 relative overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+        <div className="max-w-[1920px] mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-4 animate-slide-in-left">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-600 via-orange-600 to-pink-600 flex items-center justify-center shadow-xl animate-pulse-glow">
-                <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-600 via-pink-600 to-indigo-600 flex items-center justify-center shadow-xl animate-pulse-glow">
+                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-red-400 via-orange-400 to-pink-400 bg-clip-text text-transparent">
-                  Admin Control Panel
+                <h1 className="text-xl md:text-2xl font-black bg-gradient-to-r from-purple-300 via-pink-300 to-indigo-300 bg-clip-text text-transparent">
+                  Platform Control Center
                 </h1>
-                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Welcome, {user.name}!</p>
+                <p className="text-xs md:text-sm font-medium text-gray-400 hidden sm:block">Unified Admin Dashboard - All Projects</p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-400 font-medium">Project:</span>
-              <select
-                value={projectFilter}
-                onChange={(e) => setProjectFilter(e.target.value as ProjectFilter)}
-                className="px-3 py-2 bg-gray-700/50 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-orange-500 focus:border-transparent font-semibold"
-              >
-                <option value="X">Project X</option>
-                <option value="V">Project V</option>
-              </select>
             </div>
 
             <div className="hidden md:flex gap-3 animate-slide-in-right">
@@ -506,7 +535,7 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={handleLogout}
-                className="px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
+                className="px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl"
               >
                 Logout
               </button>
@@ -542,7 +571,7 @@ export default function AdminDashboard() {
                   handleLogout()
                   setMobileMenuOpen(false)
                 }}
-                className="w-full px-5 py-2.5 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md"
+                className="w-full px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-md"
               >
                 Logout
               </button>
@@ -551,48 +580,300 @@ export default function AdminDashboard() {
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-
+      <div className="max-w-[1920px] mx-auto px-4 md:px-6 py-8 relative z-10">
         <Breadcrumb />
 
         <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-gray-700/50 animate-slide-up">
-          {(['submissions', 'users', 'stats', 'logs', 'leaderboard', 'feedback'] as MainTab[]).map((tab) => (
+          {(['overview', 'projectx', 'projectv', 'users', 'logs', 'leaderboard', 'feedback'] as MainSection[]).map((section) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={section}
+              onClick={() => setActiveSection(section)}
               className={`px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap ${
-                activeTab === tab
-                  ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg scale-105 glow'
+                activeSection === section
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105 glow'
                   : 'text-gray-300 hover:bg-gray-700/50'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {section === 'overview' && '🌐 Overview'}
+              {section === 'projectx' && '📊 Project X'}
+              {section === 'projectv' && '🚀 Project V'}
+              {section === 'users' && '👥 Users'}
+              {section === 'logs' && '📜 Activity Logs'}
+              {section === 'leaderboard' && '🏆 Leaderboard'}
+              {section === 'feedback' && '💬 All Feedback'}
             </button>
           ))}
         </div>
 
-        {(activeTab === 'submissions' || activeTab === 'users' || activeTab === 'feedback') && (
-          <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder={`🔍 Search ${activeTab}...`}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
-              />
-              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+        {activeSection === 'overview' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 rounded-2xl p-6 animate-slide-up">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">🌐</div>
+                <div>
+                  <h2 className="text-3xl font-black text-purple-300 mb-2">Platform Overview</h2>
+                  <p className="text-gray-300">Unified statistics across all projects and systems</p>
+                </div>
+              </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <StatCard
+                title="Total Platform Users"
+                value={totalPlatformUsers}
+                icon="👥"
+                color="blue"
+              />
+              <StatCard
+                title="Total Submissions"
+                value={totalPlatformSubmissions}
+                icon="📊"
+                color="purple"
+              />
+              <StatCard
+                title="Project X Tasks"
+                value={projectXSubmissions.length}
+                icon="📝"
+                color="cyan"
+              />
+              <StatCard
+                title="Project V Tasks"
+                value={projectVSubmissions.length}
+                icon="🚀"
+                color="green"
+              />
+            </div>
+
+            {stats && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                  <StatCard
+                    title="Active Reviewers"
+                    value={stats.overview.activeReviewers}
+                    icon="🟢"
+                    color="green"
+                  />
+                  <StatCard
+                    title="Inactive Reviewers"
+                    value={stats.overview.inactiveReviewers}
+                    icon="⚫"
+                    color="red"
+                  />
+                  <StatCard
+                    title="Pending Reviews"
+                    value={stats.overview.pendingReviews}
+                    icon="⏳"
+                    color="yellow"
+                  />
+                  <StatCard
+                    title="Queued Tasks"
+                    value={stats.overview.queuedTasks}
+                    icon="📋"
+                    color="orange"
+                  />
+                  <StatCard
+                    title="Total Reviews"
+                    value={reviews.length}
+                    icon="💬"
+                    color="purple"
+                  />
+                  <StatCard
+                    title="Activity Logs"
+                    value={logs.length}
+                    icon="📜"
+                    color="cyan"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+                  <BarChart
+                    title="Project X - Task Status"
+                    data={[
+                      {
+                        label: 'Uploaded',
+                        value: projectXSubmissions.filter(s => s.status === 'PENDING').length,
+                        color: 'bg-gradient-to-r from-blue-500 to-blue-600'
+                      },
+                      {
+                        label: 'Claimed',
+                        value: projectXSubmissions.filter(s => s.status === 'CLAIMED').length,
+                        color: 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                      },
+                      {
+                        label: 'Eligible',
+                        value: projectXSubmissions.filter(s => s.status === 'ELIGIBLE').length,
+                        color: 'bg-gradient-to-r from-cyan-500 to-cyan-600'
+                      },
+                      {
+                        label: 'Approved',
+                        value: projectXSubmissions.filter(s => s.status === 'APPROVED').length,
+                        color: 'bg-gradient-to-r from-green-500 to-green-600'
+                      }
+                    ]}
+                  />
+
+                  <BarChart
+                    title="Project V - Task Pipeline"
+                    data={[
+                      {
+                        label: 'Submitted',
+                        value: projectVSubmittedTasks.length,
+                        color: 'bg-gradient-to-r from-blue-500 to-cyan-600'
+                      },
+                      {
+                        label: 'Eligible',
+                        value: projectVEligibleTasks.length,
+                        color: 'bg-gradient-to-r from-purple-500 to-pink-600'
+                      },
+                      {
+                        label: 'Final Checks',
+                        value: projectVFinalChecksTasks.length,
+                        color: 'bg-gradient-to-r from-cyan-500 to-blue-600'
+                      },
+                      {
+                        label: 'Approved',
+                        value: projectVApprovedTasks.length,
+                        color: 'bg-gradient-to-r from-green-500 to-emerald-600'
+                      }
+                    ]}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+                  <DonutChart
+                    title="Project X Distribution"
+                    data={[
+                      {
+                        label: 'Uploaded',
+                        value: projectXSubmissions.filter(s => s.status === 'PENDING').length,
+                        color: 'fill-blue-500'
+                      },
+                      {
+                        label: 'Claimed',
+                        value: projectXSubmissions.filter(s => s.status === 'CLAIMED').length,
+                        color: 'fill-yellow-500'
+                      },
+                      {
+                        label: 'Eligible',
+                        value: projectXSubmissions.filter(s => s.status === 'ELIGIBLE').length,
+                        color: 'fill-cyan-500'
+                      },
+                      {
+                        label: 'Approved',
+                        value: projectXSubmissions.filter(s => s.status === 'APPROVED').length,
+                        color: 'fill-green-500'
+                      }
+                    ]}
+                  />
+
+                  <DonutChart
+                    title="Project V Distribution"
+                    data={[
+                      {
+                        label: 'Submitted',
+                        value: projectVSubmittedTasks.length,
+                        color: 'fill-blue-500'
+                      },
+                      {
+                        label: 'Eligible',
+                        value: projectVEligibleTasks.length,
+                        color: 'fill-purple-500'
+                      },
+                      {
+                        label: 'Final Checks',
+                        value: projectVFinalChecksTasks.length,
+                        color: 'fill-cyan-500'
+                      },
+                      {
+                        label: 'Approved',
+                        value: projectVApprovedTasks.length,
+                        color: 'fill-green-500'
+                      }
+                    ]}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.5s' }}>
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">User Distribution by Role</h3>
+                    <div className="space-y-3">
+                      {[
+                        { role: 'CONTRIBUTOR', count: users.filter(u => u.role === 'CONTRIBUTOR').length, color: 'bg-blue-500' },
+                        { role: 'REVIEWER', count: users.filter(u => u.role === 'REVIEWER').length, color: 'bg-purple-500' },
+                        { role: 'TESTER', count: users.filter(u => u.role === 'TESTER').length, color: 'bg-green-500' },
+                        { role: 'ADMIN', count: users.filter(u => u.role === 'ADMIN').length, color: 'bg-red-500' },
+                      ].map((item) => {
+                        const maxCount = Math.max(...users.reduce((acc, u) => {
+                          const roleCount = users.filter(user => user.role === u.role).length
+                          return acc.includes(roleCount) ? acc : [...acc, roleCount]
+                        }, [] as number[]), 1)
+
+                        return (
+                          <div key={item.role}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-sm font-semibold text-gray-700">{item.role}</span>
+                              <span className="text-lg font-bold text-gray-900">{item.count}</span>
+                            </div>
+                            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+                              <div
+                                className={`h-full ${item.color} rounded-full transition-all duration-500`}
+                                style={{ width: `${(item.count / maxCount) * 100}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow-md p-6">
+                    <h3 className="text-lg font-bold text-gray-800 mb-4">Reviewer Status</h3>
+                    <div className="flex items-center justify-center h-48">
+                      <div className="text-center">
+                        <div className="text-6xl font-black text-green-600 mb-2">{stats.overview.activeReviewers}</div>
+                        <div className="text-sm text-gray-500 mb-4">Active Reviewers</div>
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                          <span className="text-xs text-gray-600">Ready to review</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {activeTab === 'submissions' && (
-          <>
+        {activeSection === 'projectx' && (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border-2 border-blue-500/30 rounded-2xl p-6 animate-slide-up">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">📊</div>
+                <div>
+                  <h2 className="text-3xl font-black text-blue-300 mb-2">Project X</h2>
+                  <p className="text-gray-300">Manage all Project X submissions and reviews</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 Search submissions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
+                />
+                <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
 
             {showUpload && (
-              <div className="bg-white rounded-xl shadow-lg p-8 mb-6 border border-gray-200">
+              <div className="bg-white rounded-xl shadow-lg p-8 mb-6 border border-gray-200 animate-slide-up">
                 <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-gray-800">Upload New Task (as Admin)</h3>
                   <button
@@ -612,7 +893,7 @@ export default function AdminDashboard() {
                       required
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                       placeholder="Enter a descriptive title for your task"
                     />
                   </div>
@@ -625,7 +906,7 @@ export default function AdminDashboard() {
                       required
                       value={formData.domain}
                       onChange={(e) => setFormData({ ...formData, domain: e.target.value })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-white"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white"
                     >
                       <option value="">Select a domain...</option>
                       {DOMAINS.map((domain) => (
@@ -644,7 +925,7 @@ export default function AdminDashboard() {
                       required
                       value={formData.language}
                       onChange={(e) => setFormData({ ...formData, language: e.target.value, customLanguage: '' })}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all bg-white"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-white"
                     >
                       <option value="">Select a language...</option>
                       {LANGUAGES.map((lang) => (
@@ -665,7 +946,7 @@ export default function AdminDashboard() {
                         required
                         value={formData.customLanguage}
                         onChange={(e) => setFormData({ ...formData, customLanguage: e.target.value })}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                         placeholder="e.g., Ruby, Swift, Kotlin"
                       />
                     </div>
@@ -675,13 +956,13 @@ export default function AdminDashboard() {
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                       Upload ZIP File *
                     </label>
-                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-red-400 transition-colors">
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-purple-400 transition-colors">
                       <div className="space-y-1 text-center">
                         <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                           <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                         <div className="flex text-sm text-gray-600">
-                          <label className="relative cursor-pointer bg-white rounded-md font-medium text-red-600 hover:text-red-500">
+                          <label className="relative cursor-pointer bg-white rounded-md font-medium text-purple-600 hover:text-purple-500">
                             <span>Upload a file</span>
                             <input
                               type="file"
@@ -710,7 +991,7 @@ export default function AdminDashboard() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                    className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                   >
                     {loading ? 'Uploading...' : 'Upload Task'}
                   </button>
@@ -718,7 +999,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex justify-between items-center mb-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <div className="flex gap-2 bg-white rounded-lg shadow-sm p-1 overflow-x-auto">
                 {(['all', 'pending', 'claimed', 'eligible', 'approved'] as SubmissionFilter[]).map((filter) => (
                   <button
@@ -726,7 +1007,7 @@ export default function AdminDashboard() {
                     onClick={() => setSubmissionFilter(filter)}
                     className={`px-4 py-2 rounded-md text-sm font-medium transition-all whitespace-nowrap ${
                       submissionFilter === filter
-                        ? 'bg-red-600 text-white shadow-md'
+                        ? 'bg-purple-600 text-white shadow-md'
                         : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -737,13 +1018,13 @@ export default function AdminDashboard() {
 
               <button
                 onClick={() => setShowUpload(!showUpload)}
-                className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all shadow-md hover:shadow-lg font-medium whitespace-nowrap ml-4"
+                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-md hover:shadow-lg font-medium whitespace-nowrap ml-4"
               >
                 {showUpload ? '✕ Cancel Upload' : '+ Upload Task'}
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
               {filteredSubmissions.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-md p-12 text-center">
                   <div className="text-gray-400 text-6xl mb-4">📋</div>
@@ -754,83 +1035,83 @@ export default function AdminDashboard() {
               ) : (
                 <>
                   {paginatedSubmissions.map((submission) => (
-                  <div key={submission.id} className="bg-white rounded-xl shadow-md p-4 md:p-6">
-                    <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 break-words">{submission.title}</h3>
-                        <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
-                          <span>ID:</span>
-                          <CopyToClipboard text={submission.id}>
-                            <span className="font-mono text-gray-600">{submission.id.slice(0, 8)}...</span>
-                          </CopyToClipboard>
-                        </div>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
-                            {submission.domain}
-                          </span>
-                          <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-                            {submission.language}
-                          </span>
-                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                            by {submission.contributor.name}
-                          </span>
-                          {submission.claimedBy && (
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                              Reviewer: {submission.claimedBy.name}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          Submitted: {new Date(submission.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                      <div className="flex flex-col gap-2 items-end">
-                        <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusClass(submission.status)}`}>
-                          {submission.status}
-                        </span>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleDownload(submission.id, submission.fileName)}
-                            className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                          >
-                            Download
-                          </button>
-                          {submission.status === 'ELIGIBLE' && (
-                            <button
-                              onClick={() => handleApproveSubmission(submission.id)}
-                              className="px-3 py-1 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-                            >
-                              Approve
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteSubmission(submission.id, submission.title)}
-                            className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-
-                    {submission.reviews && submission.reviews.length > 0 && (
-                      <div className="mt-4 border-t pt-4">
-                        <h4 className="text-sm font-bold text-gray-700 mb-3">Reviews</h4>
-                        {submission.reviews.map((review) => (
-                          <div key={review.id} className="bg-gray-50 p-4 rounded-lg mb-2">
-                            <p className="text-sm text-gray-800 mb-2">{review.feedback}</p>
-                            {review.accountPostedIn && (
-                              <p className="text-xs text-gray-600 mb-1">
-                                <span className="font-semibold">Account Posted:</span> {review.accountPostedIn}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-500">by {review.tester.name}</p>
+                    <div key={submission.id} className="bg-white rounded-xl shadow-md p-4 md:p-6">
+                      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 break-words">{submission.title}</h3>
+                          <div className="flex items-center gap-2 mb-3 text-xs text-gray-500">
+                            <span>ID:</span>
+                            <CopyToClipboard text={submission.id}>
+                              <span className="font-mono text-gray-600">{submission.id.slice(0, 8)}...</span>
+                            </CopyToClipboard>
                           </div>
-                        ))}
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+                              {submission.domain}
+                            </span>
+                            <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                              {submission.language}
+                            </span>
+                            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                              by {submission.contributor.name}
+                            </span>
+                            {submission.claimedBy && (
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                                Reviewer: {submission.claimedBy.name}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-600">
+                            Submitted: {new Date(submission.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-2 items-end">
+                          <span className={`px-4 py-2 rounded-full text-sm font-bold ${getStatusClass(submission.status)}`}>
+                            {submission.status}
+                          </span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDownload(submission.id, submission.fileName)}
+                              className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                              Download
+                            </button>
+                            {submission.status === 'ELIGIBLE' && (
+                              <button
+                                onClick={() => handleApproveSubmission(submission.id)}
+                                className="px-3 py-1 text-sm bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                              >
+                                Approve
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteSubmission(submission.id, submission.title)}
+                              className="px-3 py-1 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {submission.reviews && submission.reviews.length > 0 && (
+                        <div className="mt-4 border-t pt-4">
+                          <h4 className="text-sm font-bold text-gray-700 mb-3">Reviews</h4>
+                          {submission.reviews.map((review) => (
+                            <div key={review.id} className="bg-gray-50 p-4 rounded-lg mb-2">
+                              <p className="text-sm text-gray-800 mb-2">{review.feedback}</p>
+                              {review.accountPostedIn && (
+                                <p className="text-xs text-gray-600 mb-1">
+                                  <span className="font-semibold">Account Posted:</span> {review.accountPostedIn}
+                                </p>
+                              )}
+                              <p className="text-xs text-gray-500">by {review.tester.name}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
 
                   <Pagination
                     currentPage={currentPage}
@@ -842,211 +1123,102 @@ export default function AdminDashboard() {
                 </>
               )}
             </div>
-          </>
-        )}
-
-        {activeTab === 'users' && (
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Green Light</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
-                          {user.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.role === 'TESTER' ? (
-                          user.isApproved ? (
-                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                              Approved
-                            </span>
-                          ) : (
-                            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                              Pending
-                            </span>
-                          )
-                        ) : (
-                          <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                            Active
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {user.role === 'TESTER' && user.isApproved ? (
-                          <div className="flex items-center gap-2">
-                            <div className={`w-3 h-3 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                            <span className={`text-xs font-semibold ${user.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
-                              {user.isGreenLight ? 'Active' : 'Inactive'}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-gray-400">N/A</span>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex gap-2 justify-end">
-                          {user.role === 'TESTER' && !user.isApproved && (
-                            <button
-                              onClick={() => handleApproveReviewer(user.id)}
-                              className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
-                            >
-                              Approve
-                            </button>
-                          )}
-                          {user.role === 'TESTER' && user.isApproved && (
-                            <button
-                              onClick={() => handleToggleGreenLight(user.id, user.name, user.isGreenLight)}
-                              className={`px-3 py-1 rounded transition-colors ${
-                                user.isGreenLight
-                                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                                  : 'bg-green-500 text-white hover:bg-green-600'
-                              }`}
-                            >
-                              {user.isGreenLight ? '🔴 Deactivate' : '🟢 Activate'}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleSwitchRole(user.id, user.role)}
-                            className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-                          >
-                            Switch Role
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(user.id, user.name)}
-                            className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {filteredUsers.length === 0 && (
-              <div className="p-12 text-center">
-                <div className="text-gray-400 text-6xl mb-4">👥</div>
-                <p className="text-gray-500 text-lg">
-                  {searchQuery ? 'No users match your search.' : 'No users found.'}
-                </p>
-              </div>
-            )}
           </div>
         )}
 
-        {activeTab === 'stats' && stats && (
+        {activeSection === 'projectv' && (
           <div className="space-y-6">
+            <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-2 border-green-500/30 rounded-2xl p-6 animate-slide-up">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">🚀</div>
+                <div>
+                  <h2 className="text-3xl font-black text-green-300 mb-2">Project V</h2>
+                  <p className="text-gray-300">View and manage all Project V submissions</p>
+                  <button
+                    onClick={() => router.push('/project-v/admin')}
+                    className="mt-3 px-4 py-2 bg-green-600/80 hover:bg-green-700/80 text-white rounded-lg font-semibold transition-all duration-300"
+                  >
+                    Open Project V Admin Dashboard →
+                  </button>
+                </div>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
               <StatCard
-                title="Total Users"
-                value={stats.overview.totalUsers}
-                icon="👥"
+                title="Total Submissions"
+                value={projectVSubmissions.length}
+                icon="📊"
                 color="blue"
               />
               <StatCard
-                title="Total Submissions"
-                value={stats.overview.totalSubmissions}
-                icon="📊"
+                title="Submitted to Platform"
+                value={projectVSubmittedTasks.length}
+                icon="📥"
+                color="cyan"
+              />
+              <StatCard
+                title="Eligible for Review"
+                value={projectVEligibleTasks.length}
+                icon="🔍"
                 color="purple"
               />
               <StatCard
-                title="Pending Reviews"
-                value={stats.overview.pendingReviews}
-                icon="⏳"
-                color="yellow"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              <StatCard
-                title="Active Reviewers"
-                value={stats.overview.activeReviewers}
-                icon="🟢"
+                title="Approved Tasks"
+                value={projectVApprovedTasks.length}
+                icon="✅"
                 color="green"
-              />
-              <StatCard
-                title="Inactive Reviewers"
-                value={stats.overview.inactiveReviewers}
-                icon="⚫"
-                color="red"
-              />
-              <StatCard
-                title="Queued Tasks"
-                value={stats.overview.queuedTasks}
-                icon="📋"
-                color="orange"
               />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
               <BarChart
-                title="Task Status Overview"
+                title="Project V Task Pipeline"
                 data={[
                   {
-                    label: 'Uploaded Tasks',
-                    value: submissions.filter(s => s.status === 'PENDING').length,
-                    color: 'bg-gradient-to-r from-blue-500 to-blue-600'
+                    label: 'Submitted to Platform',
+                    value: projectVSubmittedTasks.length,
+                    color: 'bg-gradient-to-r from-blue-500 to-cyan-600'
                   },
                   {
-                    label: 'Claimed Tasks',
-                    value: submissions.filter(s => s.status === 'CLAIMED').length,
-                    color: 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                    label: 'Eligible for Manual Review',
+                    value: projectVEligibleTasks.length,
+                    color: 'bg-gradient-to-r from-purple-500 to-pink-600'
                   },
                   {
-                    label: 'Eligible for Review',
-                    value: submissions.filter(s => s.status === 'ELIGIBLE').length,
-                    color: 'bg-gradient-to-r from-cyan-500 to-cyan-600'
+                    label: 'Final Checks',
+                    value: projectVFinalChecksTasks.length,
+                    color: 'bg-gradient-to-r from-cyan-500 to-blue-600'
                   },
                   {
-                    label: 'Approved Tasks',
-                    value: submissions.filter(s => s.status === 'APPROVED').length,
-                    color: 'bg-gradient-to-r from-green-500 to-green-600'
+                    label: 'Approved',
+                    value: projectVApprovedTasks.length,
+                    color: 'bg-gradient-to-r from-green-500 to-emerald-600'
                   }
                 ]}
               />
 
               <DonutChart
-                title="Task Distribution"
+                title="Task Status Distribution"
                 data={[
                   {
-                    label: 'Uploaded',
-                    value: submissions.filter(s => s.status === 'PENDING').length,
+                    label: 'Submitted',
+                    value: projectVSubmittedTasks.length,
                     color: 'fill-blue-500'
                   },
                   {
-                    label: 'Claimed',
-                    value: submissions.filter(s => s.status === 'CLAIMED').length,
-                    color: 'fill-yellow-500'
+                    label: 'Eligible',
+                    value: projectVEligibleTasks.length,
+                    color: 'fill-purple-500'
                   },
                   {
-                    label: 'Eligible',
-                    value: submissions.filter(s => s.status === 'ELIGIBLE').length,
+                    label: 'Final Checks',
+                    value: projectVFinalChecksTasks.length,
                     color: 'fill-cyan-500'
                   },
                   {
                     label: 'Approved',
-                    value: submissions.filter(s => s.status === 'APPROVED').length,
+                    value: projectVApprovedTasks.length,
                     color: 'fill-green-500'
                   }
                 ]}
@@ -1054,254 +1226,459 @@ export default function AdminDashboard() {
             </div>
 
             <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Contributor Statistics</h2>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
-                  {stats.contributors?.length || 0} Contributors
-                </span>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Recent Project V Submissions</h3>
+              <div className="space-y-3">
+                {projectVSubmissions.slice(0, 10).map((submission) => (
+                  <div key={submission.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-300">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-gray-800 mb-2">{submission.title}</h4>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">
+                            {submission.language}
+                          </span>
+                          <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-semibold">
+                            {submission.difficulty}
+                          </span>
+                          <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-semibold">
+                            {submission.status.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-600">
+                          By: {submission.contributor?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(submission.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Total</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Eligible</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Approved</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Approval Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {stats.contributors && stats.contributors.length > 0 ? (
-                      stats.contributors.map((contributor, index) => (
-                        <tr key={contributor.userId} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{contributor.name}</td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className="px-2 py-1 bg-gray-100 rounded font-semibold">{contributor.totalSubmissions}</span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className="px-2 py-1 bg-cyan-100 text-cyan-800 rounded font-semibold">{contributor.eligibleCount}</span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded font-semibold">{contributor.approvedCount}</span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className={`px-2 py-1 rounded font-semibold ${
-                              contributor.approvalRate >= 75 ? 'bg-green-100 text-green-800' :
-                              contributor.approvalRate >= 50 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {contributor.approvalRate.toFixed(1)}%
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
-                          <div className="text-gray-400 text-4xl mb-2">📊</div>
-                          <p className="text-gray-500">No contributors found</p>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'users' && (
+          <div className="animate-slide-up">
+            <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">👥</div>
+                <div>
+                  <h2 className="text-3xl font-black text-indigo-300 mb-2">User Management</h2>
+                  <p className="text-gray-300">Manage all platform users across both projects</p>
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-800">Reviewer Statistics</h2>
-                <div className="flex gap-2">
-                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
-                    {stats.overview.activeReviewers} Active
-                  </span>
-                  <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
-                    {stats.overview.inactiveReviewers} Inactive
-                  </span>
-                </div>
+            <div className="mb-8">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
+                />
+                <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                  <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
-                      <th className="px-6 py-3 text-center text-sm font-bold text-gray-700">Status</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Tasks in Stack</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Reviewed</th>
-                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Current Workload</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Green Light</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {stats.reviewers && stats.reviewers.length > 0 ? (
-                      stats.reviewers.map((reviewer) => (
-                        <tr key={reviewer.userId} className={`transition-colors ${reviewer.isGreenLight ? 'hover:bg-green-50' : 'hover:bg-gray-50'}`}>
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{reviewer.name}</td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${reviewer.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                              <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                                reviewer.isGreenLight ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
-                              }`}>
-                                {reviewer.isGreenLight ? 'Active' : 'Inactive'}
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{user.email}</td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getRoleColor(user.role)}`}>
+                            {user.role}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(user.role === 'TESTER' || user.role === 'REVIEWER') ? (
+                            user.isApproved ? (
+                              <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                                Approved
+                              </span>
+                            ) : (
+                              <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
+                                Pending
+                              </span>
+                            )
+                          ) : (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                              Active
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(user.role === 'TESTER' || user.role === 'REVIEWER') && user.isApproved ? (
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                              <span className={`text-xs font-semibold ${user.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
+                                {user.isGreenLight ? 'Active' : 'Inactive'}
                               </span>
                             </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">{reviewer.tasksInStack}</span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-semibold">{reviewer.reviewedCount}</span>
-                          </td>
-                          <td className="px-6 py-4 text-sm text-right">
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
-                              reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {reviewer.currentWorkload} active
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
-                          <div className="text-gray-400 text-4xl mb-2">👥</div>
-                          <p className="text-gray-500">No reviewers found</p>
+                          ) : (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {new Date(user.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex gap-2 justify-end">
+                            {(user.role === 'TESTER' || user.role === 'REVIEWER') && !user.isApproved && (
+                              <button
+                                onClick={() => handleApproveReviewer(user.id)}
+                                className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                              >
+                                Approve
+                              </button>
+                            )}
+                            {(user.role === 'TESTER' || user.role === 'REVIEWER') && user.isApproved && (
+                              <button
+                                onClick={() => handleToggleGreenLight(user.id, user.name, user.isGreenLight)}
+                                className={`px-3 py-1 rounded transition-colors ${
+                                  user.isGreenLight
+                                    ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                    : 'bg-green-500 text-white hover:bg-green-600'
+                                }`}
+                              >
+                                {user.isGreenLight ? '🔴 Deactivate' : '🟢 Activate'}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleSwitchRole(user.id, user.role)}
+                              className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                            >
+                              Switch Role
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.name)}
+                              className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
-                    )}
+                    ))}
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'logs' && (
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-xl font-bold text-gray-800">Activity Logs (Recent 50)</h2>
-            </div>
-            <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
-              {logs.length === 0 ? (
+              {filteredUsers.length === 0 && (
                 <div className="p-12 text-center">
-                  <div className="text-gray-400 text-6xl mb-4">📜</div>
-                  <p className="text-gray-500 text-lg">No activity logs yet.</p>
+                  <div className="text-gray-400 text-6xl mb-4">👥</div>
+                  <p className="text-gray-500 text-lg">
+                    {searchQuery ? 'No users match your search.' : 'No users found.'}
+                  </p>
                 </div>
-              ) : (
-                logs.map((log) => (
-                  <div key={log.id} className="px-6 py-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
-                          {log.action}
-                        </span>
-                        {log.userName && (
-                          <span className="text-sm text-gray-600">
-                            by <span className="font-medium">{log.userName}</span>
-                            {log.userRole && ` (${log.userRole})`}
-                          </span>
+              )}
+            </div>
+
+            {stats && (
+              <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">Contributor Statistics</h2>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                      {stats.contributors?.length || 0} Contributors
+                    </span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Total</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Eligible</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Approved</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Rate</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {stats.contributors && stats.contributors.length > 0 ? (
+                          stats.contributors.slice(0, 10).map((contributor) => (
+                            <tr key={contributor.userId} className="hover:bg-gray-50 transition-colors">
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">{contributor.name}</td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className="px-2 py-1 bg-gray-100 rounded font-semibold">{contributor.totalSubmissions}</span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className="px-2 py-1 bg-cyan-100 text-cyan-800 rounded font-semibold">{contributor.eligibleCount}</span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className="px-2 py-1 bg-green-100 text-green-800 rounded font-semibold">{contributor.approvedCount}</span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className={`px-2 py-1 rounded font-semibold ${
+                                  contributor.approvalRate >= 75 ? 'bg-green-100 text-green-800' :
+                                  contributor.approvalRate >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {contributor.approvalRate.toFixed(1)}%
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="px-6 py-12 text-center">
+                              <div className="text-gray-400 text-4xl mb-2">📊</div>
+                              <p className="text-gray-500">No contributors found</p>
+                            </td>
+                          </tr>
                         )}
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {new Date(log.createdAt).toLocaleString()}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-bold text-gray-800">Reviewer Statistics</h2>
+                    <div className="flex gap-2">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                        {stats.overview.activeReviewers} Active
+                      </span>
+                      <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
+                        {stats.overview.inactiveReviewers} Inactive
                       </span>
                     </div>
-                    <p className="text-sm text-gray-800">{log.description}</p>
-                    {log.metadata && (
-                      <details className="mt-2">
-                        <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
-                          View metadata
-                        </summary>
-                        <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
-                          {JSON.stringify(JSON.parse(log.metadata), null, 2)}
-                        </pre>
-                      </details>
-                    )}
                   </div>
-                ))
-              )}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
+                          <th className="px-6 py-3 text-center text-sm font-bold text-gray-700">Status</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">In Stack</th>
+                          <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Reviewed</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {stats.reviewers && stats.reviewers.length > 0 ? (
+                          stats.reviewers.slice(0, 10).map((reviewer) => (
+                            <tr key={reviewer.userId} className={`transition-colors ${reviewer.isGreenLight ? 'hover:bg-green-50' : 'hover:bg-gray-50'}`}>
+                              <td className="px-6 py-4 text-sm font-medium text-gray-900">{reviewer.name}</td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <div className={`w-3 h-3 rounded-full ${reviewer.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
+                                  <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                    reviewer.isGreenLight ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                                  }`}>
+                                    {reviewer.isGreenLight ? 'Active' : 'Inactive'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">{reviewer.tasksInStack}</span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-semibold">{reviewer.reviewedCount}</span>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-12 text-center">
+                              <div className="text-gray-400 text-4xl mb-2">👥</div>
+                              <p className="text-gray-500">No reviewers found</p>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeSection === 'logs' && (
+          <div className="animate-slide-up">
+            <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-2 border-orange-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">📜</div>
+                <div>
+                  <h2 className="text-3xl font-black text-orange-300 mb-2">Activity Logs</h2>
+                  <p className="text-gray-300">Monitor all platform activity and user actions</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="px-6 py-4 border-b">
+                <h3 className="text-xl font-bold text-gray-800">Recent Activity (Last 100)</h3>
+              </div>
+              <div className="divide-y divide-gray-200 max-h-[600px] overflow-y-auto">
+                {logs.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">📜</div>
+                    <p className="text-gray-500 text-lg">No activity logs yet.</p>
+                  </div>
+                ) : (
+                  logs.map((log) => (
+                    <div key={log.id} className="px-6 py-4 hover:bg-gray-50">
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">
+                            {log.action}
+                          </span>
+                          {log.userName && (
+                            <span className="text-sm text-gray-600">
+                              by <span className="font-medium">{log.userName}</span>
+                              {log.userRole && ` (${log.userRole})`}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(log.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-800">{log.description}</p>
+                      {log.metadata && (
+                        <details className="mt-2">
+                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-700">
+                            View metadata
+                          </summary>
+                          <pre className="mt-2 text-xs bg-gray-50 p-2 rounded overflow-x-auto">
+                            {JSON.stringify(JSON.parse(log.metadata), null, 2)}
+                          </pre>
+                        </details>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {activeTab === 'leaderboard' && (
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Top Contributors</h2>
-            <div className="space-y-3">
-              {leaderboard.length === 0 ? (
-                <div className="p-12 text-center">
-                  <div className="text-gray-400 text-6xl mb-4">🏆</div>
-                  <p className="text-gray-500 text-lg">No leaderboard data yet.</p>
+        {activeSection === 'leaderboard' && (
+          <div className="animate-slide-up">
+            <div className="bg-gradient-to-r from-yellow-500/10 to-amber-500/10 border-2 border-yellow-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">🏆</div>
+                <div>
+                  <h2 className="text-3xl font-black text-yellow-300 mb-2">Leaderboard</h2>
+                  <p className="text-gray-300">Top contributors ranked by performance</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md p-6">
+              <div className="space-y-3">
+                {leaderboard.length === 0 ? (
+                  <div className="p-12 text-center">
+                    <div className="text-gray-400 text-6xl mb-4">🏆</div>
+                    <p className="text-gray-500 text-lg">No leaderboard data yet.</p>
+                  </div>
+                ) : (
+                  leaderboard.map((entry, index) => (
+                    <div
+                      key={entry.userId}
+                      className={`flex items-center justify-between p-4 rounded-lg ${
+                        index === 0 ? 'bg-yellow-50 border-2 border-yellow-300' :
+                        index === 1 ? 'bg-gray-50 border-2 border-gray-300' :
+                        index === 2 ? 'bg-orange-50 border-2 border-orange-300' :
+                        'bg-white border border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className={`text-2xl font-bold ${
+                          index === 0 ? 'text-yellow-600' :
+                          index === 1 ? 'text-gray-600' :
+                          index === 2 ? 'text-orange-600' :
+                          'text-gray-400'
+                        }`}>
+                          #{index + 1}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-800">{entry.userName}</p>
+                          <p className="text-sm text-gray-600">{entry.email}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4 text-sm">
+                        <div className="text-center">
+                          <div className="font-bold text-gray-800">{entry.totalCount}</div>
+                          <div className="text-xs text-gray-500">Total</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-blue-600">{entry.eligibleCount}</div>
+                          <div className="text-xs text-gray-500">Eligible</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-bold text-green-600">{entry.approvedCount}</div>
+                          <div className="text-xs text-gray-500">Approved</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'feedback' && (
+          <div className="animate-slide-up">
+            <div className="bg-gradient-to-r from-pink-500/10 to-rose-500/10 border-2 border-pink-500/30 rounded-2xl p-6 mb-6">
+              <div className="flex items-center gap-4">
+                <div className="text-5xl">💬</div>
+                <div>
+                  <h2 className="text-3xl font-black text-pink-300 mb-2">All Reviews & Feedback</h2>
+                  <p className="text-gray-300">Complete visibility of all feedback given by testers</p>
+                  <div className="mt-2 text-sm">
+                    <span className="font-semibold">Total Reviews:</span> {reviews.length}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="🔍 Search reviews..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-6 py-4 pl-14 border-2 border-gray-700/50 rounded-2xl focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 bg-gray-800/40 backdrop-blur-sm shadow-xl transition-all duration-300 focus:scale-[1.02] text-white placeholder-gray-400 font-medium"
+                />
+                <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {filteredReviews.length === 0 ? (
+                <div className="bg-white rounded-xl shadow-md p-12 text-center">
+                  <div className="text-gray-400 text-6xl mb-4">💬</div>
+                  <p className="text-gray-500 text-lg">
+                    {searchQuery ? 'No reviews match your search.' : 'No reviews found.'}
+                  </p>
                 </div>
               ) : (
-                leaderboard.map((entry, index) => (
-                  <div
-                    key={entry.userId}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      index === 0 ? 'bg-yellow-50 border-2 border-yellow-300' :
-                      index === 1 ? 'bg-gray-50 border-2 border-gray-300' :
-                      index === 2 ? 'bg-orange-50 border-2 border-orange-300' :
-                      'bg-white border border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`text-2xl font-bold ${
-                        index === 0 ? 'text-yellow-600' :
-                        index === 1 ? 'text-gray-600' :
-                        index === 2 ? 'text-orange-600' :
-                        'text-gray-400'
-                      }`}>
-                        #{index + 1}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-800">{entry.userName}</p>
-                        <p className="text-sm text-gray-600">{entry.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-4 text-sm">
-                      <div className="text-center">
-                        <div className="font-bold text-gray-800">{entry.totalCount}</div>
-                        <div className="text-xs text-gray-500">Total</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-bold text-blue-600">{entry.eligibleCount}</div>
-                        <div className="text-xs text-gray-500">Eligible</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-bold text-green-600">{entry.approvedCount}</div>
-                        <div className="text-xs text-gray-500">Approved</div>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'feedback' && (
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-md p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2">All Reviews & Feedback</h2>
-              <p className="text-purple-100">Complete visibility of all feedback given by testers across all submissions</p>
-              <div className="mt-4 text-sm">
-                <span className="font-semibold">Total Reviews:</span> {reviewsTotal}
-              </div>
-            </div>
-
-            {filteredReviews.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-md p-12 text-center">
-                <div className="text-gray-400 text-6xl mb-4">💬</div>
-                <p className="text-gray-500 text-lg">
-                  {searchQuery ? 'No reviews match your search.' : 'No reviews found.'}
-                </p>
-              </div>
-            ) : (
-              <>
-                {filteredReviews.map((review) => (
+                filteredReviews.map((review) => (
                   <div key={review.id} className="bg-white rounded-xl shadow-md p-6">
                     <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-4">
                       <div className="flex-1 min-w-0">
@@ -1357,9 +1734,9 @@ export default function AdminDashboard() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </>
-            )}
+                ))
+              )}
+            </div>
           </div>
         )}
       </div>
