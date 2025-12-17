@@ -450,28 +450,50 @@ export default function ProjectVAdmin() {
           </div>
         </div>
 
-        {/* View Mode Toggle */}
+        {/* View Mode Toggle & Admin Tools */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-slide-up" style={{ animationDelay: '0.05s' }}>
-          <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-xl shadow-xl p-1.5 border border-gray-700/50">
+          <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-xl shadow-xl p-1.5 border border-gray-700/50">
+              <button
+                onClick={() => setViewMode("all")}
+                className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  viewMode === "all"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                    : "text-gray-300 hover:bg-gray-700/50"
+                }`}
+              >
+                📊 All Submissions ({submissions.length})
+              </button>
+              <button
+                onClick={() => setViewMode("kanban")}
+                className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  viewMode === "kanban"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                    : "text-gray-300 hover:bg-gray-700/50"
+                }`}
+              >
+                📋 Kanban View
+              </button>
+            </div>
+
             <button
-              onClick={() => setViewMode("all")}
-              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
-                viewMode === "all"
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
-                  : "text-gray-300 hover:bg-gray-700/50"
-              }`}
+              onClick={async () => {
+                if (!confirm("Reassign all pending tasks to active testers?")) return;
+                setProcessing(true);
+                try {
+                  const result = await apiClient.reassignPendingProjectVTasks();
+                  showToast(`✅ Successfully assigned ${result.assignedCount} pending tasks`, "success");
+                  fetchSubmissions();
+                } catch (error: any) {
+                  showToast(error.response?.data?.error || "Failed to reassign tasks", "error");
+                } finally {
+                  setProcessing(false);
+                }
+              }}
+              disabled={processing}
+              className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-bold transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              📊 All Submissions ({submissions.length})
-            </button>
-            <button
-              onClick={() => setViewMode("kanban")}
-              className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
-                viewMode === "kanban"
-                  ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
-                  : "text-gray-300 hover:bg-gray-700/50"
-              }`}
-            >
-              📋 Kanban View
+              🔄 Reassign Pending Tasks
             </button>
           </div>
 

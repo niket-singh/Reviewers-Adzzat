@@ -184,8 +184,11 @@ func setupRouter() *gin.Engine {
 				admin.GET("/admin/audit-logs", handlers.GetAuditLogs)
 
 				// Admin God Mode - View ALL data
-				admin.GET("/admin/reviews", handlers.GetAllReviews)                     // All Project X feedback
+				admin.GET("/admin/reviews", handlers.GetAllReviews)                          // All Project X feedback
 				admin.GET("/admin/projectv/submissions", handlers.GetAllProjectVSubmissions) // All Project V submissions with feedback
+
+				// Admin Tools
+				admin.POST("/admin/projectv/reassign-pending", handlers.ReassignPendingTasks) // Reassign pending tasks to active testers
 			}
 		}
 	}
