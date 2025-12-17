@@ -12,7 +12,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 func GetLogs(c *gin.Context) {
 	limitStr := c.DefaultQuery("limit", "100")
 	limit, err := strconv.Atoi(limitStr)
@@ -32,9 +31,8 @@ func GetLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"logs": logs})
 }
 
-
 func GetStats(c *gin.Context) {
-	
+
 	var contributors []models.User
 	database.DB.Where("role = ?", models.RoleContributor).Find(&contributors)
 
@@ -66,7 +64,6 @@ func GetStats(c *gin.Context) {
 		})
 	}
 
-	
 	var testers []models.User
 	database.DB.Where("role = ?", models.RoleTester).Find(&testers)
 
@@ -81,7 +78,6 @@ func GetStats(c *gin.Context) {
 		database.DB.Model(&models.Submission{}).Where("claimed_by_id = ? AND status = ?", tester.ID, models.StatusApproved).Count(&approved)
 		database.DB.Model(&models.Review{}).Where("tester_id = ?", tester.ID).Count(&reviewed)
 
-		
 		var tasks []models.Submission
 		database.DB.Where("claimed_by_id = ?", tester.ID).
 			Select("id, title, status, assigned_at").
@@ -105,7 +101,6 @@ func GetStats(c *gin.Context) {
 		})
 	}
 
-	
 	var totalUsers, totalContributors, totalTesters, approvedTesters, pendingTesters, activeTesters, inactiveTesters, totalSubmissions, pendingReviews, queuedTasks int64
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.User{}).Where("role = ?", models.RoleContributor).Count(&totalContributors)
@@ -120,7 +115,6 @@ func GetStats(c *gin.Context) {
 	}).Count(&pendingReviews)
 	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusPending).Count(&queuedTasks)
 
-	
 	var statusCounts []struct {
 		Status string
 		Count  int64
@@ -154,15 +148,14 @@ func GetStats(c *gin.Context) {
 	})
 }
 
-
 func GetLeaderboard(c *gin.Context) {
 	type LeaderboardEntry struct {
-		UserID         string
-		UserName       string
-		Email          string
-		TotalCount     int64
-		EligibleCount  int64
-		ApprovedCount  int64
+		UserID        string
+		UserName      string
+		Email         string
+		TotalCount    int64
+		EligibleCount int64
+		ApprovedCount int64
 	}
 
 	var contributors []models.User
@@ -179,39 +172,34 @@ func GetLeaderboard(c *gin.Context) {
 
 		if total > 0 {
 			leaderboard = append(leaderboard, gin.H{
-				"userId":         contributor.ID,
-				"userName":       contributor.Name,
-				"email":          contributor.Email,
-				"totalCount":     total,
-				"eligibleCount":  eligible,
-				"approvedCount":  approved,
+				"userId":        contributor.ID,
+				"userName":      contributor.Name,
+				"email":         contributor.Email,
+				"totalCount":    total,
+				"eligibleCount": eligible,
+				"approvedCount": approved,
 			})
 		}
 	}
 
-	
 	c.JSON(http.StatusOK, gin.H{"leaderboard": leaderboard})
 }
 
-
 func GetAnalytics(c *gin.Context) {
-	
+
 	var totalSubmissions, totalUsers, approvedSubmissions, pendingSubmissions int64
 	database.DB.Model(&models.Submission{}).Count(&totalSubmissions)
 	database.DB.Model(&models.User{}).Count(&totalUsers)
 	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusApproved).Count(&approvedSubmissions)
 	database.DB.Model(&models.Submission{}).Where("status = ?", models.StatusPending).Count(&pendingSubmissions)
 
-	
 	approvalRate := 0.0
 	if totalSubmissions > 0 {
 		approvalRate = float64(approvedSubmissions) / float64(totalSubmissions) * 100
 	}
 
-	
-	avgReviewTime := 24.5 
+	avgReviewTime := 24.5
 
-	
 	type ContributorStat struct {
 		UserID   uuid.UUID
 		UserName string
@@ -243,7 +231,6 @@ func GetAnalytics(c *gin.Context) {
 		}
 	}
 
-	
 	var domainStats []struct {
 		Domain string
 		Count  int64
@@ -263,7 +250,6 @@ func GetAnalytics(c *gin.Context) {
 		})
 	}
 
-	
 	var languageStats []struct {
 		Language string
 		Count    int64
@@ -296,7 +282,6 @@ func GetAnalytics(c *gin.Context) {
 	})
 }
 
-
 func GetAnalyticsChartData(c *gin.Context) {
 	rangeParam := c.DefaultQuery("range", "30d")
 
@@ -314,7 +299,6 @@ func GetAnalyticsChartData(c *gin.Context) {
 
 	startDate := time.Now().AddDate(0, 0, -days)
 
-	
 	type DailyCount struct {
 		Date     time.Time
 		Total    int64
@@ -339,7 +323,6 @@ func GetAnalyticsChartData(c *gin.Context) {
 			Where("created_at >= ? AND created_at < ? AND status = ?", date, nextDate, models.StatusPending).
 			Count(&pending)
 
-		
 		rejected := total - approved - pending
 
 		chartData = append(chartData, gin.H{
@@ -357,9 +340,8 @@ func GetAnalyticsChartData(c *gin.Context) {
 	})
 }
 
-
 func GetAuditLogs(c *gin.Context) {
-	
+
 	limitStr := c.DefaultQuery("limit", "20")
 	offsetStr := c.DefaultQuery("offset", "0")
 	action := c.Query("action")
@@ -378,7 +360,6 @@ func GetAuditLogs(c *gin.Context) {
 		offset = 0
 	}
 
-	
 	query := database.DB.Model(&models.AuditLog{})
 
 	if action != "" && action != "all" {
@@ -392,18 +373,15 @@ func GetAuditLogs(c *gin.Context) {
 		}
 	}
 
-	
 	var total int64
 	query.Count(&total)
 
-	
 	var logs []models.AuditLog
 	query.Order("created_at DESC").
 		Limit(limit).
 		Offset(offset).
 		Find(&logs)
 
-	
 	var actionCounts []struct {
 		Action string
 		Count  int64
@@ -428,9 +406,8 @@ func GetAuditLogs(c *gin.Context) {
 	})
 }
 
-
 func GetAllReviews(c *gin.Context) {
-	
+
 	limitStr := c.DefaultQuery("limit", "100")
 	offsetStr := c.DefaultQuery("offset", "0")
 	testerIDStr := c.Query("testerId")
@@ -449,13 +426,11 @@ func GetAllReviews(c *gin.Context) {
 		offset = 0
 	}
 
-	
 	query := database.DB.Model(&models.Review{}).
 		Preload("Tester").
 		Preload("Submission").
 		Preload("Submission.Contributor")
 
-	
 	if testerIDStr != "" {
 		testerID, err := uuid.Parse(testerIDStr)
 		if err == nil {
@@ -470,11 +445,9 @@ func GetAllReviews(c *gin.Context) {
 		}
 	}
 
-	
 	var total int64
 	query.Count(&total)
 
-	
 	var reviews []models.Review
 	err = query.Order("created_at DESC").
 		Limit(limit).
@@ -486,7 +459,6 @@ func GetAllReviews(c *gin.Context) {
 		return
 	}
 
-	
 	reviewsResponse := make([]gin.H, 0, len(reviews))
 	for _, review := range reviews {
 		reviewData := gin.H{
@@ -495,12 +467,10 @@ func GetAllReviews(c *gin.Context) {
 			"createdAt": review.CreatedAt,
 		}
 
-		
 		if review.AccountPostedIn != nil {
 			reviewData["accountPostedIn"] = *review.AccountPostedIn
 		}
 
-		
 		if review.Tester != nil {
 			reviewData["tester"] = gin.H{
 				"id":    review.Tester.ID,
@@ -509,7 +479,6 @@ func GetAllReviews(c *gin.Context) {
 			}
 		}
 
-		
 		if review.Submission != nil {
 			submissionData := gin.H{
 				"id":     review.Submission.ID,
@@ -518,7 +487,6 @@ func GetAllReviews(c *gin.Context) {
 				"status": review.Submission.Status,
 			}
 
-			
 			if review.Submission.Contributor != nil {
 				submissionData["contributor"] = gin.H{
 					"id":    review.Submission.Contributor.ID,
@@ -541,9 +509,8 @@ func GetAllReviews(c *gin.Context) {
 	})
 }
 
-
 func GetAllProjectVSubmissions(c *gin.Context) {
-	
+
 	limitStr := c.DefaultQuery("limit", "100")
 	offsetStr := c.DefaultQuery("offset", "0")
 	statusStr := c.Query("status")
@@ -564,13 +531,11 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		offset = 0
 	}
 
-	
 	query := database.DB.Model(&models.ProjectVSubmission{}).
 		Preload("Contributor").
 		Preload("Tester").
 		Preload("Reviewer")
 
-	
 	if statusStr != "" {
 		query = query.Where("status = ?", statusStr)
 	}
@@ -596,11 +561,9 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		}
 	}
 
-	
 	var total int64
 	query.Count(&total)
 
-	
 	var submissions []models.ProjectVSubmission
 	err = query.Order("created_at DESC").
 		Limit(limit).
@@ -612,7 +575,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		return
 	}
 
-	
 	submissionsResponse := make([]gin.H, 0, len(submissions))
 	for _, sub := range submissions {
 		submissionData := gin.H{
@@ -655,7 +617,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 			"finalNewTestError":    sub.FinalNewTestError,
 		}
 
-		
 		if sub.SubmittedAccount != nil {
 			submissionData["submittedAccount"] = *sub.SubmittedAccount
 		}
@@ -672,7 +633,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 			submissionData["accountPostedIn"] = *sub.AccountPostedIn
 		}
 
-		
 		if sub.Contributor != nil {
 			submissionData["contributor"] = gin.H{
 				"id":    sub.Contributor.ID,
@@ -681,7 +641,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 			}
 		}
 
-		
 		if sub.Tester != nil {
 			submissionData["tester"] = gin.H{
 				"id":    sub.Tester.ID,
@@ -690,7 +649,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 			}
 		}
 
-		
 		if sub.Reviewer != nil {
 			submissionData["reviewer"] = gin.H{
 				"id":    sub.Reviewer.ID,
@@ -709,7 +667,6 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		"offset":      offset,
 	})
 }
-
 
 func ReassignPendingTasks(c *gin.Context) {
 	assignedCount, err := services.ReassignPendingProjectVTasks()

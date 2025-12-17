@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 func CreateProjectVSubmission(c *gin.Context) {
 	userID := c.GetString("userId")
 	if userID == "" {
@@ -29,13 +28,11 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
-	if err := c.Request.ParseMultipartForm(50 << 20); err != nil { 
+	if err := c.Request.ParseMultipartForm(50 << 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form data"})
 		return
 	}
 
-	
 	title := c.PostForm("title")
 	language := c.PostForm("language")
 	category := c.PostForm("category")
@@ -45,25 +42,21 @@ func CreateProjectVSubmission(c *gin.Context) {
 	commitHash := c.PostForm("commitHash")
 	issueURL := c.PostForm("issueUrl")
 
-	
 	if title == "" || language == "" || category == "" || difficulty == "" || description == "" || githubRepo == "" || commitHash == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "All required fields must be filled"})
 		return
 	}
 
-	
 	if !isASCII(description) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Description must contain only ASCII characters"})
 		return
 	}
 
-	
 	if !isValidGitHubURL(githubRepo) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid GitHub repository URL"})
 		return
 	}
 
-	
 	testPatchFile, testPatchHeader, err := c.Request.FormFile("testPatch")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Test patch file is required"})
@@ -85,7 +78,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 	}
 	defer solutionPatchFile.Close()
 
-	
 	testPatchData, err := io.ReadAll(testPatchFile)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read test patch"})
@@ -104,7 +96,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	testPatchURL, err := storage.UploadFile(testPatchData, testPatchHeader.Filename, "text/plain")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload test patch: %v", err)})
@@ -123,7 +114,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	submission := models.ProjectVSubmission{
 		Title:            title,
 		Language:         language,
@@ -145,7 +135,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	testerID, err := services.AutoAssignTester(submission.ID)
 	if err == nil && testerID != nil {
 		submission.TesterID = testerID
@@ -159,7 +148,6 @@ func CreateProjectVSubmission(c *gin.Context) {
 	})
 }
 
-
 func GetProjectVSubmissions(c *gin.Context) {
 	userID := c.GetString("userId")
 	userRole := c.GetString("userRole")
@@ -171,14 +159,12 @@ func GetProjectVSubmissions(c *gin.Context) {
 		contributorID, _ := uuid.Parse(userID)
 		query = query.Where("contributor_id = ?", contributorID)
 	}
-	
 
 	if err := query.Order("created_at DESC").Find(&submissions).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch submissions"})
 		return
 	}
 
-	
 	for i := range submissions {
 		testPatchURL, err := storage.GetSignedDownloadURL(submissions[i].TestPatchURL, "test.patch", 3600)
 		if err == nil {
@@ -196,7 +182,6 @@ func GetProjectVSubmissions(c *gin.Context) {
 		}
 	}
 
-	
 	if userRole == "CONTRIBUTOR" {
 		for i := range submissions {
 			submissions[i].AccountPostedIn = nil
@@ -208,7 +193,6 @@ func GetProjectVSubmissions(c *gin.Context) {
 		}
 	}
 
-	
 	if userRole == "REVIEWER" {
 		for i := range submissions {
 			submissions[i].SubmittedAccount = nil
@@ -217,7 +201,6 @@ func GetProjectVSubmissions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, submissions)
 }
-
 
 func GetProjectVSubmission(c *gin.Context) {
 	id := c.Param("id")
@@ -233,7 +216,6 @@ func GetProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	testPatchURL, err := storage.GetSignedDownloadURL(submission.TestPatchURL, "test.patch", 3600)
 	if err == nil {
 		submission.TestPatchURL = testPatchURL
@@ -251,7 +233,6 @@ func GetProjectVSubmission(c *gin.Context) {
 
 	c.JSON(http.StatusOK, submission)
 }
-
 
 func UpdateProjectVStatus(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -277,13 +258,11 @@ func UpdateProjectVStatus(c *gin.Context) {
 		return
 	}
 
-	
 	if req.Status == string(models.ProjectVStatusApproved) && userRole != "ADMIN" {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only admins can approve tasks"})
 		return
 	}
 
-	
 	validStatuses := []string{
 		string(models.ProjectVStatusSubmitted),
 		string(models.ProjectVStatusInTesting),
@@ -314,7 +293,6 @@ func UpdateProjectVStatus(c *gin.Context) {
 		return
 	}
 
-	
 	submission.Status = models.ProjectVStatus(req.Status)
 
 	if submission.TesterID == nil {
@@ -322,7 +300,6 @@ func UpdateProjectVStatus(c *gin.Context) {
 		submission.TesterID = &testerID
 	}
 
-	
 	if req.Status == string(models.ProjectVStatusPendingReview) && submission.ReviewerID == nil {
 		reviewerID, err := services.AutoAssignReviewer(submissionID)
 		if err == nil && reviewerID != nil {
@@ -330,7 +307,6 @@ func UpdateProjectVStatus(c *gin.Context) {
 		}
 	}
 
-	
 	if req.AccountPostedIn != nil {
 		submission.AccountPostedIn = req.AccountPostedIn
 	}
@@ -342,7 +318,6 @@ func UpdateProjectVStatus(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Status updated successfully", "submission": submission})
 }
-
 
 func MarkChangesRequested(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -377,7 +352,6 @@ func MarkChangesRequested(c *gin.Context) {
 		return
 	}
 
-	
 	if submission.Status != models.ProjectVStatusEligible &&
 		submission.Status != models.ProjectVStatusPendingReview &&
 		submission.Status != models.ProjectVStatusChangesDone {
@@ -389,13 +363,11 @@ func MarkChangesRequested(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.ReviewerID == nil {
 		submission.ReviewerID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusChangesRequested
 	submission.ReviewerFeedback = req.Feedback
 	submission.HasChangesRequested = true
@@ -408,7 +380,6 @@ func MarkChangesRequested(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Changes requested successfully", "submission": submission})
 }
-
 
 func MarkFinalChecks(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -434,7 +405,6 @@ func MarkFinalChecks(c *gin.Context) {
 		return
 	}
 
-	
 	if submission.Status != models.ProjectVStatusEligible &&
 		submission.Status != models.ProjectVStatusPendingReview &&
 		submission.Status != models.ProjectVStatusChangesDone {
@@ -446,13 +416,11 @@ func MarkFinalChecks(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.ReviewerID == nil {
 		submission.ReviewerID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusFinalChecks
 
 	if err := database.DB.Save(&submission).Error; err != nil {
@@ -462,7 +430,6 @@ func MarkFinalChecks(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Marked for final checks successfully", "submission": submission})
 }
-
 
 func MarkChangesDone(c *gin.Context) {
 	userID := c.GetString("userId")
@@ -481,19 +448,16 @@ func MarkChangesDone(c *gin.Context) {
 		return
 	}
 
-	
 	if userRole != "ADMIN" && submission.ContributorID.String() != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this submission"})
 		return
 	}
 
-	
 	if submission.Status != models.ProjectVStatusChangesRequested {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Task does not have changes requested"})
 		return
 	}
 
-	
 	submission.Status = models.ProjectVStatusInTesting
 	submission.ChangesDone = true
 
@@ -504,7 +468,6 @@ func MarkChangesDone(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Changes marked as done successfully", "submission": submission})
 }
-
 
 func DeleteProjectVSubmission(c *gin.Context) {
 	userID := c.GetString("userId")
@@ -523,18 +486,15 @@ func DeleteProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	if userRole != "ADMIN" && submission.ContributorID.String() != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to delete this submission"})
 		return
 	}
 
-	
 	storage.DeleteFile(submission.TestPatchURL)
 	storage.DeleteFile(submission.DockerfileURL)
 	storage.DeleteFile(submission.SolutionPatchURL)
 
-	
 	if err := database.DB.Delete(&submission).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete submission"})
 		return
@@ -542,7 +502,6 @@ func DeleteProjectVSubmission(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Submission deleted successfully"})
 }
-
 
 func MarkTaskSubmitted(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -574,13 +533,11 @@ func MarkTaskSubmitted(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.TesterID == nil {
 		submission.TesterID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusTaskSubmittedToPlatform
 	submission.SubmittedAccount = &req.SubmittedAccount
 	submission.TaskLinkSubmitted = &req.TaskLinkSubmitted
@@ -592,7 +549,6 @@ func MarkTaskSubmitted(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task marked as submitted successfully", "submission": submission})
 }
-
 
 func MarkEligibleForManualReview(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -623,17 +579,14 @@ func MarkEligibleForManualReview(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.TesterID == nil {
 		submission.TesterID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusEligible
 	submission.TaskLink = &req.TaskLink
 
-	
 	if submission.ReviewerID == nil {
 		reviewerID, err := services.AutoAssignReviewer(submissionID)
 		if err == nil && reviewerID != nil {
@@ -648,7 +601,6 @@ func MarkEligibleForManualReview(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task marked as eligible for manual review successfully", "submission": submission})
 }
-
 
 func SendTesterFeedback(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -679,13 +631,11 @@ func SendTesterFeedback(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.TesterID == nil {
 		submission.TesterID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusRework
 	submission.TesterFeedback = req.Feedback
 
@@ -696,7 +646,6 @@ func SendTesterFeedback(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Feedback sent successfully", "submission": submission})
 }
-
 
 func MarkRejected(c *gin.Context) {
 	userRole := c.GetString("userRole")
@@ -731,19 +680,16 @@ func MarkRejected(c *gin.Context) {
 		return
 	}
 
-	
 	if submission.Status != models.ProjectVStatusEligible && submission.Status != models.ProjectVStatusPendingReview && submission.Status != models.ProjectVStatusChangesDone {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Task is not in a reviewable state"})
 		return
 	}
 
-	
 	userID, _ := uuid.Parse(c.GetString("userId"))
 	if submission.ReviewerID == nil {
 		submission.ReviewerID = &userID
 	}
 
-	
 	submission.Status = models.ProjectVStatusRejected
 	submission.RejectionReason = &req.RejectionReason
 
@@ -754,7 +700,6 @@ func MarkRejected(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task rejected successfully", "submission": submission})
 }
-
 
 func ResubmitProjectVSubmission(c *gin.Context) {
 	userID := c.GetString("userId")
@@ -773,25 +718,21 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	if userRole != "ADMIN" && submission.ContributorID.String() != userID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You don't have permission to update this submission"})
 		return
 	}
 
-	
 	if submission.Status != models.ProjectVStatusRework && submission.Status != models.ProjectVStatusChangesRequested {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Task does not have feedback to address"})
 		return
 	}
 
-	
-	if err := c.Request.ParseMultipartForm(50 << 20); err != nil { 
+	if err := c.Request.ParseMultipartForm(50 << 20); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse form data"})
 		return
 	}
 
-	
 	title := c.PostForm("title")
 	language := c.PostForm("language")
 	category := c.PostForm("category")
@@ -801,7 +742,6 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 	commitHash := c.PostForm("commitHash")
 	issueURL := c.PostForm("issueUrl")
 
-	
 	if title != "" {
 		submission.Title = title
 	}
@@ -815,7 +755,7 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		submission.Difficulty = difficulty
 	}
 	if description != "" {
-		
+
 		if !isASCII(description) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Description must contain only ASCII characters"})
 			return
@@ -823,7 +763,7 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		submission.Description = description
 	}
 	if githubRepo != "" {
-		
+
 		if !isValidGitHubURL(githubRepo) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid GitHub repository URL"})
 			return
@@ -837,13 +777,12 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		submission.IssueURL = issueURL
 	}
 
-	
 	testPatchFile, testPatchHeader, err := c.Request.FormFile("testPatch")
 	if err == nil {
 		defer testPatchFile.Close()
 		testPatchData, err := io.ReadAll(testPatchFile)
 		if err == nil {
-			
+
 			storage.DeleteFile(submission.TestPatchURL)
 			testPatchURL, err := storage.UploadFile(testPatchData, testPatchHeader.Filename, "text/plain")
 			if err == nil {
@@ -857,7 +796,7 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		defer dockerFile.Close()
 		dockerData, err := io.ReadAll(dockerFile)
 		if err == nil {
-			
+
 			storage.DeleteFile(submission.DockerfileURL)
 			dockerfileURL, err := storage.UploadFile(dockerData, dockerHeader.Filename, "text/plain")
 			if err == nil {
@@ -871,7 +810,7 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		defer solutionPatchFile.Close()
 		solutionPatchData, err := io.ReadAll(solutionPatchFile)
 		if err == nil {
-			
+
 			storage.DeleteFile(submission.SolutionPatchURL)
 			solutionPatchURL, err := storage.UploadFile(solutionPatchData, solutionHeader.Filename, "text/plain")
 			if err == nil {
@@ -880,7 +819,6 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		}
 	}
 
-	
 	if submission.Status == models.ProjectVStatusRework {
 		submission.Status = models.ProjectVStatusReworkDone
 	} else if submission.Status == models.ProjectVStatusChangesRequested {
@@ -888,7 +826,6 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 		submission.ChangesDone = true
 	}
 
-	
 	if err := database.DB.Save(&submission).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update submission"})
 		return
@@ -900,7 +837,6 @@ func ResubmitProjectVSubmission(c *gin.Context) {
 	})
 }
 
-
 func isASCII(s string) bool {
 	for _, r := range s {
 		if r > unicode.MaxASCII {
@@ -909,7 +845,6 @@ func isASCII(s string) bool {
 	}
 	return true
 }
-
 
 func isValidGitHubURL(url string) bool {
 	pattern := `^https?://github\.com/[\w-]+/[\w.-]+/?$`

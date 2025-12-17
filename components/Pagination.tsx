@@ -57,7 +57,7 @@ export default function Pagination({
       )}
 
       <div className="flex items-center gap-2">
-        {/* Previous Button */}
+
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -77,7 +77,6 @@ export default function Pagination({
           </svg>
         </button>
 
-        {/* Page Numbers */}
         {getPageNumbers().map((page, index) =>
           page === '...' ? (
             <span key={`dots-${index}`} className="px-2 text-gray-500">
@@ -98,7 +97,6 @@ export default function Pagination({
           )
         )}
 
-        {/* Next Button */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}

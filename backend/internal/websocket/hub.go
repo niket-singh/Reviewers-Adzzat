@@ -9,12 +9,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-
 type Message struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }
-
 
 type Client struct {
 	ID     uuid.UUID
@@ -24,24 +22,17 @@ type Client struct {
 	conn   *websocket.Conn
 }
 
-
 type Hub struct {
-	
 	clients map[*Client]bool
 
-	
 	broadcast chan []byte
 
-	
 	register chan *Client
 
-	
 	unregister chan *Client
 
-	
 	mu sync.RWMutex
 }
-
 
 func NewHub() *Hub {
 	return &Hub{
@@ -51,7 +42,6 @@ func NewHub() *Hub {
 		unregister: make(chan *Client),
 	}
 }
-
 
 func (h *Hub) Run() {
 	for {
@@ -77,7 +67,7 @@ func (h *Hub) Run() {
 				select {
 				case client.Send <- message:
 				default:
-					
+
 					close(client.Send)
 					delete(h.clients, client)
 				}
@@ -86,7 +76,6 @@ func (h *Hub) Run() {
 		}
 	}
 }
-
 
 func (h *Hub) BroadcastToAll(messageType string, data interface{}) error {
 	msg := Message{
@@ -102,7 +91,6 @@ func (h *Hub) BroadcastToAll(messageType string, data interface{}) error {
 	h.broadcast <- jsonMsg
 	return nil
 }
-
 
 func (h *Hub) BroadcastToUser(userID uuid.UUID, messageType string, data interface{}) error {
 	msg := Message{
@@ -123,14 +111,13 @@ func (h *Hub) BroadcastToUser(userID uuid.UUID, messageType string, data interfa
 			select {
 			case client.Send <- jsonMsg:
 			default:
-				
+
 			}
 		}
 	}
 
 	return nil
 }
-
 
 func (h *Hub) GetConnectedUsers() int {
 	h.mu.RLock()

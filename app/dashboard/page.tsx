@@ -93,7 +93,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        {}
+
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white">Dashboard</h1>
@@ -123,7 +123,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Overall Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <StatCard
             title="Total Submissions"
@@ -145,7 +144,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Admin Message */}
         {user?.role === "ADMIN" && (
           <div className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl shadow-lg p-6 mb-8">
             <div className="flex items-center gap-4">
@@ -166,9 +164,8 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Project-wise Stats */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Project X Stats */}
+
           <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6 opacity-60">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Project X</h2>
@@ -206,7 +203,6 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Project V Stats */}
           <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white">Project V</h2>
@@ -250,7 +246,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Quick Links */}
         <div className="mt-8 bg-gray-800 border border-gray-700 rounded-xl shadow-lg p-6">
           <h2 className="text-xl font-bold text-white mb-4">Quick Links</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

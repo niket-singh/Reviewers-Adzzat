@@ -5,6 +5,8 @@ export function middleware(request: NextRequest) {
   const response = NextResponse.next()
 
   
+
+  
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'
   const baseUrl = apiUrl.replace('/api', '')
 
@@ -62,6 +64,11 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     
+
+
+
+
+
 
     '/((?!_next/static|_next/image|favicon.ico).*)',
   ],

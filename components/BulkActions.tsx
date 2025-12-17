@@ -40,7 +40,7 @@ export default function BulkActions({
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 animate-slide-up">
       <div className="bg-gray-800/95 backdrop-blur-xl border-2 border-gray-700/50 rounded-2xl shadow-2xl px-6 py-4">
         <div className="flex items-center gap-6">
-          {}
+
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center font-bold text-white">
               {selectedCount}
@@ -58,10 +58,8 @@ export default function BulkActions({
             </div>
           </div>
 
-          {/* Divider */}
           <div className="h-10 w-px bg-gray-700" />
 
-          {}
           <div className="hidden md:flex items-center gap-2">
             {actions.map((action, index) => (
               <button
@@ -78,7 +76,6 @@ export default function BulkActions({
             ))}
           </div>
 
-          {/* Actions - Mobile (Dropdown) */}
           <div className="md:hidden relative">
             <button
               onClick={() => setIsOpen(!isOpen)}
@@ -119,7 +116,6 @@ export default function BulkActions({
             )}
           </div>
 
-          {/* Close Button */}
           <button
             onClick={onDeselectAll}
             className="w-8 h-8 rounded-lg hover:bg-gray-700/50 flex items-center justify-center transition-colors text-gray-400 hover:text-white"

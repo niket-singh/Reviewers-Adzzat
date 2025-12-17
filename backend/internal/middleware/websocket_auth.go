@@ -8,12 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func WebSocketAuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var tokenString string
 
-		
 		authHeader := c.GetHeader("Authorization")
 		if authHeader != "" {
 			parts := strings.Split(authHeader, " ")
@@ -22,7 +20,6 @@ func WebSocketAuthMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		
 		if tokenString == "" {
 			tokenString = c.Query("token")
 		}
@@ -33,7 +30,6 @@ func WebSocketAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		
 		claims, err := utils.ValidateJWT(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
@@ -41,7 +37,6 @@ func WebSocketAuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		
 		c.Set("userId", claims.UserID)
 		c.Set("userEmail", claims.Email)
 		c.Set("userRole", claims.Role)

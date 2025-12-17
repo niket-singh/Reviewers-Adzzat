@@ -25,23 +25,20 @@ func (g *gzipWriter) Write(data []byte) (int, error) {
 	return g.writer.Write(data)
 }
 
-
 func CompressionMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		
+
 		if !strings.Contains(c.Request.Header.Get("Accept-Encoding"), "gzip") {
 			c.Next()
 			return
 		}
 
-		
 		gz := gzipPool.Get().(*gzip.Writer)
 		defer gzipPool.Put(gz)
 
 		gz.Reset(c.Writer)
 		defer gz.Close()
 
-		
 		c.Header("Content-Encoding", "gzip")
 		c.Header("Vary", "Accept-Encoding")
 		c.Writer = &gzipWriter{

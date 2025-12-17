@@ -11,6 +11,9 @@ interface ShortcutHandler {
 }
 
 
+
+
+
 export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -50,6 +53,8 @@ export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [shortcuts]);
 }
+
+
 
 
 export const commonShortcuts = {

@@ -4,6 +4,8 @@ import { queryKeys } from '@/lib/query-client';
 import { useToast } from '@/components/ToastContainer';
 
 
+
+
 export function useSubmissions(params?: { status?: string; search?: string }) {
   return useQuery({
     queryKey: queryKeys.submissions(params?.status, params?.search),
@@ -11,6 +13,8 @@ export function useSubmissions(params?: { status?: string; search?: string }) {
     staleTime: 30000, 
   });
 }
+
+
 
 
 export function useReviewedSubmissions(search?: string) {
@@ -22,6 +26,8 @@ export function useReviewedSubmissions(search?: string) {
 }
 
 
+
+
 export function useSubmission(id: string) {
   return useQuery({
     queryKey: queryKeys.submission(id),
@@ -29,6 +35,8 @@ export function useSubmission(id: string) {
     enabled: !!id,
   });
 }
+
+
 
 
 export function useApproveSubmission() {
@@ -74,6 +82,8 @@ export function useApproveSubmission() {
     },
   });
 }
+
+
 
 
 export function useSubmitFeedback() {
@@ -128,6 +138,8 @@ export function useSubmitFeedback() {
     },
   });
 }
+
+
 
 
 export function useDeleteSubmission() {
@@ -188,6 +200,8 @@ export function useDeleteSubmission() {
     },
   });
 }
+
+
 
 
 export function useUploadSubmission() {

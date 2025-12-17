@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 func CORSMiddleware() gin.HandlerFunc {
 	allowedOrigins := strings.Split(os.Getenv("CORS_ORIGINS"), ",")
 	if len(allowedOrigins) == 0 || allowedOrigins[0] == "" {
@@ -17,7 +16,6 @@ func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		origin := c.Request.Header.Get("Origin")
 
-		
 		allowed := false
 		for _, allowedOrigin := range allowedOrigins {
 			trimmedOrigin := strings.TrimSpace(allowedOrigin)
@@ -27,14 +25,13 @@ func CORSMiddleware() gin.HandlerFunc {
 			}
 		}
 
-		
 		if allowed {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 		} else if origin != "" {
-			
+
 			println("CORS: Origin not in allowed list:", origin)
 			println("CORS: Allowed origins:", strings.Join(allowedOrigins, ", "))
-			
+
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 		}
 

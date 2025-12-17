@@ -271,14 +271,13 @@ export default function ProjectVTester() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-blue-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -296,7 +295,6 @@ export default function ProjectVTester() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button onClick={() => router.push('/select-project')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600">
@@ -312,7 +310,6 @@ export default function ProjectVTester() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +322,6 @@ export default function ProjectVTester() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
@@ -346,10 +342,9 @@ export default function ProjectVTester() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb */}
+
         <Breadcrumb />
 
-        {/* Search Bar */}
         <div className="mb-8 animate-slide-up">
           <div className="relative">
             <input type="text" placeholder="🔍 Search by title, language, category, or contributor..."
@@ -361,7 +356,6 @@ export default function ProjectVTester() {
           </div>
         </div>
 
-        {/* Status Filter Tabs */}
         <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50 overflow-x-auto">
             {[
@@ -383,7 +377,6 @@ export default function ProjectVTester() {
           </div>
         </div>
 
-        {/* Submissions Grid */}
         <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           {filteredSubmissions.length === 0 ? (
             <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 border-2 border-gray-700/50 text-center">
@@ -431,7 +424,6 @@ export default function ProjectVTester() {
                   </button>
                 </div>
 
-                {/* Testing Status Indicator */}
                 {submission.status === "IN_TESTING" && (
                   <div className="mt-3 px-3 py-2 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-xs text-yellow-300 font-bold flex items-center gap-2">
                     <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
@@ -443,7 +435,6 @@ export default function ProjectVTester() {
           )}
         </div>
 
-        {/* Submission Details Modal */}
         {selectedSubmission && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
@@ -463,7 +454,7 @@ export default function ProjectVTester() {
               </div>
 
               <div className="space-y-6">
-                {/* Status & Metadata */}
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
                     <div className="text-xs text-gray-400 font-semibold mb-2">Status</div>
@@ -485,13 +476,11 @@ export default function ProjectVTester() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-gray-200 mb-2 text-lg">📝 Description:</h4>
                   <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{selectedSubmission.description}</p>
                 </div>
 
-                {/* Repository Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                     <h4 className="font-bold text-gray-200 mb-3">🔗 Repository:</h4>
@@ -516,7 +505,6 @@ export default function ProjectVTester() {
                   </code>
                 </div>
 
-                {/* Processing Pipeline - Tester's Main View */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-white mb-4 text-lg">🔄 Testing Pipeline Results:</h4>
                   <div className="space-y-2">
@@ -540,7 +528,6 @@ export default function ProjectVTester() {
                   </div>
                 )}
 
-                {/* Files */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-white mb-4 text-lg">📎 Submitted Files:</h4>
                   <div className="space-y-2">
@@ -560,7 +547,6 @@ export default function ProjectVTester() {
                   </div>
                 </div>
 
-                {/* Previous Feedback (if any) */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback:</h4>
@@ -568,7 +554,6 @@ export default function ProjectVTester() {
                   </div>
                 )}
 
-                {/* Tester Actions */}
                 {(selectedSubmission.status === "TASK_SUBMITTED" ||
                   selectedSubmission.status === "IN_TESTING" ||
                   selectedSubmission.status === "TASK_SUBMITTED_TO_PLATFORM" ||
@@ -618,7 +603,7 @@ export default function ProjectVTester() {
 
                     {!actionType ? (
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {/* Only show Task Submitted button if not already submitted to platform */}
+
                         {selectedSubmission.status !== "TASK_SUBMITTED_TO_PLATFORM" && (
                           <button onClick={() => setActionType("submitted")} disabled={processing}
                             className="px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold rounded-xl transition-all duration-300 shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -646,7 +631,7 @@ export default function ProjectVTester() {
                         <div>
                           <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Link: *</label>
                           <input type="url" value={taskLinkSubmitted} onChange={(e) => setTaskLinkSubmitted(e.target.value)}
-                            placeholder="https:
+                            placeholder="https://..." disabled={processing}
                             className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
                           <p className="text-xs text-gray-400 mt-2">This will be visible to testers, reviewers, and admins</p>
                         </div>

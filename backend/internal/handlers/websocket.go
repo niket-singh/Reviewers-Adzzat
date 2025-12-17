@@ -14,15 +14,12 @@ var upgrader = gorillaws.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		
-		
+
 		return true
 	},
 }
 
-
 var WSHub *websocket.Hub
-
 
 func InitWebSocket() {
 	WSHub = websocket.NewHub()
@@ -30,9 +27,8 @@ func InitWebSocket() {
 	log.Println("✓ WebSocket hub initialized")
 }
 
-
 func HandleWebSocket(c *gin.Context) {
-	
+
 	userIDInterface, exists := c.Get("userId")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -51,14 +47,12 @@ func HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 
-	
 	client := &websocket.Client{
 		ID:     uuid.New(),
 		UserID: userID,
@@ -66,10 +60,8 @@ func HandleWebSocket(c *gin.Context) {
 		Hub:    WSHub,
 	}
 
-	
 	client.ServeWS(conn)
 }
-
 
 func BroadcastSubmissionUpdate(submissionID uuid.UUID, status string) {
 	if WSHub != nil {
@@ -80,7 +72,6 @@ func BroadcastSubmissionUpdate(submissionID uuid.UUID, status string) {
 		})
 	}
 }
-
 
 func BroadcastNotification(userID uuid.UUID, title, message string) {
 	if WSHub != nil {

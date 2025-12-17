@@ -8,7 +8,6 @@ interface LazyLoadProps {
   children: ReactNode
 }
 
-
 export default function LazyLoad({ fallback, children }: LazyLoadProps) {
   return (
     <Suspense fallback={fallback || <Skeleton className="h-64 w-full rounded-xl" />}>
@@ -16,7 +15,6 @@ export default function LazyLoad({ fallback, children }: LazyLoadProps) {
     </Suspense>
   )
 }
-
 
 export function createLazyComponent<T extends ComponentType<any>>(
   importFunc: () => Promise<{ default: T }>,
@@ -33,9 +31,9 @@ export function createLazyComponent<T extends ComponentType<any>>(
   }
 }
 
-
 export function preloadComponent(lazyComponent: any) {
   if (lazyComponent && typeof lazyComponent._ctor === 'function') {
     lazyComponent._ctor()
   }
 }
+

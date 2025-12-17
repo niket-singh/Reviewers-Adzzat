@@ -14,18 +14,15 @@ import (
 	"gorm.io/gorm"
 )
 
-
 func UploadSubmission(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 
-	
 	if userRole != string(models.RoleContributor) && userRole != string(models.RoleAdmin) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Only contributors and admins can upload submissions"})
 		return
 	}
 
-	
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
@@ -33,13 +30,11 @@ func UploadSubmission(c *gin.Context) {
 	}
 	defer file.Close()
 
-	
 	if !strings.HasSuffix(header.Filename, ".zip") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Only ZIP files are allowed"})
 		return
 	}
 
-	
 	title := c.PostForm("title")
 	domain := c.PostForm("domain")
 	language := c.PostForm("language")
@@ -49,21 +44,18 @@ func UploadSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	fileData, err := io.ReadAll(file)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to read file"})
 		return
 	}
 
-	
 	fileURL, err := storage.UploadFile(fileData, header.Filename, "application/zip")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload file"})
 		return
 	}
 
-	
 	uid, _ := uuid.Parse(userID.(string))
 	submission := models.Submission{
 		Title:         title,
@@ -79,7 +71,6 @@ func UploadSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	userName, _ := c.Get("userEmail")
 	userRoleStr := userRole.(string)
 	targetType := "submission"
@@ -101,7 +92,6 @@ func UploadSubmission(c *gin.Context) {
 		},
 	})
 
-	
 	testerID, _ := services.AutoAssignSubmission(submission.ID)
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -110,7 +100,6 @@ func UploadSubmission(c *gin.Context) {
 		"assigned":   testerID != nil,
 	})
 }
-
 
 func GetSubmissions(c *gin.Context) {
 	userID, _ := c.Get("userId")
@@ -125,27 +114,24 @@ func GetSubmissions(c *gin.Context) {
 		Preload("ClaimedBy").
 		Preload("Reviews.Tester")
 
-	
 	if userRole == string(models.RoleContributor) {
 		query = query.Where("contributor_id = ?", uid)
 	} else if userRole == string(models.RoleTester) {
 		query = query.Where("claimed_by_id = ?", uid)
 	} else if userRole == string(models.RoleAdmin) {
-		
+
 		viewMode := c.Query("view")
 		if viewMode == "mine" {
-			
+
 			query = query.Where("claimed_by_id = ?", uid)
 		}
-		
+
 	}
 
-	
 	if status != "" && status != "all" {
 		query = query.Where("status = ?", strings.ToUpper(status))
 	}
 
-	
 	if search != "" {
 		searchPattern := "%" + search + "%"
 		query = query.Where("title ILIKE ? OR domain ILIKE ? OR language ILIKE ?",
@@ -161,30 +147,26 @@ func GetSubmissions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"submissions": submissions})
 }
 
-
 func GetReviewedSubmissions(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 	uid, _ := uuid.Parse(userID.(string))
 
-	
 	if userRole != string(models.RoleTester) && userRole != string(models.RoleAdmin) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
 
-	
 	search := c.Query("search")
 
-	
 	var reviews []models.Review
 	var query *gorm.DB
 
 	if userRole == string(models.RoleAdmin) {
-		
+
 		query = database.DB.Model(&models.Review{})
 	} else {
-		
+
 		query = database.DB.Where("tester_id = ?", uid)
 	}
 
@@ -193,7 +175,6 @@ func GetReviewedSubmissions(c *gin.Context) {
 		return
 	}
 
-	
 	submissionIDs := make([]uuid.UUID, 0)
 	for _, review := range reviews {
 		submissionIDs = append(submissionIDs, review.SubmissionID)
@@ -204,14 +185,12 @@ func GetReviewedSubmissions(c *gin.Context) {
 		return
 	}
 
-	
 	submissionQuery := database.DB.
 		Preload("Contributor").
 		Preload("Reviews.Tester").
 		Preload("ClaimedBy").
 		Where("id IN ?", submissionIDs)
 
-	
 	if search != "" {
 		searchPattern := "%" + search + "%"
 		submissionQuery = submissionQuery.Where("title ILIKE ? OR domain ILIKE ? OR language ILIKE ?",
@@ -226,7 +205,6 @@ func GetReviewedSubmissions(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"submissions": submissions})
 }
-
 
 func GetSubmission(c *gin.Context) {
 	submissionID := c.Param("id")
@@ -249,7 +227,6 @@ func GetSubmission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"submission": submission})
 }
 
-
 func DeleteSubmission(c *gin.Context) {
 	submissionID := c.Param("id")
 	sid, err := uuid.Parse(submissionID)
@@ -268,22 +245,18 @@ func DeleteSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	if userRole == string(models.RoleContributor) && submission.ContributorID != uid {
 		c.JSON(http.StatusForbidden, gin.H{"error": "You can only delete your own submissions"})
 		return
 	}
 
-	
 	storage.DeleteFile(submission.FileURL)
 
-	
 	if err := database.DB.Delete(&submission).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete submission"})
 		return
 	}
 
-	
 	userName, _ := c.Get("userEmail")
 	userRoleStr := userRole.(string)
 	userNameStr := userName.(string)
@@ -307,7 +280,6 @@ func DeleteSubmission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Submission deleted successfully"})
 }
 
-
 func GetDownloadURL(c *gin.Context) {
 	submissionID := c.Param("id")
 	sid, err := uuid.Parse(submissionID)
@@ -326,7 +298,6 @@ func GetDownloadURL(c *gin.Context) {
 		return
 	}
 
-	
 	isOwner := submission.ContributorID == uid
 	canDownload := userRole == string(models.RoleTester) || userRole == string(models.RoleAdmin) || (userRole == string(models.RoleContributor) && isOwner)
 
@@ -335,14 +306,12 @@ func GetDownloadURL(c *gin.Context) {
 		return
 	}
 
-	
 	fileData, err := storage.DownloadFile(submission.FileURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to download file"})
 		return
 	}
 
-	
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
 	c.Header("Content-Disposition", "attachment; filename=\""+submission.FileName+"\"")
@@ -351,10 +320,8 @@ func GetDownloadURL(c *gin.Context) {
 	c.Header("Pragma", "no-cache")
 	c.Header("Expires", "0")
 
-	
 	c.Data(http.StatusOK, "application/zip", fileData)
 }
-
 
 func SubmitFeedback(c *gin.Context) {
 	submissionID := c.Param("id")
@@ -384,7 +351,6 @@ func SubmitFeedback(c *gin.Context) {
 
 	uid, _ := uuid.Parse(userID.(string))
 
-	
 	review := models.Review{
 		Feedback:        req.Feedback,
 		AccountPostedIn: req.AccountPostedIn,
@@ -397,14 +363,12 @@ func SubmitFeedback(c *gin.Context) {
 		return
 	}
 
-	
 	if req.MarkAsEligible {
 		database.DB.Model(&models.Submission{}).
 			Where("id = ?", sid).
 			Update("status", models.StatusEligible)
 	}
 
-	
 	var submission models.Submission
 	database.DB.Preload("Contributor").First(&submission, sid)
 
@@ -433,7 +397,6 @@ func SubmitFeedback(c *gin.Context) {
 	})
 }
 
-
 func ApproveSubmission(c *gin.Context) {
 	submissionID := c.Param("id")
 	sid, err := uuid.Parse(submissionID)
@@ -459,7 +422,6 @@ func ApproveSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := c.Get("userId")
 	userName, _ := c.Get("userEmail")
 	userRole, _ := c.Get("userRole")
@@ -484,7 +446,6 @@ func ApproveSubmission(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Submission approved successfully"})
 }
 
-
 func ClaimSubmission(c *gin.Context) {
 	submissionID := c.Param("id")
 	sid, err := uuid.Parse(submissionID)
@@ -493,7 +454,6 @@ func ClaimSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	userID, _ := c.Get("userId")
 	userRole, _ := c.Get("userRole")
 
@@ -510,13 +470,11 @@ func ClaimSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	if submission.Status != models.StatusPending && submission.Status != models.StatusClaimed {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Can only claim pending or claimed tasks"})
 		return
 	}
 
-	
 	submission.ClaimedByID = &uid
 	submission.Status = models.StatusClaimed
 	if err := database.DB.Save(&submission).Error; err != nil {
@@ -524,7 +482,6 @@ func ClaimSubmission(c *gin.Context) {
 		return
 	}
 
-	
 	userName, _ := c.Get("userEmail")
 	userNameStr := userName.(string)
 	userRoleStr := userRole.(string)

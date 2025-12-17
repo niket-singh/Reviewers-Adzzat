@@ -69,7 +69,7 @@ export default function AdvancedFilter({
 
   return (
     <div className="relative">
-      {}
+
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="px-6 py-3 rounded-xl bg-gray-800/60 text-white font-bold flex items-center gap-2 hover:bg-gray-700/60 transition-all duration-300 hover:scale-105 shadow-lg"
@@ -90,16 +90,14 @@ export default function AdvancedFilter({
         )}
       </button>
 
-      {}
       {isOpen && (
         <>
-          {}
+
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Panel */}
           <div className="absolute top-full mt-2 right-0 z-50 w-96 max-w-[calc(100vw-2rem)] bg-gray-800/95 backdrop-blur-xl border-2 border-gray-700/50 rounded-2xl shadow-2xl p-6 animate-slide-up">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-black text-white">Advanced Filters</h3>
@@ -112,7 +110,7 @@ export default function AdvancedFilter({
             </div>
 
             <div className="space-y-6 max-h-[70vh] overflow-y-auto smooth-scroll">
-              {/* Sort By */}
+
               <div>
                 <label className="block text-sm font-bold mb-2 text-gray-300">Sort By</label>
                 <select
@@ -126,7 +124,6 @@ export default function AdvancedFilter({
                 </select>
               </div>
 
-              {/* Domains */}
               {availableDomains.length > 0 && (
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-300">Domains</label>
@@ -148,7 +145,6 @@ export default function AdvancedFilter({
                 </div>
               )}
 
-              {/* Languages */}
               {availableLanguages.length > 0 && (
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-300">Languages</label>
@@ -170,7 +166,6 @@ export default function AdvancedFilter({
                 </div>
               )}
 
-              {/* Statuses */}
               {availableStatuses.length > 0 && (
                 <div>
                   <label className="block text-sm font-bold mb-2 text-gray-300">Status</label>
@@ -192,7 +187,6 @@ export default function AdvancedFilter({
                 </div>
               )}
 
-              {/* Date Range */}
               <div>
                 <label className="block text-sm font-bold mb-2 text-gray-300">Date Range</label>
                 <div className="grid grid-cols-2 gap-3">
@@ -228,7 +222,6 @@ export default function AdvancedFilter({
               </div>
             </div>
 
-            {/* Apply Button */}
             <button
               onClick={() => setIsOpen(false)}
               className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-300 hover:scale-105 shadow-lg"

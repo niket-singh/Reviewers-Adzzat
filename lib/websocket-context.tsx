@@ -174,7 +174,6 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   )
 }
 
-// Custom hook for real-time submission updates
 export function useRealtimeSubmissions(onUpdate: (data: any) => void) {
   const { subscribe } = useWebSocket()
 
@@ -191,7 +190,6 @@ export function useRealtimeSubmissions(onUpdate: (data: any) => void) {
   }, [subscribe, onUpdate])
 }
 
-// Custom hook for notification events
 export function useRealtimeNotifications(onNotification: (data: any) => void) {
   const { subscribe } = useWebSocket()
 
@@ -201,7 +199,6 @@ export function useRealtimeNotifications(onNotification: (data: any) => void) {
   }, [subscribe, onNotification])
 }
 
-// Connection status indicator component
 export function WebSocketStatus() {
   const { isConnected } = useWebSocket()
 

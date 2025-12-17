@@ -342,14 +342,13 @@ export default function ProjectVAdmin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
-      {}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -367,7 +366,6 @@ export default function ProjectVAdmin() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right items-center">
               <CompactThemeToggle />
               <button onClick={() => router.push('/admin')}
@@ -392,7 +390,6 @@ export default function ProjectVAdmin() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -405,7 +402,6 @@ export default function ProjectVAdmin() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <div className="flex justify-center mb-2">
@@ -436,10 +432,9 @@ export default function ProjectVAdmin() {
       </nav>
 
       <div className="max-w-[1920px] mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb */}
+
         <Breadcrumb />
 
-        {/* Admin Notice */}
         <div className="mb-6 bg-gradient-to-r from-red-500/10 to-orange-500/10 border-2 border-red-500/30 rounded-2xl p-5 animate-slide-up">
           <div className="flex items-center gap-3">
             <div className="text-3xl">👑</div>
@@ -450,7 +445,6 @@ export default function ProjectVAdmin() {
           </div>
         </div>
 
-        {/* View Mode Toggle & Admin Tools */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between animate-slide-up" style={{ animationDelay: '0.05s' }}>
           <div className="flex flex-wrap gap-2">
             <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-xl shadow-xl p-1.5 border border-gray-700/50">
@@ -511,11 +505,9 @@ export default function ProjectVAdmin() {
           )}
         </div>
 
-        {/* Kanban View */}
         {viewMode === "kanban" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
 
-          {/* Column 1: Submitted Tasks */}
           <TaskColumn
             title="📥 Submitted Tasks"
             count={submittedTasks.length}
@@ -525,7 +517,6 @@ export default function ProjectVAdmin() {
             onDelete={handleDeleteProjectVSubmission}
           />
 
-          {/* Column 2: Eligible for Manual Review */}
           <TaskColumn
             title="🔍 Eligible for Review"
             count={eligibleTasks.length}
@@ -535,7 +526,6 @@ export default function ProjectVAdmin() {
             onDelete={handleDeleteProjectVSubmission}
           />
 
-          {/* Column 3: Final Checks */}
           <TaskColumn
             title="✅ Final Checks"
             count={finalChecksTasks.length}
@@ -545,7 +535,6 @@ export default function ProjectVAdmin() {
             onDelete={handleDeleteProjectVSubmission}
           />
 
-          {/* Column 4: Approved */}
           <TaskColumn
             title="🎉 Approved"
             count={approvedTasks.length}
@@ -558,7 +547,6 @@ export default function ProjectVAdmin() {
         </div>
         )}
 
-        {/* All Submissions View */}
         {viewMode === "all" && (
           <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             {filteredSubmissions.length === 0 ? (
@@ -658,9 +646,8 @@ export default function ProjectVAdmin() {
           </div>
         )}
 
-        {/* Users Management Section */}
         <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-          {/* Section Header */}
+
           <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border-2 border-gray-700/50 overflow-hidden shadow-xl">
             <button
               onClick={handleToggleUsersSection}
@@ -694,10 +681,9 @@ export default function ProjectVAdmin() {
               </svg>
             </button>
 
-            {/* Users Content */}
             {showUsersSection && (
               <div className="p-6 border-t-2 border-gray-700/50 space-y-6">
-                {/* Search Bar */}
+
                 <div className="flex gap-3">
                   <div className="flex-1 relative">
                     <input
@@ -850,7 +836,6 @@ export default function ProjectVAdmin() {
           </div>
         </div>
 
-        {/* Submission Details Modal */}
         {selectedSubmission && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
@@ -870,7 +855,7 @@ export default function ProjectVAdmin() {
               </div>
 
               <div className="space-y-6">
-                {/* Status & Metadata */}
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
                     <div className="text-xs text-gray-400 font-semibold mb-2">Status</div>
@@ -892,7 +877,6 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
-                {/* Team & People Involved - Admin God Mode */}
                 <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 rounded-xl p-5">
                   <h4 className="font-bold text-purple-300 mb-4 text-lg">👥 Team & People Involved</h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -932,7 +916,6 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
-                {/* Task Information */}
                 {selectedSubmission.taskLink && (
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                     <h4 className="font-bold text-gray-200 mb-3">🔗 Task Link:</h4>
@@ -957,13 +940,11 @@ export default function ProjectVAdmin() {
                   </div>
                 )}
 
-                {/* Description */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-gray-200 mb-2 text-lg">📝 Description:</h4>
                   <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{selectedSubmission.description}</p>
                 </div>
 
-                {/* Repository Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                     <h4 className="font-bold text-gray-200 mb-3">🔗 Repository:</h4>
@@ -981,7 +962,6 @@ export default function ProjectVAdmin() {
                   </div>
                 </div>
 
-                {/* Previous Feedback - Admin God Mode View */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback:</h4>
@@ -996,7 +976,6 @@ export default function ProjectVAdmin() {
                   </div>
                 )}
 
-                {/* Additional Admin Info */}
                 {(selectedSubmission.submittedAccount || selectedSubmission.rejectionReason) && (
                   <div className="bg-gray-700/30 border border-gray-600 rounded-xl p-5">
                     <h4 className="font-bold text-gray-200 mb-3 text-lg">ℹ️ Additional Information</h4>
@@ -1017,7 +996,6 @@ export default function ProjectVAdmin() {
                   </div>
                 )}
 
-                {/* Admin Actions */}
                 {(selectedSubmission.status === "ELIGIBLE_FOR_MANUAL_REVIEW" || selectedSubmission.status === "FINAL_CHECKS") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">👑 Admin Actions:</h4>
@@ -1083,7 +1061,6 @@ export default function ProjectVAdmin() {
   );
 }
 
-// Task Column Component
 function TaskColumn({
   title,
   count,
@@ -1130,13 +1107,13 @@ function TaskColumn({
 
   return (
     <div className="bg-gray-800/40 backdrop-blur-xl rounded-2xl border-2 border-gray-700/50 overflow-hidden shadow-xl">
-      {/* Column Header */}
+
       <div className={`bg-gradient-to-r ${colors.gradient} p-4 border-b-2 ${colors.border}`}>
         <h3 className="text-lg font-black text-white mb-1">{title}</h3>
         <p className="text-sm text-white/80 font-semibold">{count} task{count !== 1 ? 's' : ''}</p>
       </div>
 
-      {/* Column Content */}
+      {}
       <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
         {tasks.length === 0 ? (
           <div className="text-center py-12">
@@ -1149,7 +1126,7 @@ function TaskColumn({
               onClick={() => onTaskClick(task)}
               className={`bg-gray-700/50 rounded-xl p-4 border-2 ${colors.border} hover:bg-gray-700/70 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:shadow-lg`}>
 
-              {/* Task Link */}
+              {}
               {task.taskLink && (
                 <div className="mb-2">
                   <a href={task.taskLink} target="_blank" rel="noopener noreferrer"
@@ -1160,29 +1137,24 @@ function TaskColumn({
                 </div>
               )}
 
-              {/* Title */}
               <h4 className="text-white font-bold mb-2 line-clamp-2">{task.title}</h4>
 
-              {/* Author */}
               <div className="text-xs text-gray-300 mb-1">
                 <span className="font-semibold">Author:</span> {task.contributor?.name || "Unknown"}
               </div>
 
-              {/* Account */}
               {task.accountPostedIn && (
                 <div className="text-xs text-gray-300 mb-2">
                   <span className="font-semibold">Account:</span> {task.accountPostedIn}
                 </div>
               )}
 
-              {/* Reviewer */}
               {task.reviewer && (
                 <div className="text-xs text-gray-300 mb-2">
                   <span className="font-semibold">Reviewer:</span> {task.reviewer.name}
                 </div>
               )}
 
-              {/* Tags */}
               <div className="flex flex-wrap gap-2 mt-3">
                 {task.hasChangesRequested && (
                   <span className="px-2 py-1 bg-orange-500/20 border border-orange-500/40 text-orange-300 rounded-lg text-xs font-bold">
@@ -1196,7 +1168,6 @@ function TaskColumn({
                 )}
               </div>
 
-              {/* Metadata & Actions */}
               <div className="mt-3 pt-3 border-t border-gray-600/30 flex justify-between items-center gap-2 text-xs">
                 <div className="flex gap-2">
                   <span className="px-2 py-1 bg-gray-600/40 text-gray-300 rounded font-semibold">{task.language}</span>

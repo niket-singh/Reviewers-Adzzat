@@ -3,7 +3,6 @@
 import { useTheme } from '@/lib/theme-context'
 import { useEffect, useState } from 'react'
 
-
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -73,7 +72,6 @@ export default function ThemeToggle() {
     </button>
   )
 }
-
 
 export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme()

@@ -11,11 +11,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-
 func getJWTSecret() []byte {
 	return []byte(os.Getenv("JWT_SECRET"))
 }
-
 
 type Claims struct {
 	UserID string `json:"userId"`
@@ -24,18 +22,15 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
 	return string(bytes), err
 }
 
-
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
-
 
 func GenerateJWT(userID, email, role string) (string, error) {
 	jwtSecret := getJWTSecret()
@@ -48,7 +43,7 @@ func GenerateJWT(userID, email, role string) (string, error) {
 		Email:  email,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)), 
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(7 * 24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -57,7 +52,6 @@ func GenerateJWT(userID, email, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
 }
-
 
 func ValidateJWT(tokenString string) (*Claims, error) {
 	jwtSecret := getJWTSecret()
@@ -80,18 +74,15 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	return nil, errors.New("invalid token")
 }
 
-
 func GenerateRefreshToken() (string, error) {
-	
+
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", err
 	}
 
-	
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
-
 
 func GenerateShortLivedJWT(userID, email, role string) (string, error) {
 	jwtSecret := getJWTSecret()
@@ -104,7 +95,7 @@ func GenerateShortLivedJWT(userID, email, role string) (string, error) {
 		Email:  email,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)), 
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -113,7 +104,6 @@ func GenerateShortLivedJWT(userID, email, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(jwtSecret)
 }
-
 
 func GetRefreshTokenExpiry() time.Time {
 	return time.Now().Add(30 * 24 * time.Hour)

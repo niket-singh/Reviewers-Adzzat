@@ -14,7 +14,6 @@ interface VirtualListProps<T> {
   onScrollEnd?: () => void
 }
 
-
 export default function VirtualList<T>({
   items,
   itemHeight,
@@ -99,9 +98,9 @@ export default function VirtualList<T>({
       className={`overflow-y-auto ${className}`}
       style={{ height: containerHeight }}
     >
-      {/* Spacer for total height */}
+
       <div style={{ height: totalHeight, position: 'relative' }}>
-        {/* Visible items container */}
+
         <div style={{ transform: `translateY(${offsetY}px)` }}>
           {visibleItems.map((item, relativeIndex) => {
             const absoluteIndex = startIndex + relativeIndex
@@ -113,7 +112,6 @@ export default function VirtualList<T>({
           })}
         </div>
 
-        {/* Loading indicator at bottom */}
         {loading && (
           <div
             className="absolute bottom-0 left-0 right-0 flex justify-center p-4"
@@ -148,10 +146,6 @@ export default function VirtualList<T>({
   )
 }
 
-/**
- * Hook to calculate dynamic item heights
- * Useful when items have variable heights
- */
 export function useVirtualList<T>(items: T[], estimatedItemHeight: number = 100) {
   const [itemHeights, setItemHeights] = useState<Map<number, number>>(new Map())
   const itemRefs = useRef<Map<number, HTMLElement>>(new Map())

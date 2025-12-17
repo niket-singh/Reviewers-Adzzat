@@ -236,14 +236,13 @@ export default function ProjectVReviewer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-cyan-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -261,7 +260,6 @@ export default function ProjectVReviewer() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button onClick={() => router.push('/select-project')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600">
@@ -277,7 +275,6 @@ export default function ProjectVReviewer() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -290,7 +287,6 @@ export default function ProjectVReviewer() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
@@ -311,10 +307,9 @@ export default function ProjectVReviewer() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb */}
+
         <Breadcrumb />
 
-        {/* Search Bar */}
         <div className="mb-8 animate-slide-up">
           <div className="relative">
             <input type="text" placeholder="🔍 Search by title, language, category, or contributor..."
@@ -326,7 +321,6 @@ export default function ProjectVReviewer() {
           </div>
         </div>
 
-        {/* Status Filter Tabs */}
         <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
           <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50 overflow-x-auto">
             {[
@@ -348,7 +342,6 @@ export default function ProjectVReviewer() {
           </div>
         </div>
 
-        {/* Submissions Grid */}
         <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.2s' }}>
           {filteredSubmissions.length === 0 ? (
             <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 border-2 border-gray-700/50 text-center">
@@ -406,7 +399,6 @@ export default function ProjectVReviewer() {
           )}
         </div>
 
-        {/* Submission Details Modal */}
         {selectedSubmission && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
@@ -426,7 +418,7 @@ export default function ProjectVReviewer() {
               </div>
 
               <div className="space-y-6">
-                {/* Status & Metadata */}
+
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
                     <div className="text-xs text-gray-400 font-semibold mb-2">Status</div>
@@ -448,13 +440,11 @@ export default function ProjectVReviewer() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-gray-200 mb-2 text-lg">📝 Description:</h4>
                   <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{selectedSubmission.description}</p>
                 </div>
 
-                {/* Repository Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                     <h4 className="font-bold text-gray-200 mb-3">🔗 Repository:</h4>
@@ -479,7 +469,6 @@ export default function ProjectVReviewer() {
                   </code>
                 </div>
 
-                {/* Files */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-white mb-4 text-lg">📎 Submitted Files:</h4>
                   <div className="space-y-2">
@@ -499,7 +488,6 @@ export default function ProjectVReviewer() {
                   </div>
                 </div>
 
-                {/* Previous Feedback */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Previous Feedback:</h4>
@@ -507,7 +495,6 @@ export default function ProjectVReviewer() {
                   </div>
                 )}
 
-                {/* Reviewer Actions */}
                 {(selectedSubmission.status === "PENDING_REVIEW" || selectedSubmission.status === "ELIGIBLE_FOR_MANUAL_REVIEW" || selectedSubmission.status === "CHANGES_DONE" || selectedSubmission.status === "FINAL_CHECKS") && (
                   <div className="border-t-2 border-gray-700 pt-6">
                     <h4 className="font-bold text-white mb-4 text-lg">⚡ Reviewer Actions:</h4>

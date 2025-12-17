@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type SignupRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=6"`
@@ -22,12 +21,10 @@ type SignupRequest struct {
 	Role     string `json:"role" binding:"required,oneof=CONTRIBUTOR REVIEWER TESTER"`
 }
 
-
 type SigninRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required"`
 }
-
 
 func Signup(c *gin.Context) {
 	var req SignupRequest
@@ -36,21 +33,18 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	
 	var existingUser models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User already exists"})
 		return
 	}
 
-	
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
 		return
 	}
 
-	
 	user := models.User{
 		Email:        req.Email,
 		PasswordHash: hashedPassword,
@@ -63,7 +57,6 @@ func Signup(c *gin.Context) {
 		return
 	}
 
-	
 	userRole := string(user.Role)
 	targetType := "user"
 	services.LogActivity(services.LogActivityParams{
@@ -76,7 +69,6 @@ func Signup(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	
 	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -95,7 +87,6 @@ func Signup(c *gin.Context) {
 	})
 }
 
-
 func Signin(c *gin.Context) {
 	var req SigninRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -103,20 +94,17 @@ func Signin(c *gin.Context) {
 		return
 	}
 
-	
 	var user models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	
 	if !utils.CheckPassword(req.Password, user.PasswordHash) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
-	
 	token, err := utils.GenerateJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
@@ -134,7 +122,6 @@ func Signin(c *gin.Context) {
 		"token": token,
 	})
 }
-
 
 func GetMe(c *gin.Context) {
 	userID, _ := c.Get("userId")
@@ -163,22 +150,18 @@ func GetMe(c *gin.Context) {
 	})
 }
 
-
 func Logout(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
-
 
 type ForgotPasswordRequest struct {
 	Email string `json:"email" binding:"required,email"`
 }
 
-
 type ResetPasswordRequest struct {
 	Token       string `json:"token" binding:"required"`
 	NewPassword string `json:"newPassword" binding:"required,min=8"`
 }
-
 
 func ForgotPassword(c *gin.Context) {
 	var req ForgotPasswordRequest
@@ -187,15 +170,13 @@ func ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	
 	var user models.User
 	if err := database.DB.Where("email = ?", req.Email).First(&user).Error; err != nil {
-		
+
 		c.JSON(http.StatusOK, gin.H{"message": "If an account exists, a password reset link has been sent"})
 		return
 	}
 
-	
 	tokenBytes := make([]byte, 32)
 	if _, err := rand.Read(tokenBytes); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate reset token"})
@@ -203,10 +184,8 @@ func ForgotPassword(c *gin.Context) {
 	}
 	token := hex.EncodeToString(tokenBytes)
 
-	
 	database.DB.Where("user_id = ? AND used = ?", user.ID, false).Delete(&models.PasswordResetToken{})
 
-	
 	resetToken := models.PasswordResetToken{
 		UserID:    user.ID,
 		Token:     token,
@@ -219,7 +198,6 @@ func ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	
 	userRole := string(user.Role)
 	targetType := "user"
 	services.LogActivity(services.LogActivityParams{
@@ -232,13 +210,11 @@ func ForgotPassword(c *gin.Context) {
 		TargetType:  &targetType,
 	})
 
-	
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Password reset token generated successfully",
-		"token":   token, 
+		"token":   token,
 	})
 }
-
 
 func ResetPassword(c *gin.Context) {
 	var req ResetPasswordRequest
@@ -247,7 +223,6 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	
 	var resetToken models.PasswordResetToken
 	if err := database.DB.Where("token = ? AND used = ? AND expires_at > ?",
 		req.Token, false, time.Now()).First(&resetToken).Error; err != nil {
@@ -255,30 +230,25 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	
 	var user models.User
 	if err := database.DB.First(&user, resetToken.UserID).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
-	
 	hashedPassword, err := utils.HashPassword(req.NewPassword)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process password"})
 		return
 	}
 
-	
 	if err := database.DB.Model(&user).Update("password_hash", hashedPassword).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update password"})
 		return
 	}
 
-	
 	database.DB.Model(&resetToken).Update("used", true)
 
-	
 	userRole := string(user.Role)
 	targetType := "user"
 	services.LogActivity(services.LogActivityParams{
@@ -294,11 +264,9 @@ func ResetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Password reset successful"})
 }
 
-
 type RefreshTokenRequest struct {
 	RefreshToken string `json:"refreshToken" binding:"required"`
 }
-
 
 func RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
@@ -307,7 +275,6 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
-	
 	var refreshToken models.RefreshToken
 	if err := database.DB.Where("token = ? AND revoked_at IS NULL AND expires_at > ?",
 		req.RefreshToken, time.Now()).Preload("User").First(&refreshToken).Error; err != nil {
@@ -321,19 +288,16 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 
-	
 	accessToken, err := utils.GenerateShortLivedJWT(user.ID.String(), user.Email, string(user.Role))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate access token"})
 		return
 	}
 
-	
 	c.JSON(http.StatusOK, gin.H{
 		"accessToken": accessToken,
 	})
 }
-
 
 func RevokeRefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
@@ -342,15 +306,13 @@ func RevokeRefreshToken(c *gin.Context) {
 		return
 	}
 
-	
 	var refreshToken models.RefreshToken
 	if err := database.DB.Where("token = ?", req.RefreshToken).First(&refreshToken).Error; err != nil {
-		
+
 		c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 		return
 	}
 
-	
 	now := time.Now()
 	if err := database.DB.Model(&refreshToken).Update("revoked_at", &now).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to revoke token"})
@@ -360,15 +322,13 @@ func RevokeRefreshToken(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Logged out successfully"})
 }
 
-
 func CleanupExpiredRefreshTokens() error {
-	
+
 	result := database.DB.Where("expires_at < ?", time.Now().AddDate(0, 0, -7)).Delete(&models.RefreshToken{})
 	if result.Error != nil {
 		return result.Error
 	}
 
-	
 	if result.RowsAffected > 0 {
 		database.DB.Exec("SELECT pg_notify('refresh_tokens_cleaned', ?)", result.RowsAffected)
 	}

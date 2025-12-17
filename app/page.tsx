@@ -57,7 +57,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-blue-500"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-purple-500" style={{ animationDelay: '1s' }}></div>
@@ -65,7 +65,7 @@ export default function Home() {
       </div>
 
       <div className="rounded-3xl shadow-2xl p-10 w-full max-w-md backdrop-blur-2xl transition-all duration-500 hover-lift animate-scale-in z-10 bg-gray-800/40 border-2 border-gray-700/50 glass-dark glow">
-        {/* Logo/Brand */}
+
         <div className="text-center mb-10 animate-slide-up">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 shadow-2xl animate-pulse-glow bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
             <svg className="w-10 h-10 text-white animate-bounce-subtle" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -80,7 +80,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Tab Switcher */}
         <div className="flex mb-8 rounded-2xl p-1.5 shadow-inner bg-gray-900/50">
           <button
             onClick={() => setIsSignUp(false)}
@@ -216,7 +215,6 @@ export default function Home() {
           </button>
         </form>
 
-        {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-300">
           {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
           <button

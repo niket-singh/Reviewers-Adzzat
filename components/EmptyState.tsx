@@ -36,7 +36,6 @@ export const EmptyState = ({ icon, title, description, action }: EmptyStateProps
   )
 }
 
-// Predefined empty states for common scenarios
 export const NoSubmissionsEmpty = ({ onUpload }: { onUpload?: () => void }) => (
   <EmptyState
     icon={

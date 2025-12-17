@@ -8,10 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-
 func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
-	
-	
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -20,11 +18,10 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(testers) == 0 {
-		
+
 		return nil, nil
 	}
 
-	
 	type TesterTaskCount struct {
 		TesterID uuid.UUID
 		Count    int64
@@ -47,7 +44,6 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	
 	minCount := testerCounts[0].Count
 	selectedTesterID := testerCounts[0].TesterID
 
@@ -58,7 +54,6 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	
 	now := time.Now()
 	err = database.DB.Model(&models.Submission{}).
 		Where("id = ?", submissionID).
@@ -72,16 +67,13 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		return nil, err
 	}
 
-	
 	var submission models.Submission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	
 	var tester models.User
 	database.DB.First(&tester, selectedTesterID)
 
-	
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") 
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "submission"
@@ -104,9 +96,8 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedTesterID, nil
 }
 
-
 func AssignQueuedTasks() (int, error) {
-	
+
 	var pendingSubmissions []models.Submission
 	err := database.DB.Where("status = ?", models.StatusPending).Order("created_at ASC").Find(&pendingSubmissions).Error
 	if err != nil {
@@ -114,10 +105,9 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	if len(pendingSubmissions) == 0 {
-		return 0, nil 
+		return 0, nil
 	}
 
-	
 	var testers []models.User
 	err = database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -126,10 +116,9 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	if len(testers) == 0 {
-		return 0, nil 
+		return 0, nil
 	}
 
-	
 	testerTaskCounts := make(map[uuid.UUID]int64)
 	for _, tester := range testers {
 		var count int64
@@ -145,9 +134,8 @@ func AssignQueuedTasks() (int, error) {
 
 	assignedCount := 0
 
-	
 	for _, submission := range pendingSubmissions {
-		
+
 		var selectedTesterID uuid.UUID
 		minCount := int64(-1)
 
@@ -159,7 +147,6 @@ func AssignQueuedTasks() (int, error) {
 			}
 		}
 
-		
 		now := time.Now()
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", submission.ID).
@@ -170,18 +157,15 @@ func AssignQueuedTasks() (int, error) {
 			}).Error
 
 		if err != nil {
-			continue 
+			continue
 		}
 
-		
 		testerTaskCounts[selectedTesterID]++
 		assignedCount++
 
-		
 		var tester models.User
 		database.DB.First(&tester, selectedTesterID)
 
-		
 		userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 		userName := "System"
 		userRole := "SYSTEM"
@@ -206,10 +190,8 @@ func AssignQueuedTasks() (int, error) {
 	return assignedCount, nil
 }
 
-
 func RedistributeTasks() (int, error) {
-	
-	
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -218,10 +200,9 @@ func RedistributeTasks() (int, error) {
 	}
 
 	if len(testers) == 0 {
-		return 0, nil 
+		return 0, nil
 	}
 
-	
 	var allTasks []models.Submission
 	err = database.DB.Where("status IN ?", []string{
 		string(models.StatusPending),
@@ -233,14 +214,12 @@ func RedistributeTasks() (int, error) {
 	}
 
 	if len(allTasks) == 0 {
-		return 0, nil 
+		return 0, nil
 	}
 
-	
 	tasksPerTester := len(allTasks) / len(testers)
 	remainder := len(allTasks) % len(testers)
 
-	
 	testerTaskAssignments := make(map[uuid.UUID]int)
 	for _, tester := range testers {
 		testerTaskAssignments[tester.ID] = 0
@@ -248,12 +227,10 @@ func RedistributeTasks() (int, error) {
 
 	redistributedCount := 0
 
-	
 	testerIndex := 0
 	for _, task := range allTasks {
 		tester := testers[testerIndex]
 
-		
 		now := time.Now()
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", task.ID).
@@ -264,13 +241,12 @@ func RedistributeTasks() (int, error) {
 			}).Error
 
 		if err != nil {
-			continue 
+			continue
 		}
 
 		testerTaskAssignments[tester.ID]++
 		redistributedCount++
 
-		
 		currentTesterQuota := tasksPerTester
 		if testerIndex < remainder {
 			currentTesterQuota++
@@ -284,7 +260,6 @@ func RedistributeTasks() (int, error) {
 		}
 	}
 
-	
 	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
@@ -296,17 +271,16 @@ func RedistributeTasks() (int, error) {
 		UserName:    &userName,
 		UserRole:    &userRole,
 		Metadata: map[string]interface{}{
-			"taskCount":    redistributedCount,
-			"testerCount":  len(testers),
+			"taskCount":   redistributedCount,
+			"testerCount": len(testers),
 		},
 	})
 
 	return redistributedCount, nil
 }
 
-
 func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
-	
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -315,11 +289,10 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(testers) == 0 {
-		
+
 		return nil, nil
 	}
 
-	
 	type TesterTaskCount struct {
 		TesterID uuid.UUID
 		Count    int64
@@ -344,7 +317,6 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	
 	minCount := testerCounts[0].Count
 	selectedTesterID := testerCounts[0].TesterID
 
@@ -355,16 +327,13 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	
 	var submission models.ProjectVSubmission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	
 	var tester models.User
 	database.DB.First(&tester, selectedTesterID)
 
-	
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") 
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "projectv_submission"
@@ -387,9 +356,8 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedTesterID, nil
 }
 
-
 func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
-	
+
 	var reviewers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleReviewer, true, true).Find(&reviewers).Error
@@ -398,11 +366,10 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(reviewers) == 0 {
-		
+
 		return nil, nil
 	}
 
-	
 	type ReviewerTaskCount struct {
 		ReviewerID uuid.UUID
 		Count      int64
@@ -426,7 +393,6 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	
 	minCount := reviewerCounts[0].Count
 	selectedReviewerID := reviewerCounts[0].ReviewerID
 
@@ -437,16 +403,13 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	
 	var submission models.ProjectVSubmission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	
 	var reviewer models.User
 	database.DB.First(&reviewer, selectedReviewerID)
 
-	
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") 
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "projectv_submission"
@@ -469,9 +432,8 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedReviewerID, nil
 }
 
-
 func ReassignPendingProjectVTasks() (int, error) {
-	
+
 	var pendingSubmissions []models.ProjectVSubmission
 	err := database.DB.Where("status = ? AND tester_id IS NULL", models.ProjectVStatusSubmitted).
 		Find(&pendingSubmissions).Error
@@ -483,7 +445,7 @@ func ReassignPendingProjectVTasks() (int, error) {
 	for _, submission := range pendingSubmissions {
 		testerID, err := AutoAssignTester(submission.ID)
 		if err == nil && testerID != nil {
-			
+
 			submission.TesterID = testerID
 			submission.Status = models.ProjectVStatusInTesting
 			if err := database.DB.Save(&submission).Error; err == nil {
