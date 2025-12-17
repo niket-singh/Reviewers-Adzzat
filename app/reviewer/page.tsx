@@ -48,9 +48,10 @@ export default function TesterDashboard() {
   const [loading, setLoading] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [togglingGreenLight, setTogglingGreenLight] = useState(false)
   const itemsPerPage = 10
   const router = useRouter()
-  const { user, loading: authLoading, logout } = useAuth()
+  const { user, loading: authLoading, logout, refreshUser } = useAuth()
   const { showToast } = useToast()
 
   
@@ -173,6 +174,33 @@ export default function TesterDashboard() {
     }
   }
 
+  const handleToggleGreenLight = async () => {
+    if (!user) return
+
+    const action = user.isGreenLight ? 'deactivate' : 'activate'
+    if (!confirm(`Are you sure you want to ${action} your availability? ${!user.isGreenLight ? 'You will start receiving new tasks.' : 'You will stop receiving new tasks.'}`)) {
+      return
+    }
+
+    setTogglingGreenLight(true)
+    try {
+      const response = await apiClient.toggleGreenLight(user.id)
+      if (response.queuedTasksAssigned > 0) {
+        showToast(`Availability ${user.isGreenLight ? 'deactivated' : 'activated'}! ${response.queuedTasksAssigned} queued tasks were assigned to you.`, 'success')
+      } else {
+        showToast(`Availability ${user.isGreenLight ? 'deactivated' : 'activated'} successfully!`, 'success')
+      }
+      if (refreshUser) {
+        await refreshUser()
+      }
+      fetchSubmissions()
+    } catch (err: any) {
+      showToast(err.response?.data?.error || 'Failed to toggle availability', 'error')
+    } finally {
+      setTogglingGreenLight(false)
+    }
+  }
+
   const handleLogout = async () => {
     await logout()
     router.push('/')
@@ -264,7 +292,24 @@ export default function TesterDashboard() {
               </div>
             </div>
 
-            <div className="hidden md:flex gap-2">
+            <div className="hidden md:flex gap-2 items-center">
+              <div className="flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-lg bg-gray-800/60 border border-gray-700">
+                <div className={`w-2.5 h-2.5 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></div>
+                <span className="text-xs font-semibold text-gray-300">
+                  {user.isGreenLight ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+              <button
+                onClick={handleToggleGreenLight}
+                disabled={togglingGreenLight}
+                className={`px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg backdrop-blur-lg ${
+                  user.isGreenLight
+                    ? 'bg-orange-600/80 hover:bg-orange-700/80 text-white border border-orange-500'
+                    : 'bg-green-600/80 hover:bg-green-700/80 text-white border border-green-500'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {togglingGreenLight ? 'Updating...' : (user.isGreenLight ? '🔴 Go Inactive' : '🟢 Go Active')}
+              </button>
               <button
                 onClick={() => router.push('/profile')}
                 className="px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg bg-gray-700/50 text-gray-200 hover:bg-gray-600/60 backdrop-blur-lg"
@@ -295,6 +340,28 @@ export default function TesterDashboard() {
 
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              <div className="flex items-center justify-between px-4 py-3 rounded-xl backdrop-blur-lg bg-gray-800/60 border border-gray-700">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></div>
+                  <span className="text-sm font-semibold text-gray-300">
+                    Status: {user.isGreenLight ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  handleToggleGreenLight()
+                  setMobileMenuOpen(false)
+                }}
+                disabled={togglingGreenLight}
+                className={`w-full px-6 py-3 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg backdrop-blur-lg ${
+                  user.isGreenLight
+                    ? 'bg-orange-600/80 hover:bg-orange-700/80 text-white border border-orange-500'
+                    : 'bg-green-600/80 hover:bg-green-700/80 text-white border border-green-500'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {togglingGreenLight ? 'Updating...' : (user.isGreenLight ? '🔴 Go Inactive' : '🟢 Go Active')}
+              </button>
               <button
                 onClick={() => {
                   router.push('/profile')

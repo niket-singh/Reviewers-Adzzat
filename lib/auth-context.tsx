@@ -9,6 +9,7 @@ interface User {
   name: string
   role: 'ADMIN' | 'TESTER' | 'REVIEWER' | 'CONTRIBUTOR'
   isApproved: boolean
+  isGreenLight: boolean
 }
 
 interface AuthContextType {
