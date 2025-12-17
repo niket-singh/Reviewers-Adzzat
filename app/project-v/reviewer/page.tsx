@@ -73,7 +73,7 @@ export default function ProjectVReviewer() {
     }
   }, [user, loading, router, fetchSubmissions]);
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSubmissions();
@@ -183,7 +183,7 @@ export default function ProjectVReviewer() {
   const getFilteredSubmissions = () => {
     let filtered = submissions;
 
-    // Reviewers only see tasks assigned to them or pending review
+    
     if (user?.role === "REVIEWER") {
       filtered = submissions.filter(
         (s) =>
@@ -236,7 +236,7 @@ export default function ProjectVReviewer() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>

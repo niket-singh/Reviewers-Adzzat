@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// LogActivityParams contains parameters for logging activity
+
 type LogActivityParams struct {
 	Action      string
 	Description string
@@ -20,7 +20,7 @@ type LogActivityParams struct {
 	Metadata    map[string]interface{}
 }
 
-// LogActivity logs an activity to the database
+
 func LogActivity(params LogActivityParams) error {
 	var metadataJSON *string
 	if params.Metadata != nil {
@@ -45,7 +45,7 @@ func LogActivity(params LogActivityParams) error {
 	return database.DB.Create(&log).Error
 }
 
-// GetRecentLogs retrieves recent activity logs
+
 func GetRecentLogs(limit int) ([]models.ActivityLog, error) {
 	var logs []models.ActivityLog
 	err := database.DB.

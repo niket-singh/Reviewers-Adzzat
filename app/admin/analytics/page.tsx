@@ -12,8 +12,8 @@ interface AnalyticsData {
   totalUsers: number
   submissionsThisWeek: number
   submissionsThisMonth: number
-  avgReviewTime: number // in hours
-  approvalRate: number // percentage
+  avgReviewTime: number 
+  approvalRate: number 
   topContributors: Array<{
     userId: string
     name: string
@@ -47,7 +47,7 @@ export default function AnalyticsDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Auth check
+  
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
       router.push('/')
@@ -55,7 +55,7 @@ export default function AnalyticsDashboard() {
   }, [user, authLoading, router])
 
   const setMockData = useCallback(() => {
-    // Mock data for development/demo
+    
     const mockAnalytics: AnalyticsData = {
       totalSubmissions: 247,
       totalUsers: 89,
@@ -103,7 +103,7 @@ export default function AnalyticsDashboard() {
   const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true)
-      // Fetch both analytics overview and chart data
+      
       const [analyticsData, chartDataResponse] = await Promise.all([
         apiClient.getAnalytics(),
         apiClient.getAnalyticsChartData(timeRange),
@@ -114,14 +114,14 @@ export default function AnalyticsDashboard() {
     } catch (error: any) {
       console.error('Error fetching analytics:', error)
       showToast('Failed to load analytics', 'error')
-      // Use mock data for development
+      
       setMockData()
     } finally {
       setLoading(false)
     }
   }, [timeRange, showToast, setMockData])
 
-  // Fetch analytics data
+  
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       fetchAnalytics()

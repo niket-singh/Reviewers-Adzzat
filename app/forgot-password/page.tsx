@@ -23,10 +23,10 @@ export default function ForgotPassword() {
     setSubmitting(true)
 
     try {
-      // Validate email
+      
       emailSchema.parse({ email })
 
-      // Call API
+      
       await apiClient.requestPasswordReset(email)
 
       setEmailSent(true)
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
       if (error instanceof z.ZodError) {
         showToast(error.issues[0].message, 'error')
       } else {
-        // Don't reveal if email exists for security
+        
         setEmailSent(true)
         showToast('If an account exists, you will receive a reset link.', 'info')
       }
@@ -46,7 +46,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-blue-500"></div>
         <div
@@ -147,7 +147,7 @@ export default function ForgotPassword() {
             </div>
           </>
         ) : (
-          // Success State
+          
           <div className="text-center animate-scale-in">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 shadow-2xl bg-green-500/20 animate-pulse-glow">
               <svg className="w-12 h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

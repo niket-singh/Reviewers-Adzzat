@@ -1,9 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-/**
- * Auto-save data to localStorage with debouncing
- * Never lose work again!
- */
+
 export function useAutoSave<T>(
   key: string,
   data: T,
@@ -12,12 +9,12 @@ export function useAutoSave<T>(
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   useEffect(() => {
-    // Clear existing timeout
+    
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout to save
+    
     timeoutRef.current = setTimeout(() => {
       try {
         localStorage.setItem(key, JSON.stringify(data));

@@ -1,15 +1,15 @@
-/** @type {import('next').NextConfig} */
+
 const nextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '50mb', // Allows larger file uploads
+      bodySizeLimit: '50mb', 
     },
   },
-  output: 'export', // Static export for Azure Static Web Apps
+  output: 'export', 
   images: {
-    unoptimized: true, // Required for static export
+    unoptimized: true, 
   },
-  // Disable server-side features for static export
+  
   trailingSlash: true,
 }
 

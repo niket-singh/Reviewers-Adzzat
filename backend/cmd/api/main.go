@@ -13,14 +13,14 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	
 	if err := godotenv.Load(); err != nil {
 		log.Println("⚠️  No .env file found, using system environment variables")
 	}
 
 	log.Println("🔧 Starting server initialization...")
 
-	// Check required environment variables
+	
 	requiredEnvVars := []string{"DATABASE_URL", "SUPABASE_URL", "SUPABASE_SERVICE_KEY", "JWT_SECRET"}
 	for _, envVar := range requiredEnvVars {
 		if os.Getenv(envVar) == "" {
@@ -30,21 +30,21 @@ func main() {
 	}
 	log.Println("✓ All required environment variables are set")
 
-	// Connect to database
+	
 	log.Println("🔌 Connecting to database...")
 	if err := database.Connect(); err != nil {
 		log.Printf("❌ Failed to connect to database: %v", err)
 		log.Fatal("Database connection failed")
 	}
 
-	// Run migrations
+	
 	log.Println("🔄 Running database migrations...")
 	if err := database.AutoMigrate(); err != nil {
 		log.Printf("❌ Failed to run migrations: %v", err)
 		log.Fatal("Migration failed")
 	}
 
-	// Initialize storage
+	
 	log.Println("☁️  Initializing Supabase storage...")
 	if err := storage.InitStorage(); err != nil {
 		log.Printf("❌ Failed to initialize storage: %v", err)
@@ -52,15 +52,15 @@ func main() {
 	}
 	log.Println("✓ Supabase storage initialized")
 
-	// Initialize services
+	
 	log.Println("🔌 Initializing WebSocket service...")
 	handlers.InitWebSocket()
 	log.Println("✓ WebSocket service initialized")
 
-	// Setup router
+	
 	router := setupRouter()
 
-	// Get port from environment
+	
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -77,56 +77,55 @@ func main() {
 }
 
 func setupRouter() *gin.Engine {
-	// Set Gin to release mode for better performance in production
+	
 	if os.Getenv("GIN_MODE") != "debug" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
 	router := gin.Default()
 
-	// Apply global middlewares - OPTIMIZED FOR 200+ CONCURRENT USERS
+	
 	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.CompressionMiddleware()) // Gzip compression for faster responses
+	router.Use(middleware.CompressionMiddleware()) 
 
-	// CRITICAL: Increased rate limit from 100 to 1000 requests/minute for high concurrency
-	// This allows ~16 requests per second per IP, sufficient for 200+ concurrent users
-	router.Use(middleware.RateLimitMiddleware(1000)) // 1000 requests per minute per IP
+	
+	router.Use(middleware.RateLimitMiddleware(1000)) 
 
-	// Health check
+	
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "healthy"})
 	})
 
-	// API routes
+	
 	api := router.Group("/api")
 	{
-		// Authentication routes (public)
+		
 		auth := api.Group("/auth")
 		{
 			auth.POST("/signup", handlers.Signup)
 			auth.POST("/signin", handlers.Signin)
 			auth.POST("/logout", handlers.Logout)
-			auth.POST("/refresh", handlers.RefreshToken)       // JWT refresh token endpoint
-			auth.POST("/revoke", handlers.RevokeRefreshToken) // Revoke refresh token
+			auth.POST("/refresh", handlers.RefreshToken)       
+			auth.POST("/revoke", handlers.RevokeRefreshToken) 
 			auth.GET("/me", middleware.AuthMiddleware(), handlers.GetMe)
 			auth.POST("/forgot-password", handlers.ForgotPassword)
 			auth.POST("/reset-password", handlers.ResetPassword)
 		}
 
-		// WebSocket route (uses query param auth for browser compatibility)
+		
 		api.GET("/ws", middleware.WebSocketAuthMiddleware(), handlers.HandleWebSocket)
 
-		// Protected routes
+		
 		protected := api.Group("/")
 		protected.Use(middleware.AuthMiddleware())
 		{
 
-			// Profile routes
+			
 			protected.GET("/profile", handlers.GetProfile)
 			protected.PUT("/profile", handlers.UpdateProfile)
 			protected.DELETE("/profile", handlers.DeleteMyAccount)
 
-			// Submission routes (Project X)
+			
 			submissions := protected.Group("/submissions")
 			{
 				submissions.POST("", handlers.UploadSubmission)
@@ -138,7 +137,7 @@ func setupRouter() *gin.Engine {
 				submissions.POST("/:id/feedback", handlers.SubmitFeedback)
 			}
 
-			// Project V routes
+			
 			projectv := protected.Group("/projectv")
 			{
 				projectv.POST("/submissions", handlers.CreateProjectVSubmission)
@@ -156,39 +155,39 @@ func setupRouter() *gin.Engine {
 				projectv.DELETE("/submissions/:id", handlers.DeleteProjectVSubmission)
 			}
 
-			// Admin-only routes
+			
 			admin := protected.Group("/")
 			admin.Use(middleware.AdminOnly())
 			{
-				// User management
+				
 				admin.GET("/users", handlers.GetUsers)
 				admin.PUT("/users/:id/approve", handlers.ApproveTester)
 				admin.PUT("/users/:id/greenlight", handlers.ToggleGreenLight)
 				admin.PUT("/users/:id/role", handlers.SwitchUserRole)
 				admin.DELETE("/users/:id", handlers.DeleteUser)
 
-				// Submission approval and claiming
+				
 				admin.PUT("/submissions/:id/approve", handlers.ApproveSubmission)
 				admin.PUT("/submissions/:id/claim", handlers.ClaimSubmission)
 
-				// Stats and logs
+				
 				admin.GET("/logs", handlers.GetLogs)
 				admin.GET("/stats", handlers.GetStats)
 				admin.GET("/leaderboard", handlers.GetLeaderboard)
 
-				// Analytics
+				
 				admin.GET("/admin/analytics", handlers.GetAnalytics)
 				admin.GET("/admin/analytics/chart", handlers.GetAnalyticsChartData)
 
-				// Audit logs
+				
 				admin.GET("/admin/audit-logs", handlers.GetAuditLogs)
 
-				// Admin God Mode - View ALL data
-				admin.GET("/admin/reviews", handlers.GetAllReviews)                          // All Project X feedback
-				admin.GET("/admin/projectv/submissions", handlers.GetAllProjectVSubmissions) // All Project V submissions with feedback
+				
+				admin.GET("/admin/reviews", handlers.GetAllReviews)                          
+				admin.GET("/admin/projectv/submissions", handlers.GetAllProjectVSubmissions) 
 
-				// Admin Tools
-				admin.POST("/admin/projectv/reassign-pending", handlers.ReassignPendingTasks) // Reassign pending tasks to active testers
+				
+				admin.POST("/admin/projectv/reassign-pending", handlers.ReassignPendingTasks) 
 			}
 		}
 	}

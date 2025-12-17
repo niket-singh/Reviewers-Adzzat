@@ -151,7 +151,7 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not admin
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
   }, [activeTab])
 
   const filterData = useCallback(() => {
-    // Filter submissions
+    
     let filteredSubs = submissions
 
     if (submissionFilter !== 'all') {
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
 
     setFilteredSubmissions(filteredSubs)
 
-    // Filter users
+    
     let filteredUsr = users
 
     if (searchQuery.trim() && activeTab === 'users') {
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
 
     setFilteredUsers(filteredUsr)
 
-    // Filter reviews
+    
     let filteredRevs = reviews
 
     if (searchQuery.trim() && activeTab === 'feedback') {
@@ -241,19 +241,19 @@ export default function AdminDashboard() {
     setFilteredReviews(filteredRevs)
   }, [submissions, submissionFilter, searchQuery, activeTab, users, reviews])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchData()
     const interval = setInterval(() => {
       fetchData()
-    }, 30000) // 30 seconds
+    }, 30000) 
 
     return () => clearInterval(interval)
   }, [activeTab, fetchData])
 
   useEffect(() => {
     filterData()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterData])
 
   const handleApproveReviewer = async (userId: string) => {
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
         link.click()
         document.body.removeChild(link)
 
-        // Clean up blob URL to prevent memory leaks
+        
         setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
         showToast('Download started!', 'success')
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
-  // Pagination calculations for submissions
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -460,7 +460,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>

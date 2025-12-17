@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-// Auth Validation
+
 export const signupSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z
@@ -36,7 +36,7 @@ export const passwordResetSchema = z.object({
     .regex(/[0-9]/, 'Password must contain at least one number'),
 })
 
-// Profile Validation
+
 export const profileUpdateSchema = z.object({
   name: z
     .string()
@@ -53,7 +53,7 @@ export const profileUpdateSchema = z.object({
     .optional(),
 })
 
-// Submission Validation
+
 export const submissionSchema = z.object({
   title: z
     .string()
@@ -69,7 +69,7 @@ export const submissionSchema = z.object({
     .max(50, 'Language must be less than 50 characters'),
 })
 
-// Review Validation
+
 export const reviewSchema = z.object({
   feedback: z
     .string()
@@ -79,9 +79,9 @@ export const reviewSchema = z.object({
   accountPostedIn: z.string().max(200, 'Account info must be less than 200 characters').optional(),
 })
 
-// File Validation
+
 export const fileValidation = {
-  maxSize: 10 * 1024 * 1024, // 10MB
+  maxSize: 10 * 1024 * 1024, 
   allowedTypes: [
     'application/pdf',
     'application/zip',
@@ -97,7 +97,7 @@ export const fileValidation = {
 }
 
 export function validateFile(file: File): { valid: boolean; error?: string } {
-  // Check file size
+  
   if (file.size > fileValidation.maxSize) {
     return {
       valid: false,
@@ -105,7 +105,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     }
   }
 
-  // Check if file size is 0
+  
   if (file.size === 0) {
     return {
       valid: false,
@@ -113,9 +113,9 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     }
   }
 
-  // Check file type
+  
   if (!fileValidation.allowedTypes.includes(file.type)) {
-    // If type check fails, also check extension as fallback
+    
     const extension = '.' + file.name.split('.').pop()?.toLowerCase()
     if (!extension || !fileValidation.allowedExtensions.includes(extension)) {
       return {
@@ -125,7 +125,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     }
   }
 
-  // Check filename
+  
   const sanitizedName = sanitizeFilename(file.name)
   if (sanitizedName !== file.name) {
     return {
@@ -134,7 +134,7 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
     }
   }
 
-  // Check for potential path traversal
+  
   if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
     return {
       valid: false,
@@ -145,18 +145,18 @@ export function validateFile(file: File): { valid: boolean; error?: string } {
   return { valid: true }
 }
 
-// Sanitize filename
+
 export function sanitizeFilename(filename: string): string {
-  // Remove path traversal attempts
+  
   let sanitized = filename.replace(/\.\./g, '')
 
-  // Remove directory separators
+  
   sanitized = sanitized.replace(/[\/\\]/g, '')
 
-  // Remove special characters except dots, dashes, underscores
+  
   sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, '_')
 
-  // Limit length
+  
   if (sanitized.length > 255) {
     const extension = sanitized.split('.').pop()
     const nameWithoutExt = sanitized.substring(0, sanitized.lastIndexOf('.'))
@@ -166,7 +166,7 @@ export function sanitizeFilename(filename: string): string {
   return sanitized
 }
 
-// Sanitize user input to prevent XSS
+
 export function sanitizeInput(input: string): string {
   return input
     .replace(/&/g, '&amp;')
@@ -177,21 +177,21 @@ export function sanitizeInput(input: string): string {
     .replace(/\//g, '&#x2F;')
 }
 
-// Validate and sanitize search query
+
 export function sanitizeSearchQuery(query: string): string {
-  // Remove potentially dangerous SQL/NoSQL injection attempts
+  
   let sanitized = query.trim()
 
-  // Remove special characters that could be used in injection
+  
   sanitized = sanitized.replace(/[;'"\\${}]/g, '')
 
-  // Limit length
+  
   sanitized = sanitized.substring(0, 100)
 
   return sanitized
 }
 
-// Rate limiting helper (frontend)
+
 export class RateLimiter {
   private timestamps: Map<string, number[]> = new Map()
 
@@ -199,7 +199,7 @@ export class RateLimiter {
     const now = Date.now()
     const timestamps = this.timestamps.get(key) || []
 
-    // Remove old timestamps outside the window
+    
     const validTimestamps = timestamps.filter(timestamp => now - timestamp < windowMs)
 
     if (validTimestamps.length >= maxRequests) {
@@ -216,7 +216,7 @@ export class RateLimiter {
   }
 }
 
-// Export types
+
 export type SignupInput = z.infer<typeof signupSchema>
 export type SigninInput = z.infer<typeof signinSchema>
 export type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>

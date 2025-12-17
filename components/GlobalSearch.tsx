@@ -16,7 +16,7 @@ interface GlobalSearchProps {
   onClose: () => void
 }
 
-// Debounce hook
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
@@ -41,17 +41,17 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // Debounce search query
+  
   const debouncedQuery = useDebounce(query, 300)
 
-  // Focus input when opened
+  
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus()
     }
   }, [isOpen])
 
-  // Perform search
+  
   useEffect(() => {
     if (!debouncedQuery.trim()) {
       setResults([])
@@ -60,8 +60,7 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
 
     setLoading(true)
 
-    // TODO: Replace with actual API call
-    // Simulate API call
+    
     setTimeout(() => {
       const mockResults: SearchResult[] = [
         {
@@ -84,7 +83,7 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
     }, 200)
   }, [debouncedQuery])
 
-  // Keyboard navigation
+  
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
@@ -109,7 +108,7 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-      {/* Backdrop */}
+      {}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Search Dialog */}

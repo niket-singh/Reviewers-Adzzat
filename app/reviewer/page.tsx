@@ -53,25 +53,25 @@ export default function TesterDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not a reviewer
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
     } else if (user && user.role !== 'TESTER') {
       router.push('/')
     } else if (user && !user.isApproved) {
-      // Show waiting for approval message
+      
     }
   }, [user, authLoading, router])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchSubmissions()
     fetchReviewedSubmissions()
     const interval = setInterval(() => {
       fetchSubmissions()
       fetchReviewedSubmissions()
-    }, 30000) // 30 seconds
+    }, 30000) 
 
     return () => clearInterval(interval)
   }, [])
@@ -97,16 +97,16 @@ export default function TesterDashboard() {
   const filterSubmissions = useCallback(() => {
     let filtered = activeTab === 'reviewed' ? reviewedSubmissions : submissions
 
-    // Filter by status tab
+    
     if (activeTab === 'claimed') {
       filtered = filtered.filter(s => s.status === 'CLAIMED')
     } else if (activeTab === 'eligible') {
       filtered = filtered.filter(s => s.status === 'ELIGIBLE')
     } else if (activeTab === 'reviewed') {
-      // Already filtered to reviewed submissions
+      
     }
 
-    // Filter by search query
+    
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -123,7 +123,7 @@ export default function TesterDashboard() {
 
   useEffect(() => {
     filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterSubmissions])
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
@@ -163,7 +163,7 @@ export default function TesterDashboard() {
         link.click()
         document.body.removeChild(link)
 
-        // Clean up blob URL to prevent memory leaks
+        
         setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
         showToast('Download started!', 'success')
@@ -185,7 +185,7 @@ export default function TesterDashboard() {
     return 0
   }
 
-  // Pagination calculations
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -209,7 +209,7 @@ export default function TesterDashboard() {
   if (!user.isApproved) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
-        {/* Animated Background Circles */}
+        {}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-purple-500"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-indigo-500" style={{ animationDelay: '1s' }}></div>

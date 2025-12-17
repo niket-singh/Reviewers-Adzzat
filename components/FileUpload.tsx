@@ -5,16 +5,16 @@ import { useState, useRef, DragEvent } from 'react'
 interface FileUploadProps {
   onFileSelect: (file: File) => void
   accept?: string
-  maxSize?: number // in bytes
+  maxSize?: number 
   label?: string
-  uploadProgress?: number // 0-100
+  uploadProgress?: number 
   isUploading?: boolean
 }
 
 export default function FileUpload({
   onFileSelect,
   accept = '*',
-  maxSize = 10 * 1024 * 1024, // 10MB default
+  maxSize = 10 * 1024 * 1024, 
   label = 'Upload File',
   uploadProgress,
   isUploading = false,

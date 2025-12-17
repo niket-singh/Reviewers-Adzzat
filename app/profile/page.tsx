@@ -8,19 +8,19 @@ import { useToast } from '@/components/ToastContainer'
 import Breadcrumb from '@/components/Breadcrumb'
 
 interface Stats {
-  // Project X stats
+  
   totalSubmissions?: number
   eligibleSubmissions?: number
   approvedSubmissions?: number
   totalReviews?: number
   tasksClaimed?: number
   eligibleMarked?: number
-  // Project V stats
+  
   projectVTotal?: number
   projectVSubmitted?: number
   projectVApproved?: number
   projectVRejected?: number
-  // Combined stats
+  
   allProjectsTotal?: number
   allProjectsApproved?: number
 }
@@ -138,13 +138,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
+    
     if (!file.type.startsWith('image/')) {
       showToast('Please upload an image file', 'error')
       return
     }
 
-    // Validate file size (max 5MB)
+    
     if (file.size > 5 * 1024 * 1024) {
       showToast('Image must be less than 5MB', 'error')
       return
@@ -194,7 +194,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
@@ -314,15 +314,10 @@ export default function ProfilePage() {
                   <input
                     id="pfp-upload"
                     type="file"
-                    accept="image/*"
-                    onChange={handlePfpUpload}
-                    className="hidden"
-                    disabled={uploadingPfp}
-                  />
-                </label>
-              </div>
+                    accept="image
 
-              {/* Info */}
+
+}
               <div>
                 <h2 className="text-3xl font-black text-white mb-2">{user.name}</h2>
                 <p className="text-gray-400 mb-3 font-medium flex items-center gap-2">
@@ -354,7 +349,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Edit Button */}
+            {}
             <button
               onClick={() => setEditing(!editing)}
               className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 whitespace-nowrap ${
@@ -367,7 +362,7 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Edit Form */}
+          {}
           {editing && (
             <form onSubmit={handleUpdate} className="border-t-2 border-gray-700 pt-6 space-y-5 animate-slide-up">
               <div>

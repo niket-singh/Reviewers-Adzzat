@@ -80,20 +80,20 @@ export default function ProjectVAdmin() {
   const [processing, setProcessing] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Users state
+  
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [showUsersSection, setShowUsersSection] = useState(false); // Collapsed by default to improve performance
+  const [showUsersSection, setShowUsersSection] = useState(false); 
   const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [usersLoaded, setUsersLoaded] = useState(false); // Track if users have been loaded
+  const [usersLoaded, setUsersLoaded] = useState(false); 
 
-  // View mode state
-  const [viewMode, setViewMode] = useState<"kanban" | "all">("all"); // Default to "all" for god mode
+  
+  const [viewMode, setViewMode] = useState<"kanban" | "all">("all"); 
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      // Admin God Mode: Use the admin endpoint to get ALL submissions with full details
+      
       const data = await apiClient.getAllProjectVSubmissions({ limit: 500 });
       setSubmissions(data.submissions || []);
     } catch (error: any) {
@@ -114,7 +114,7 @@ export default function ProjectVAdmin() {
       console.error("Error fetching users:", error);
       const errorMsg = error.response?.data?.error || error.message || "Failed to fetch users";
       showToast(`Failed to fetch users: ${errorMsg}`, "error");
-      setUsers([]); // Set empty array on error
+      setUsers([]); 
       setUsersLoaded(false);
     } finally {
       setLoadingUsers(false);
@@ -126,11 +126,11 @@ export default function ProjectVAdmin() {
       router.push("/");
     } else if (user) {
       fetchSubmissions();
-      // Don't fetch users on mount - only when section is expanded
+      
     }
   }, [user, loading, router, fetchSubmissions]);
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSubmissions();
@@ -199,7 +199,7 @@ export default function ProjectVAdmin() {
     router.push("/");
   };
 
-  // User management handlers
+  
   const handleApproveUser = async (userId: string) => {
     setProcessing(true);
     try {
@@ -275,7 +275,7 @@ export default function ProjectVAdmin() {
     const newState = !showUsersSection;
     setShowUsersSection(newState);
 
-    // Fetch users when section is opened for the first time
+    
     if (newState && !usersLoaded) {
       fetchUsers();
     }
@@ -299,13 +299,13 @@ export default function ProjectVAdmin() {
     return statusMap[status] || "bg-gray-500 text-white";
   };
 
-  // Filter submissions by status for each column (Kanban view)
+  
   const submittedTasks = submissions.filter(s => s.status === "TASK_SUBMITTED_TO_PLATFORM");
   const eligibleTasks = submissions.filter(s => s.status === "ELIGIBLE_FOR_MANUAL_REVIEW");
   const finalChecksTasks = submissions.filter(s => s.status === "FINAL_CHECKS");
   const approvedTasks = submissions.filter(s => s.status === "APPROVED");
 
-  // Filter all submissions for "All View"
+  
   const filteredSubmissions = submissions.filter(s => {
     const query = searchQuery.toLowerCase();
     return (
@@ -317,14 +317,14 @@ export default function ProjectVAdmin() {
     );
   });
 
-  // Filter users based on search query
+  
   const filteredUsers = users.filter(u =>
     u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
     u.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
     u.role.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
 
-  // Group users by role
+  
   const contributors = filteredUsers.filter(u => u.role === "CONTRIBUTOR");
   const reviewers = filteredUsers.filter(u => u.role === "REVIEWER");
   const testers = filteredUsers.filter(u => u.role === "TESTER");
@@ -342,7 +342,7 @@ export default function ProjectVAdmin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>

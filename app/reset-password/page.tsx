@@ -36,15 +36,14 @@ function ResetPasswordForm() {
   const token = searchParams.get('token')
 
   useEffect(() => {
-    // Validate token on mount
+    
     if (!token) {
       setTokenValid(false)
       showToast('Invalid reset link', 'error')
       return
     }
 
-    // In a real app, you'd validate the token with the backend
-    // For now, we'll assume it's valid if it exists
+    
     setTokenValid(true)
   }, [token, showToast])
 
@@ -53,20 +52,20 @@ function ResetPasswordForm() {
     setSubmitting(true)
 
     try {
-      // Validate passwords
+      
       passwordSchema.parse({ password, confirmPassword })
 
       if (!token) {
         throw new Error('Invalid reset token')
       }
 
-      // Call API
+      
       await apiClient.resetPassword(token, password)
 
       setResetSuccess(true)
       showToast('Password reset successful!', 'success')
 
-      // Redirect to login after 3 seconds
+      
       setTimeout(() => {
         router.push('/')
       }, 3000)
