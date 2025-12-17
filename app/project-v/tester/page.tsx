@@ -54,7 +54,7 @@ interface Submission {
 }
 
 export default function ProjectVTester() {
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, refreshUser } = useAuth();
   const router = useRouter();
   const { showToast } = useToast();
 
@@ -70,6 +70,7 @@ export default function ProjectVTester() {
   const [taskLink, setTaskLink] = useState("");
   const [taskLinkSubmitted, setTaskLinkSubmitted] = useState("");
   const [testerFeedback, setTesterFeedback] = useState("");
+  const [togglingGreenLight, setTogglingGreenLight] = useState(false);
 
   const fetchSubmissions = useCallback(async () => {
     try {
@@ -99,6 +100,33 @@ export default function ProjectVTester() {
     }, 30000);
     return () => clearInterval(interval);
   }, [fetchSubmissions]);
+
+  const handleToggleGreenLight = async () => {
+    if (!user) return;
+
+    const action = user.isGreenLight ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} your availability? ${!user.isGreenLight ? 'You will start receiving new tasks.' : 'You will stop receiving new tasks.'}`)) {
+      return;
+    }
+
+    setTogglingGreenLight(true);
+    try {
+      const response = await apiClient.toggleGreenLight(user.id);
+      if (response.queuedTasksAssigned > 0) {
+        showToast(`Availability ${user.isGreenLight ? 'deactivated' : 'activated'}! ${response.queuedTasksAssigned} queued tasks were assigned to you.`, 'success');
+      } else {
+        showToast(`Availability ${user.isGreenLight ? 'deactivated' : 'activated'} successfully!`, 'success');
+      }
+      if (refreshUser) {
+        await refreshUser();
+      }
+      fetchSubmissions();
+    } catch (err: any) {
+      showToast(err?.response?.data?.error || 'Failed to toggle availability', 'error');
+    } finally {
+      setTogglingGreenLight(false);
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -295,7 +323,28 @@ export default function ProjectVTester() {
               </div>
             </div>
 
-            <div className="hidden md:flex gap-3 animate-slide-in-right">
+            <div className="hidden md:flex gap-3 items-center animate-slide-in-right">
+              {user && (
+                <>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl backdrop-blur-lg bg-gray-800/60 border border-gray-700">
+                    <div className={`w-2.5 h-2.5 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></div>
+                    <span className="text-xs font-semibold text-gray-300">
+                      {user.isGreenLight ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleToggleGreenLight}
+                    disabled={togglingGreenLight}
+                    className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg backdrop-blur-lg ${
+                      user.isGreenLight
+                        ? 'bg-orange-600/80 hover:bg-orange-700/80 text-white border border-orange-500'
+                        : 'bg-green-600/80 hover:bg-green-700/80 text-white border border-green-500'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {togglingGreenLight ? 'Updating...' : (user.isGreenLight ? '🔴 Go Inactive' : '🟢 Go Active')}
+                  </button>
+                </>
+              )}
               <button onClick={() => router.push('/select-project')}
                 className="px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 hover:scale-105 transition-all duration-300 font-semibold shadow-md hover:shadow-xl border border-gray-600">
                 Switch Project
@@ -324,6 +373,32 @@ export default function ProjectVTester() {
 
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
+              {user && (
+                <>
+                  <div className="flex items-center justify-between px-4 py-3 rounded-xl backdrop-blur-lg bg-gray-800/60 border border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2.5 h-2.5 rounded-full ${user.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`}></div>
+                      <span className="text-sm font-semibold text-gray-300">
+                        Status: {user.isGreenLight ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      handleToggleGreenLight();
+                      setMobileMenuOpen(false);
+                    }}
+                    disabled={togglingGreenLight}
+                    className={`w-full px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 shadow-lg backdrop-blur-lg ${
+                      user.isGreenLight
+                        ? 'bg-orange-600/80 hover:bg-orange-700/80 text-white border border-orange-500'
+                        : 'bg-green-600/80 hover:bg-green-700/80 text-white border border-green-500'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {togglingGreenLight ? 'Updating...' : (user.isGreenLight ? '🔴 Go Inactive' : '🟢 Go Active')}
+                  </button>
+                </>
+              )}
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
                 className="w-full px-5 py-2.5 bg-gray-700/50 backdrop-blur-sm text-gray-200 rounded-xl hover:bg-gray-600/60 transition-all duration-300 font-semibold shadow-md border border-gray-600">
                 Switch Project
