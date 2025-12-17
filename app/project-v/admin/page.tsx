@@ -7,6 +7,7 @@ import { useToast } from "@/components/ToastContainer";
 import { apiClient } from "@/lib/api-client";
 import Breadcrumb from "@/components/Breadcrumb";
 import { CompactThemeToggle } from "@/components/ThemeToggle";
+import { BarChart, DonutChart, StatCard } from "@/components/StatCharts";
 
 interface Submission {
   id: string;
@@ -87,8 +88,8 @@ export default function ProjectVAdmin() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [usersLoaded, setUsersLoaded] = useState(false); 
 
-  
-  const [viewMode, setViewMode] = useState<"kanban" | "all">("all"); 
+
+  const [viewMode, setViewMode] = useState<"kanban" | "all" | "stats">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const fetchSubmissions = useCallback(async () => {
@@ -439,7 +440,7 @@ export default function ProjectVAdmin() {
           <div className="flex items-center gap-3">
             <div className="text-3xl">👑</div>
             <div>
-              <h3 className="text-lg font-bold text-red-300">Administrator GOD MODE Active</h3>
+              <h3 className="text-lg font-bold text-red-300">Administrator Dashboard</h3>
               <p className="text-sm text-gray-300">Complete visibility over all submissions and feedback across the platform</p>
             </div>
           </div>
@@ -467,6 +468,16 @@ export default function ProjectVAdmin() {
                 }`}
               >
                 📋 Kanban View
+              </button>
+              <button
+                onClick={() => setViewMode("stats")}
+                className={`px-6 py-3 rounded-lg text-sm font-bold transition-all duration-300 ${
+                  viewMode === "stats"
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg scale-105"
+                    : "text-gray-300 hover:bg-gray-700/50"
+                }`}
+              >
+                📈 Statistics
               </button>
             </div>
 
@@ -643,6 +654,119 @@ export default function ProjectVAdmin() {
                 </div>
               ))
             )}
+          </div>
+        )}
+
+        {viewMode === "stats" && (
+          <div className="space-y-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <StatCard
+                title="Total Submissions"
+                value={submissions.length}
+                icon="📊"
+                color="blue"
+              />
+              <StatCard
+                title="Submitted to Platform"
+                value={submittedTasks.length}
+                icon="📥"
+                color="cyan"
+              />
+              <StatCard
+                title="Eligible for Review"
+                value={eligibleTasks.length}
+                icon="🔍"
+                color="purple"
+              />
+              <StatCard
+                title="Approved Tasks"
+                value={approvedTasks.length}
+                icon="✅"
+                color="green"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ animationDelay: '0.2s' }}>
+              <BarChart
+                title="Project V Task Pipeline"
+                data={[
+                  {
+                    label: 'Submitted to Platform',
+                    value: submittedTasks.length,
+                    color: 'bg-gradient-to-r from-blue-500 to-cyan-600'
+                  },
+                  {
+                    label: 'Eligible for Manual Review',
+                    value: eligibleTasks.length,
+                    color: 'bg-gradient-to-r from-purple-500 to-pink-600'
+                  },
+                  {
+                    label: 'Final Checks',
+                    value: finalChecksTasks.length,
+                    color: 'bg-gradient-to-r from-cyan-500 to-blue-600'
+                  },
+                  {
+                    label: 'Approved',
+                    value: approvedTasks.length,
+                    color: 'bg-gradient-to-r from-green-500 to-emerald-600'
+                  }
+                ]}
+              />
+
+              <DonutChart
+                title="Task Status Distribution"
+                data={[
+                  {
+                    label: 'Submitted',
+                    value: submittedTasks.length,
+                    color: 'fill-blue-500'
+                  },
+                  {
+                    label: 'Eligible',
+                    value: eligibleTasks.length,
+                    color: 'fill-purple-500'
+                  },
+                  {
+                    label: 'Final Checks',
+                    value: finalChecksTasks.length,
+                    color: 'fill-cyan-500'
+                  },
+                  {
+                    label: 'Approved',
+                    value: approvedTasks.length,
+                    color: 'fill-green-500'
+                  }
+                ]}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+              <StatCard
+                title="In Testing"
+                value={submissions.filter(s => s.status === "IN_TESTING").length}
+                icon="🧪"
+                color="yellow"
+              />
+              <StatCard
+                title="Pending Review"
+                value={submissions.filter(s => s.status === "PENDING_REVIEW").length}
+                icon="⏳"
+                color="orange"
+              />
+              <StatCard
+                title="Changes Requested"
+                value={submissions.filter(s => s.status === "CHANGES_REQUESTED").length}
+                icon="🔄"
+                color="red"
+              />
+              <StatCard
+                title="Rework"
+                value={submissions.filter(s => s.status === "REWORK" || s.status === "REWORK_DONE").length}
+                icon="🔧"
+                color="cyan"
+              />
+            </div>
           </div>
         )}
 
