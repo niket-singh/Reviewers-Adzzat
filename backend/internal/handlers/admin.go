@@ -712,3 +712,17 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		"offset":      offset,
 	})
 }
+
+// ReassignPendingTasks reassigns all pending Project V tasks that don't have a tester (Admin only)
+func ReassignPendingTasks(c *gin.Context) {
+	assignedCount, err := services.ReassignPendingProjectVTasks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to reassign tasks"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Pending tasks reassigned successfully",
+		"assignedCount": assignedCount,
+	})
+}

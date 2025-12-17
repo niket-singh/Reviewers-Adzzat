@@ -473,3 +473,29 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 
 	return &selectedReviewerID, nil
 }
+
+// ReassignPendingProjectVTasks reassigns all pending Project V tasks that don't have a tester
+func ReassignPendingProjectVTasks() (int, error) {
+	// Find all submissions with TASK_SUBMITTED status and no tester assigned
+	var pendingSubmissions []models.ProjectVSubmission
+	err := database.DB.Where("status = ? AND tester_id IS NULL", models.ProjectVStatusSubmitted).
+		Find(&pendingSubmissions).Error
+	if err != nil {
+		return 0, err
+	}
+
+	assignedCount := 0
+	for _, submission := range pendingSubmissions {
+		testerID, err := AutoAssignTester(submission.ID)
+		if err == nil && testerID != nil {
+			// Update submission with tester and change status to IN_TESTING
+			submission.TesterID = testerID
+			submission.Status = models.ProjectVStatusInTesting
+			if err := database.DB.Save(&submission).Error; err == nil {
+				assignedCount++
+			}
+		}
+	}
+
+	return assignedCount, nil
+}

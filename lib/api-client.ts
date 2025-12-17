@@ -293,6 +293,11 @@ class ApiClient {
     return response.data
   }
 
+  async reassignPendingProjectVTasks() {
+    const response = await this.client.post('/admin/projectv/reassign-pending')
+    return response.data
+  }
+
   // Project V
   async createProjectVSubmission(formData: FormData) {
     const response = await this.client.post('/projectv/submissions', formData, {
