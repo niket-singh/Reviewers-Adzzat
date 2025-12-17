@@ -8,10 +8,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware validates JWT tokens
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// Get token from Authorization header
+
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
@@ -19,7 +18,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Extract token (format: "Bearer <token>")
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
@@ -29,7 +27,6 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		tokenString := parts[1]
 
-		// Validate token
 		claims, err := utils.ValidateJWT(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
@@ -37,7 +34,6 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// Set user info in context
 		c.Set("userId", claims.UserID)
 		c.Set("userEmail", claims.Email)
 		c.Set("userRole", claims.Role)
@@ -46,7 +42,6 @@ func AuthMiddleware() gin.HandlerFunc {
 	}
 }
 
-// RequireRole middleware checks if user has required role
 func RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("userRole")
@@ -69,12 +64,10 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 	}
 }
 
-// AdminOnly middleware ensures only admins can access
 func AdminOnly() gin.HandlerFunc {
 	return RequireRole("ADMIN")
 }
 
-// TesterOrAdmin middleware allows testers and admins
 func TesterOrAdmin() gin.HandlerFunc {
 	return RequireRole("TESTER", "ADMIN")
 }

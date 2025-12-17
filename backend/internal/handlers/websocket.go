@@ -14,25 +14,21 @@ var upgrader = gorillaws.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// TODO: In production, implement proper origin checking
-		// For now, allow all origins (CORS handled by middleware)
+
 		return true
 	},
 }
 
-// Global WebSocket hub instance
 var WSHub *websocket.Hub
 
-// InitWebSocket initializes the WebSocket hub
 func InitWebSocket() {
 	WSHub = websocket.NewHub()
 	go WSHub.Run()
 	log.Println("✓ WebSocket hub initialized")
 }
 
-// HandleWebSocket handles WebSocket connection requests
 func HandleWebSocket(c *gin.Context) {
-	// Get user ID from context (set by auth middleware)
+
 	userIDInterface, exists := c.Get("userId")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -51,14 +47,12 @@ func HandleWebSocket(c *gin.Context) {
 		return
 	}
 
-	// Upgrade HTTP connection to WebSocket
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Printf("WebSocket upgrade error: %v", err)
 		return
 	}
 
-	// Create new client
 	client := &websocket.Client{
 		ID:     uuid.New(),
 		UserID: userID,
@@ -66,11 +60,9 @@ func HandleWebSocket(c *gin.Context) {
 		Hub:    WSHub,
 	}
 
-	// Serve WebSocket connection
 	client.ServeWS(conn)
 }
 
-// BroadcastSubmissionUpdate sends a submission update to all connected clients
 func BroadcastSubmissionUpdate(submissionID uuid.UUID, status string) {
 	if WSHub != nil {
 		WSHub.BroadcastToAll("submission_update", gin.H{
@@ -81,7 +73,6 @@ func BroadcastSubmissionUpdate(submissionID uuid.UUID, status string) {
 	}
 }
 
-// BroadcastNotification sends a notification to a specific user
 func BroadcastNotification(userID uuid.UUID, title, message string) {
 	if WSHub != nil {
 		WSHub.BroadcastToUser(userID, "notification", gin.H{

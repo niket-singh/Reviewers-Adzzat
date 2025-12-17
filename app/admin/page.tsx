@@ -151,7 +151,7 @@ export default function AdminDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not admin
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
@@ -188,7 +188,7 @@ export default function AdminDashboard() {
   }, [activeTab])
 
   const filterData = useCallback(() => {
-    // Filter submissions
+    
     let filteredSubs = submissions
 
     if (submissionFilter !== 'all') {
@@ -208,7 +208,7 @@ export default function AdminDashboard() {
 
     setFilteredSubmissions(filteredSubs)
 
-    // Filter users
+    
     let filteredUsr = users
 
     if (searchQuery.trim() && activeTab === 'users') {
@@ -223,7 +223,7 @@ export default function AdminDashboard() {
 
     setFilteredUsers(filteredUsr)
 
-    // Filter reviews
+    
     let filteredRevs = reviews
 
     if (searchQuery.trim() && activeTab === 'feedback') {
@@ -241,19 +241,19 @@ export default function AdminDashboard() {
     setFilteredReviews(filteredRevs)
   }, [submissions, submissionFilter, searchQuery, activeTab, users, reviews])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchData()
     const interval = setInterval(() => {
       fetchData()
-    }, 30000) // 30 seconds
+    }, 30000) 
 
     return () => clearInterval(interval)
   }, [activeTab, fetchData])
 
   useEffect(() => {
     filterData()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterData])
 
   const handleApproveReviewer = async (userId: string) => {
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
         link.click()
         document.body.removeChild(link)
 
-        // Clean up blob URL to prevent memory leaks
+        
         setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
         showToast('Download started!', 'success')
@@ -440,7 +440,7 @@ export default function AdminDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
-  // Pagination calculations for submissions
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -460,14 +460,13 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-red-900 to-orange-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-red-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -485,7 +484,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Project Filter */}
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400 font-medium">Project:</span>
               <select
@@ -498,7 +496,6 @@ export default function AdminDashboard() {
               </select>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
@@ -514,7 +511,6 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
@@ -529,7 +525,6 @@ export default function AdminDashboard() {
             </button>
           </div>
 
-          {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button
@@ -556,10 +551,9 @@ export default function AdminDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb Navigation */}
+
         <Breadcrumb />
 
-        {/* Main Tabs */}
         <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl shadow-xl p-1.5 mb-8 overflow-x-auto border border-gray-700/50 animate-slide-up">
           {(['submissions', 'users', 'stats', 'logs', 'leaderboard', 'feedback'] as MainTab[]).map((tab) => (
             <button
@@ -576,7 +570,6 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Search Bar */}
         {(activeTab === 'submissions' || activeTab === 'users' || activeTab === 'feedback') && (
           <div className="mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <div className="relative">
@@ -594,10 +587,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Submissions Tab */}
         {activeTab === 'submissions' && (
           <>
-            {/* Upload Form */}
+
             {showUpload && (
               <div className="bg-white rounded-xl shadow-lg p-8 mb-6 border border-gray-200">
                 <div className="flex justify-between items-center mb-6">
@@ -839,7 +831,6 @@ export default function AdminDashboard() {
                   </div>
                 ))}
 
-                  {/* Pagination */}
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -853,7 +844,6 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* Users Tab */}
         {activeTab === 'users' && (
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="overflow-x-auto">
@@ -963,10 +953,9 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Stats Tab */}
         {activeTab === 'stats' && stats && (
           <div className="space-y-6">
-            {/* Overview */}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h3 className="text-sm font-medium text-gray-600 mb-2">Total Users</h3>
@@ -982,7 +971,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Green Light Status Overview */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
                 <div className="flex items-center gap-3 mb-2">
@@ -1007,7 +995,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Contributors Stats */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Contributor Statistics</h2>
               <div className="overflow-x-auto">
@@ -1044,7 +1031,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Reviewers Stats */}
             <div className="bg-white rounded-xl shadow-md p-6">
               <h2 className="text-xl font-bold text-gray-800 mb-4">Reviewer Statistics</h2>
               <div className="overflow-x-auto">
@@ -1098,7 +1084,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Activity Logs Tab */}
         {activeTab === 'logs' && (
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="px-6 py-4 border-b">
@@ -1147,7 +1132,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Leaderboard Tab */}
         {activeTab === 'leaderboard' && (
           <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Top Contributors</h2>
@@ -1203,7 +1187,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Feedback Tab - Admin God Mode */}
         {activeTab === 'feedback' && (
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-md p-6 text-white">

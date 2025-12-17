@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
-/**
- * Copy to clipboard hook with visual feedback
- */
+
+
+
 export function useCopyToClipboard(resetDelay: number = 2000) {
   const [copied, setCopied] = useState(false);
 

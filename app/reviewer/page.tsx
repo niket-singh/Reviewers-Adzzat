@@ -53,25 +53,25 @@ export default function TesterDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not a reviewer
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
     } else if (user && user.role !== 'TESTER') {
       router.push('/')
     } else if (user && !user.isApproved) {
-      // Show waiting for approval message
+      
     }
   }, [user, authLoading, router])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchSubmissions()
     fetchReviewedSubmissions()
     const interval = setInterval(() => {
       fetchSubmissions()
       fetchReviewedSubmissions()
-    }, 30000) // 30 seconds
+    }, 30000) 
 
     return () => clearInterval(interval)
   }, [])
@@ -97,16 +97,16 @@ export default function TesterDashboard() {
   const filterSubmissions = useCallback(() => {
     let filtered = activeTab === 'reviewed' ? reviewedSubmissions : submissions
 
-    // Filter by status tab
+    
     if (activeTab === 'claimed') {
       filtered = filtered.filter(s => s.status === 'CLAIMED')
     } else if (activeTab === 'eligible') {
       filtered = filtered.filter(s => s.status === 'ELIGIBLE')
     } else if (activeTab === 'reviewed') {
-      // Already filtered to reviewed submissions
+      
     }
 
-    // Filter by search query
+    
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -123,7 +123,7 @@ export default function TesterDashboard() {
 
   useEffect(() => {
     filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterSubmissions])
 
   const handleSubmitFeedback = async (e: React.FormEvent) => {
@@ -163,7 +163,7 @@ export default function TesterDashboard() {
         link.click()
         document.body.removeChild(link)
 
-        // Clean up blob URL to prevent memory leaks
+        
         setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
         showToast('Download started!', 'success')
@@ -185,7 +185,7 @@ export default function TesterDashboard() {
     return 0
   }
 
-  // Pagination calculations
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -209,7 +209,7 @@ export default function TesterDashboard() {
   if (!user.isApproved) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
-        {/* Animated Background Circles */}
+
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-purple-500"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-indigo-500" style={{ animationDelay: '1s' }}></div>
@@ -238,14 +238,13 @@ export default function TesterDashboard() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-purple-500"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-indigo-500" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 rounded-full blur-3xl opacity-20 floating bg-blue-500" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Glassmorphic Header */}
       <nav className="sticky top-0 z-40 backdrop-blur-xl border-b shadow-lg bg-gray-800/40 border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -265,7 +264,6 @@ export default function TesterDashboard() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-2">
               <button
                 onClick={() => router.push('/profile')}
@@ -281,7 +279,6 @@ export default function TesterDashboard() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
@@ -296,7 +293,6 @@ export default function TesterDashboard() {
             </button>
           </div>
 
-          {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button
@@ -323,10 +319,9 @@ export default function TesterDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb Navigation */}
+
         <Breadcrumb />
 
-        {/* Modern Search Bar */}
         <div className="mb-6 animate-slide-up">
           <div className="relative">
             <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -342,7 +337,6 @@ export default function TesterDashboard() {
           </div>
         </div>
 
-        {/* Glassmorphic Tabs */}
         <div className="flex gap-2 rounded-2xl p-1.5 mb-6 w-fit shadow-xl backdrop-blur-xl animate-slide-up bg-gray-800/40" style={{ animationDelay: '0.1s' }}>
           {(['claimed', 'eligible', 'reviewed'] as StatusFilter[]).map((tab) => (
             <button
@@ -452,7 +446,6 @@ export default function TesterDashboard() {
                   </div>
                 )}
 
-                {/* Feedback Form */}
                 {selectedSubmission === submission.id && (
                   <form onSubmit={handleSubmitFeedback} className="mt-4 pt-4 border-t animate-slide-up border-gray-700">
                     <h4 className="text-lg font-black mb-4 text-white">
@@ -544,7 +537,6 @@ export default function TesterDashboard() {
               </div>
             ))}
 
-              {/* Pagination */}
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

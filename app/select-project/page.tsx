@@ -27,7 +27,7 @@ export default function SelectProject() {
 
   const handleProjectSelect = (project: string) => {
     if (project === "V") {
-      // Navigate to Project V
+      
       if (user?.role === "CONTRIBUTOR") {
         router.push("/project-v/contributor");
       } else if (user?.role === "TESTER") {
@@ -38,7 +38,7 @@ export default function SelectProject() {
         router.push("/project-v/admin");
       }
     } else if (project === "X") {
-      // Navigate to existing Project X (current implementation)
+      
       if (user?.role === "CONTRIBUTOR") {
         router.push("/contributor");
       } else if (user?.role === "REVIEWER") {
@@ -47,7 +47,7 @@ export default function SelectProject() {
         router.push("/admin");
       }
     }
-    // Project Z is paused, no navigation
+    
   };
 
   const handleLogout = async () => {
@@ -58,7 +58,7 @@ export default function SelectProject() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-2">
             Welcome, {user?.name}!
@@ -68,9 +68,8 @@ export default function SelectProject() {
           </p>
         </div>
 
-        {/* Project Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Project X */}
+
           <div className="relative group cursor-not-allowed transform transition-all duration-300">
             <div className="absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-2xl opacity-50 blur-xl"></div>
             <div className="relative bg-white rounded-2xl p-8 shadow-xl border-4 border-yellow-500 opacity-75">
@@ -109,7 +108,6 @@ export default function SelectProject() {
             </div>
           </div>
 
-          {/* Project V */}
           <div
             onClick={() => handleProjectSelect("V")}
             className="relative group cursor-pointer transform transition-all duration-300 hover:scale-105"
@@ -151,7 +149,6 @@ export default function SelectProject() {
             </div>
           </div>
 
-          {/* Project Z */}
           <div className="relative group cursor-not-allowed transform transition-all duration-300">
             <div className="absolute inset-0 bg-gradient-to-r from-red-400 to-pink-500 rounded-2xl opacity-50 blur-xl"></div>
             <div className="relative bg-white rounded-2xl p-8 shadow-xl border-4 border-red-500 opacity-75">
@@ -191,7 +188,6 @@ export default function SelectProject() {
           </div>
         </div>
 
-        {/* Logout Button */}
         <div className="mt-12 text-center">
           <button
             onClick={handleLogout}

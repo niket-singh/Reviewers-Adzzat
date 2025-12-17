@@ -23,7 +23,7 @@ export function useOptimisticMutation<T, R>({
       setIsLoading(true)
       setError(null)
 
-      // Optimistic update
+      
       if (onOptimisticUpdate) {
         onOptimisticUpdate(data)
       }
@@ -40,7 +40,7 @@ export function useOptimisticMutation<T, R>({
         const error = err as Error
         setError(error)
 
-        // Revert optimistic update on error
+        
         if (onRevert) {
           onRevert()
         }
@@ -60,7 +60,7 @@ export function useOptimisticMutation<T, R>({
   return { mutate, isLoading, error }
 }
 
-// Example usage helpers for common operations
+
 export const useOptimisticDelete = <T extends { id: string }>(
   items: T[],
   setItems: (items: T[]) => void,
@@ -71,12 +71,12 @@ export const useOptimisticDelete = <T extends { id: string }>(
       await deleteFn(id)
     },
     onOptimisticUpdate: (id: string) => {
-      // Immediately remove from UI
+      
       setItems(items.filter((item) => item.id !== id))
     },
     onRevert: () => {
-      // Revert on error - could store original state
-      // For now, this would require a refetch
+      
+      
     },
   })
 }
@@ -93,16 +93,16 @@ export const useOptimisticUpdate = <T extends { id: string }>(
       return await updateFn(id, updates)
     },
     onOptimisticUpdate: ({ id, updates }: { id: string; updates: Partial<T> }) => {
-      // Store original for revert
+      
       originalItem = items.find((item) => item.id === id) || null
 
-      // Immediately update in UI
+      
       setItems(
         items.map((item) => (item.id === id ? { ...item, ...updates } : item))
       )
     },
     onRevert: () => {
-      // Restore original item on error
+      
       if (originalItem) {
         setItems(
           items.map((item) => (item.id === originalItem!.id ? originalItem! : item))
@@ -122,18 +122,18 @@ export const useOptimisticCreate = <T extends { id?: string }>(
       return await createFn(data)
     },
     onOptimisticUpdate: (data: Omit<T, 'id'>) => {
-      // Add with temporary ID
+      
       const tempItem = { ...data, id: `temp-${Date.now()}` } as T
       setItems([...items, tempItem])
     },
     onSuccess: (result: T) => {
-      // Replace temp item with real one
+      
       setItems(
         items.map((item) => (item.id?.startsWith('temp-') ? result : item))
       )
     },
     onRevert: () => {
-      // Remove temp item on error
+      
       setItems(items.filter((item) => !item.id?.startsWith('temp-')))
     },
   })

@@ -15,7 +15,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ProcessProjectVSubmission processes a Project V submission through the Docker workflow
 func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	var submission models.ProjectVSubmission
 	if err := database.DB.First(&submission, submissionID).Error; err != nil {
@@ -26,24 +25,20 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	logs := []string{}
 	workDir := filepath.Join(os.TempDir(), "projectv", submissionID.String())
 
-	// Cleanup function
 	defer func() {
-		// Save logs
+
 		submission.ProcessingLogs = strings.Join(logs, "\n")
 		database.DB.Save(&submission)
 
-		// Cleanup work directory
 		os.RemoveAll(workDir)
 	}()
 
-	// Create work directory
 	if err := os.MkdirAll(workDir, 0755); err != nil {
 		logs = append(logs, fmt.Sprintf("ERROR: Failed to create work directory: %v", err))
 		submission.ProcessingComplete = true
 		return
 	}
 
-	// Step 1: Clone the repository
 	logs = append(logs, "Step 1: Cloning repository...")
 	if err := cloneRepo(submission.GithubRepo, submission.CommitHash, workDir, &logs); err != nil {
 		submission.CloneError = err.Error()
@@ -55,7 +50,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Repository cloned successfully")
 
-	// Step 2: Download and apply test patch
 	logs = append(logs, "\nStep 2: Applying test patch...")
 	testPatchPath := filepath.Join(workDir, "test.patch")
 	if err := downloadFile(submission.TestPatchURL, testPatchPath); err != nil {
@@ -75,7 +69,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Test patch applied successfully")
 
-	// Step 3: Download Dockerfile
 	logs = append(logs, "\nStep 3: Setting up Dockerfile...")
 	dockerfilePath := filepath.Join(workDir, "Dockerfile")
 	if err := downloadFile(submission.DockerfileURL, dockerfilePath); err != nil {
@@ -86,7 +79,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	}
 	logs = append(logs, "✓ Dockerfile downloaded successfully")
 
-	// Step 4: Build Docker image
 	logs = append(logs, "\nStep 4: Building Docker image...")
 	imageName := fmt.Sprintf("projectv-%s:initial", submissionID.String())
 	if err := buildDockerImage(workDir, imageName, &logs); err != nil {
@@ -99,7 +91,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Docker image built successfully")
 
-	// Step 5: Run base mode tests (should pass)
 	logs = append(logs, "\nStep 5: Running base mode tests...")
 	if err := runDockerTests(imageName, "base", &logs); err != nil {
 		submission.BaseTestError = err.Error()
@@ -111,20 +102,18 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Base tests passed as expected")
 
-	// Step 6: Run new mode tests (should fail)
 	logs = append(logs, "\nStep 6: Running new mode tests...")
 	if err := runDockerTests(imageName, "new", &logs); err == nil {
-		// Tests passed but they should have failed
+
 		submission.NewTestError = "New tests passed but they should have failed"
 		submission.ProcessingComplete = true
 		logs = append(logs, "ERROR: New tests passed but they should have failed")
 		return
 	}
-	submission.NewTestSuccess = true // Success means they failed as expected
+	submission.NewTestSuccess = true
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ New tests failed as expected")
 
-	// Step 7: Download and apply solution patch
 	logs = append(logs, "\nStep 7: Applying solution patch...")
 	solutionPatchPath := filepath.Join(workDir, "solution.patch")
 	if err := downloadFile(submission.SolutionPatchURL, solutionPatchPath); err != nil {
@@ -144,7 +133,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Solution patch applied successfully")
 
-	// Step 8: Rebuild Docker image
 	logs = append(logs, "\nStep 8: Rebuilding Docker image with solution...")
 	imageNameFinal := fmt.Sprintf("projectv-%s:final", submissionID.String())
 	if err := buildDockerImage(workDir, imageNameFinal, &logs); err != nil {
@@ -155,7 +143,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	}
 	logs = append(logs, "✓ Docker image rebuilt successfully")
 
-	// Step 9: Run base mode tests again (should still pass)
 	logs = append(logs, "\nStep 9: Running base mode tests after solution...")
 	if err := runDockerTests(imageNameFinal, "base", &logs); err != nil {
 		submission.FinalBaseTestError = err.Error()
@@ -167,7 +154,6 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Final base tests passed")
 
-	// Step 10: Run new mode tests (should now pass)
 	logs = append(logs, "\nStep 10: Running new mode tests after solution...")
 	if err := runDockerTests(imageNameFinal, "new", &logs); err != nil {
 		submission.FinalNewTestError = err.Error()
@@ -179,16 +165,13 @@ func ProcessProjectVSubmission(submissionID uuid.UUID) {
 	database.DB.Save(&submission)
 	logs = append(logs, "✓ Final new tests passed")
 
-	// All steps completed successfully
 	submission.ProcessingComplete = true
 	logs = append(logs, "\n✓✓✓ All validation steps completed successfully! ✓✓✓")
 
-	// Cleanup Docker images
 	exec.Command("docker", "rmi", imageName).Run()
 	exec.Command("docker", "rmi", imageNameFinal).Run()
 }
 
-// cloneRepo clones a git repository at a specific commit
 func cloneRepo(repoURL, commitHash, targetDir string, logs *[]string) error {
 	*logs = append(*logs, fmt.Sprintf("  Cloning %s...", repoURL))
 
@@ -210,13 +193,11 @@ func cloneRepo(repoURL, commitHash, targetDir string, logs *[]string) error {
 	return nil
 }
 
-// downloadFile downloads a file from Supabase
 func downloadFile(fileKey, targetPath string) error {
-	// For Supabase URLs, we can use the storage service
+
 	return storage.DownloadFileToPath(fileKey, targetPath)
 }
 
-// applyPatch applies a git patch file
 func applyPatch(workDir, patchPath string, logs *[]string) error {
 	*logs = append(*logs, fmt.Sprintf("  Applying patch: %s", filepath.Base(patchPath)))
 
@@ -230,7 +211,6 @@ func applyPatch(workDir, patchPath string, logs *[]string) error {
 	return nil
 }
 
-// buildDockerImage builds a Docker image
 func buildDockerImage(workDir, imageName string, logs *[]string) error {
 	*logs = append(*logs, fmt.Sprintf("  Building image: %s", imageName))
 
@@ -247,14 +227,12 @@ func buildDockerImage(workDir, imageName string, logs *[]string) error {
 	return nil
 }
 
-// runDockerTests runs tests inside a Docker container
 func runDockerTests(imageName, mode string, logs *[]string) error {
 	*logs = append(*logs, fmt.Sprintf("  Running tests in %s mode...", mode))
 
 	cmd := exec.Command("docker", "run", "--rm", imageName, "./test.sh", mode)
 	cmd.Env = append(os.Environ(), fmt.Sprintf("TEST_MODE=%s", mode))
 
-	// Set timeout
 	done := make(chan error, 1)
 	go func() {
 		output, err := cmd.CombinedOutput()

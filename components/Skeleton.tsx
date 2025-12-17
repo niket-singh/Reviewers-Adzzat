@@ -1,4 +1,4 @@
-// Loading Skeleton Components
+
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div

@@ -8,19 +8,19 @@ import { useToast } from '@/components/ToastContainer'
 import Breadcrumb from '@/components/Breadcrumb'
 
 interface Stats {
-  // Project X stats
+  
   totalSubmissions?: number
   eligibleSubmissions?: number
   approvedSubmissions?: number
   totalReviews?: number
   tasksClaimed?: number
   eligibleMarked?: number
-  // Project V stats
+  
   projectVTotal?: number
   projectVSubmitted?: number
   projectVApproved?: number
   projectVRejected?: number
-  // Combined stats
+  
   allProjectsTotal?: number
   allProjectsApproved?: number
 }
@@ -138,13 +138,13 @@ export default function ProfilePage() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
+    
     if (!file.type.startsWith('image/')) {
       showToast('Please upload an image file', 'error')
       return
     }
 
-    // Validate file size (max 5MB)
+    
     if (file.size > 5 * 1024 * 1024) {
       showToast('Image must be less than 5MB', 'error')
       return
@@ -178,7 +178,6 @@ export default function ProfilePage() {
     return 'from-blue-600 via-indigo-600 to-purple-600'
   }
 
-
   if (authLoading || loading || !profileData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
@@ -194,14 +193,13 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -219,7 +217,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push(getRoleDashboard(user.role))}
@@ -235,7 +232,6 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
@@ -250,7 +246,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button
@@ -277,14 +272,13 @@ export default function ProfilePage() {
       </nav>
 
       <div className="max-w-5xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb Navigation */}
+
         <Breadcrumb />
 
-        {/* Profile Card */}
         <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 mb-8 border-2 border-gray-700/50 animate-slide-up hover-lift">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6 mb-6">
             <div className="flex items-start gap-6">
-              {/* Avatar */}
+
               <div className="relative group">
                 <div className={`w-24 h-24 rounded-3xl bg-gradient-to-br ${getRoleColor(user.role)} flex items-center justify-center shadow-2xl animate-pulse-glow flex-shrink-0 glow overflow-hidden`}>
                   {user.profilePictureUrl ? (
@@ -322,7 +316,6 @@ export default function ProfilePage() {
                 </label>
               </div>
 
-              {/* Info */}
               <div>
                 <h2 className="text-3xl font-black text-white mb-2">{user.name}</h2>
                 <p className="text-gray-400 mb-3 font-medium flex items-center gap-2">
@@ -354,7 +347,6 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Edit Button */}
             <button
               onClick={() => setEditing(!editing)}
               className={`px-6 py-3 rounded-xl font-bold transition-all duration-300 shadow-md hover:shadow-xl hover:scale-105 whitespace-nowrap ${
@@ -367,7 +359,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* Edit Form */}
           {editing && (
             <form onSubmit={handleUpdate} className="border-t-2 border-gray-700 pt-6 space-y-5 animate-slide-up">
               <div>
@@ -419,7 +410,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Statistics */}
         <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 border-2 border-gray-700/50 animate-slide-up hover-lift" style={{ animationDelay: '0.1s' }}>
           <h3 className={`text-2xl font-black mb-6 bg-gradient-to-r ${getRoleColor(user.role)} bg-clip-text text-transparent flex items-center gap-2`}>
             <svg className="w-7 h-7 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,7 +418,6 @@ export default function ProfilePage() {
             Your Statistics - All Projects
           </h3>
 
-          {/* Overall Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="text-center p-6 bg-gradient-to-br from-blue-600 to-blue-700 backdrop-blur-sm rounded-2xl border-2 border-blue-500/50 hover-lift">
               <div className="text-5xl font-black text-white mb-2">{stats.allProjectsTotal || 0}</div>
@@ -444,7 +433,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Project X Stats */}
           <div className="mb-6">
             <h4 className="text-lg font-bold text-yellow-400 mb-3 flex items-center gap-2">
               <span className="text-2xl">X</span> Project X Stats
@@ -485,7 +473,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Project V Stats */}
           <div>
             <h4 className="text-lg font-bold text-green-400 mb-3 flex items-center gap-2">
               <span className="text-2xl">V</span> Project V Stats
@@ -520,7 +507,6 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Danger Zone - Delete Account */}
         {user.role !== 'ADMIN' && (
           <div className="bg-red-900/20 backdrop-blur-xl rounded-3xl shadow-2xl p-4 md:p-8 mt-8 border-2 border-red-500/30 animate-slide-up hover-lift" style={{ animationDelay: '0.2s' }}>
             <h3 className="text-2xl font-black mb-4 bg-gradient-to-r from-red-400 to-pink-400 bg-clip-text text-transparent flex items-center gap-2">

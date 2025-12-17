@@ -16,7 +16,7 @@ interface BreadcrumbProps {
 export default function Breadcrumb({ items, customSeparator }: BreadcrumbProps) {
   const pathname = usePathname()
 
-  // Auto-generate breadcrumbs from pathname if items not provided
+  
   const breadcrumbItems =
     items ||
     pathname

@@ -34,7 +34,7 @@ export default function AuditLogsPage() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Auth check
+  
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
       router.push('/')
@@ -42,7 +42,7 @@ export default function AuditLogsPage() {
   }, [user, authLoading, router])
 
   const setMockLogs = useCallback(() => {
-    // Mock audit logs for development/demo
+    
     const actions = ['UPLOAD', 'REVIEW', 'APPROVE', 'DELETE', 'LOGIN', 'LOGOUT', 'UPDATE_PROFILE', 'CREATE_USER']
     const entityTypes = ['SUBMISSION', 'USER', 'REVIEW', 'PROFILE']
     const users = ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Williams', 'Charlie Brown']
@@ -80,30 +80,30 @@ export default function AuditLogsPage() {
     } catch (error: any) {
       console.error('Error fetching audit logs:', error)
       showToast('Failed to load audit logs', 'error')
-      // Use mock data for development
+      
       setMockLogs()
     } finally {
       setLoading(false)
     }
   }, [showToast, setMockLogs])
 
-  // Fetch audit logs
+  
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       fetchLogs()
     }
   }, [user, fetchLogs])
 
-  // Filter logs
+  
   useEffect(() => {
     let filtered = logs
 
-    // Filter by action type
+    
     if (filterAction !== 'all') {
       filtered = filtered.filter((log) => log.action === filterAction)
     }
 
-    // Filter by search query
+    
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter(
@@ -116,7 +116,7 @@ export default function AuditLogsPage() {
     }
 
     setFilteredLogs(filtered)
-    setCurrentPage(1) // Reset to first page when filter changes
+    setCurrentPage(1) 
   }, [logs, filterAction, searchQuery])
 
   const handleLogout = async () => {
@@ -124,7 +124,7 @@ export default function AuditLogsPage() {
     router.push('/')
   }
 
-  // Pagination
+  
   const totalPages = Math.ceil(filteredLogs.length / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedLogs = filteredLogs.slice(startIndex, startIndex + itemsPerPage)
@@ -195,13 +195,12 @@ export default function AuditLogsPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
-      {/* Animated Background */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-red-500"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-orange-500" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="sticky top-0 z-40 backdrop-blur-xl border-b shadow-lg bg-gray-800/40 border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -219,7 +218,6 @@ export default function AuditLogsPage() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-2">
               <button
                 onClick={() => router.push('/admin')}
@@ -235,7 +233,6 @@ export default function AuditLogsPage() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -243,7 +240,6 @@ export default function AuditLogsPage() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 animate-slide-up">
               <button
@@ -266,9 +262,8 @@ export default function AuditLogsPage() {
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
         <Breadcrumb />
 
-        {/* Filters */}
         <div className="mb-6 space-y-4">
-          {/* Search Bar */}
+
           <div className="relative animate-slide-up">
             <svg className="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -282,7 +277,6 @@ export default function AuditLogsPage() {
             />
           </div>
 
-          {/* Action Filters */}
           <div className="flex flex-wrap gap-2 animate-slide-up" style={{ animationDelay: '0.1s' }}>
             <button
               onClick={() => setFilterAction('all')}
@@ -312,7 +306,6 @@ export default function AuditLogsPage() {
           </div>
         </div>
 
-        {/* Audit Logs Table */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-white text-lg">Loading audit logs...</div>
@@ -375,7 +368,6 @@ export default function AuditLogsPage() {
               </div>
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <Pagination
                 currentPage={currentPage}
@@ -386,7 +378,6 @@ export default function AuditLogsPage() {
               />
             )}
 
-            {/* Empty State */}
             {filteredLogs.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-8xl mb-4">🔍</div>

@@ -11,9 +11,9 @@ interface ConfirmDialogState {
   loading?: boolean;
 }
 
-/**
- * Confirm dialog hook for easy confirmation modals
- */
+
+
+
 export function useConfirmDialog() {
   const [state, setState] = useState<ConfirmDialogState>({
     isOpen: false,

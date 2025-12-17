@@ -16,7 +16,6 @@ interface GlobalSearchProps {
   onClose: () => void
 }
 
-// Debounce hook
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value)
 
@@ -41,17 +40,17 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  // Debounce search query
+  
   const debouncedQuery = useDebounce(query, 300)
 
-  // Focus input when opened
+  
   useEffect(() => {
     if (isOpen && inputRef.current) {
       inputRef.current.focus()
     }
   }, [isOpen])
 
-  // Perform search
+  
   useEffect(() => {
     if (!debouncedQuery.trim()) {
       setResults([])
@@ -60,8 +59,8 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
 
     setLoading(true)
 
-    // TODO: Replace with actual API call
-    // Simulate API call
+    
+    
     setTimeout(() => {
       const mockResults: SearchResult[] = [
         {
@@ -84,7 +83,7 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
     }, 200)
   }, [debouncedQuery])
 
-  // Keyboard navigation
+  
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
@@ -109,12 +108,11 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-      {/* Backdrop */}
+
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Search Dialog */}
       <div className="relative w-full max-w-2xl rounded-3xl shadow-2xl backdrop-blur-2xl border-2 bg-gray-800/90 border-gray-700/50 overflow-hidden animate-slide-up">
-        {/* Search Input */}
+
         <div className="flex items-center gap-4 p-5 border-b border-gray-700/50">
           <svg
             className="w-6 h-6 text-gray-400"
@@ -146,7 +144,6 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
           </kbd>
         </div>
 
-        {/* Results */}
         <div className="max-h-96 overflow-y-auto">
           {query && !loading && results.length === 0 && (
             <div className="p-8 text-center text-gray-400">
@@ -180,7 +177,7 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
                   : 'hover:bg-gray-700/30'
               }`}
             >
-              {/* Icon based on type */}
+
               <div className="w-10 h-10 rounded-xl bg-gray-700/50 flex items-center justify-center flex-shrink-0">
                 {result.type === 'submission' && (
                   <svg
@@ -251,7 +248,6 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
           ))}
         </div>
 
-        {/* Footer */}
         {results.length > 0 && (
           <div className="p-3 border-t border-gray-700/50 flex items-center justify-between text-xs text-gray-400">
             <div className="flex items-center gap-4">
@@ -274,13 +270,12 @@ export const GlobalSearch = ({ isOpen, onClose }: GlobalSearchProps) => {
   )
 }
 
-// Hook to control search modal
 export const useGlobalSearch = () => {
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K or Ctrl+K to open search
+      
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setIsOpen(true)

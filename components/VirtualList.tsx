@@ -14,40 +14,6 @@ interface VirtualListProps<T> {
   onScrollEnd?: () => void
 }
 
-/**
- * Virtual List Component for Efficient Rendering
- *
- * Renders only visible items for optimal performance with large datasets (1000+ items).
- * Uses windowing technique to dramatically reduce DOM nodes and improve scroll performance.
- *
- * Features:
- * - Only renders visible + overscan items
- * - Smooth scrolling with transform positioning
- * - Automatic viewport calculation
- * - Infinite scroll support via onScrollEnd
- * - Loading states and empty states
- * - TypeScript generics for type safety
- *
- * Performance Benefits:
- * - Renders ~20 items instead of 1000+ items
- * - 50x faster initial render
- * - Smooth 60fps scrolling
- * - Reduced memory usage
- *
- * @example
- * ```tsx
- * <VirtualList
- *   items={submissions}
- *   itemHeight={100}
- *   containerHeight={600}
- *   overscan={3}
- *   renderItem={(submission, index) => (
- *     <SubmissionCard key={submission.id} submission={submission} />
- *   )}
- *   onScrollEnd={() => loadMore()}
- * />
- * ```
- */
 export default function VirtualList<T>({
   items,
   itemHeight,
@@ -62,7 +28,7 @@ export default function VirtualList<T>({
   const containerRef = useRef<HTMLDivElement>(null)
   const [scrollTop, setScrollTop] = useState(0)
 
-  // Calculate visible range
+  
   const totalHeight = items.length * itemHeight
   const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan)
   const endIndex = Math.min(
@@ -73,12 +39,12 @@ export default function VirtualList<T>({
   const visibleItems = items.slice(startIndex, endIndex + 1)
   const offsetY = startIndex * itemHeight
 
-  // Handle scroll
+  
   const handleScroll = useCallback((e: Event) => {
     const target = e.target as HTMLDivElement
     setScrollTop(target.scrollTop)
 
-    // Check if scrolled to bottom for infinite scroll
+    
     if (onScrollEnd) {
       const isBottom =
         target.scrollHeight - target.scrollTop - target.clientHeight < itemHeight * 2
@@ -88,7 +54,7 @@ export default function VirtualList<T>({
     }
   }, [itemHeight, onScrollEnd])
 
-  // Attach scroll listener
+  
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
@@ -97,7 +63,7 @@ export default function VirtualList<T>({
     return () => container.removeEventListener('scroll', handleScroll)
   }, [handleScroll])
 
-  // Empty state
+  
   if (items.length === 0 && !loading) {
     return (
       <div
@@ -132,9 +98,9 @@ export default function VirtualList<T>({
       className={`overflow-y-auto ${className}`}
       style={{ height: containerHeight }}
     >
-      {/* Spacer for total height */}
+
       <div style={{ height: totalHeight, position: 'relative' }}>
-        {/* Visible items container */}
+
         <div style={{ transform: `translateY(${offsetY}px)` }}>
           {visibleItems.map((item, relativeIndex) => {
             const absoluteIndex = startIndex + relativeIndex
@@ -146,7 +112,6 @@ export default function VirtualList<T>({
           })}
         </div>
 
-        {/* Loading indicator at bottom */}
         {loading && (
           <div
             className="absolute bottom-0 left-0 right-0 flex justify-center p-4"
@@ -181,10 +146,6 @@ export default function VirtualList<T>({
   )
 }
 
-/**
- * Hook to calculate dynamic item heights
- * Useful when items have variable heights
- */
 export function useVirtualList<T>(items: T[], estimatedItemHeight: number = 100) {
   const [itemHeights, setItemHeights] = useState<Map<number, number>>(new Map())
   const itemRefs = useRef<Map<number, HTMLElement>>(new Map())

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 
-/**
- * Format date as relative time (e.g., "2 hours ago")
- * Auto-updates every minute
- */
+
+
+
+
 export function useRelativeTime(date: Date | string | null | undefined) {
   const [relativeTime, setRelativeTime] = useState('');
 
@@ -51,7 +51,7 @@ export function useRelativeTime(date: Date | string | null | undefined) {
     };
 
     update();
-    const interval = setInterval(update, 60000); // Update every minute
+    const interval = setInterval(update, 60000); 
 
     return () => clearInterval(interval);
   }, [date]);
@@ -59,9 +59,9 @@ export function useRelativeTime(date: Date | string | null | undefined) {
   return relativeTime;
 }
 
-/**
- * Format date as relative time (non-hook version for use in components)
- */
+
+
+
 export function formatRelativeTime(date: Date | string | null | undefined): string {
   if (!date) return '';
 

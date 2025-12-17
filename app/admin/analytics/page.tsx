@@ -12,8 +12,8 @@ interface AnalyticsData {
   totalUsers: number
   submissionsThisWeek: number
   submissionsThisMonth: number
-  avgReviewTime: number // in hours
-  approvalRate: number // percentage
+  avgReviewTime: number 
+  approvalRate: number 
   topContributors: Array<{
     userId: string
     name: string
@@ -47,7 +47,7 @@ export default function AnalyticsDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Auth check
+  
   useEffect(() => {
     if (!authLoading && (!user || user.role !== 'ADMIN')) {
       router.push('/')
@@ -55,7 +55,7 @@ export default function AnalyticsDashboard() {
   }, [user, authLoading, router])
 
   const setMockData = useCallback(() => {
-    // Mock data for development/demo
+    
     const mockAnalytics: AnalyticsData = {
       totalSubmissions: 247,
       totalUsers: 89,
@@ -103,7 +103,7 @@ export default function AnalyticsDashboard() {
   const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true)
-      // Fetch both analytics overview and chart data
+      
       const [analyticsData, chartDataResponse] = await Promise.all([
         apiClient.getAnalytics(),
         apiClient.getAnalyticsChartData(timeRange),
@@ -114,14 +114,14 @@ export default function AnalyticsDashboard() {
     } catch (error: any) {
       console.error('Error fetching analytics:', error)
       showToast('Failed to load analytics', 'error')
-      // Use mock data for development
+      
       setMockData()
     } finally {
       setLoading(false)
     }
   }, [timeRange, showToast, setMockData])
 
-  // Fetch analytics data
+  
   useEffect(() => {
     if (user?.role === 'ADMIN') {
       fetchAnalytics()
@@ -164,13 +164,12 @@ export default function AnalyticsDashboard() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-red-900 to-orange-900">
-      {/* Animated Background */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-red-500"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-orange-500" style={{ animationDelay: '1s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="sticky top-0 z-40 backdrop-blur-xl border-b shadow-lg bg-gray-800/40 border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -188,7 +187,6 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-2">
               <button
                 onClick={() => router.push('/admin')}
@@ -204,7 +202,6 @@ export default function AnalyticsDashboard() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="md:hidden text-white">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -212,7 +209,6 @@ export default function AnalyticsDashboard() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 animate-slide-up">
               <button
@@ -241,7 +237,7 @@ export default function AnalyticsDashboard() {
           </div>
         ) : analytics ? (
           <div className="space-y-8">
-            {/* Key Metrics */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 title="Total Submissions"
@@ -289,7 +285,6 @@ export default function AnalyticsDashboard() {
               />
             </div>
 
-            {/* Submission Trends */}
             <div className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl border-2 bg-gray-800/40 border-gray-700/50">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-black text-white">Submission Trends</h2>
@@ -310,7 +305,6 @@ export default function AnalyticsDashboard() {
                 </div>
               </div>
 
-              {/* Simple Bar Chart */}
               <div className="h-64 flex items-end gap-2 overflow-x-auto pb-4">
                 {chartData.map((point, index) => {
                   const maxValue = Math.max(...chartData.map((d) => d.total))
@@ -323,7 +317,7 @@ export default function AnalyticsDashboard() {
                           className="w-full bg-gradient-to-t from-red-600 to-orange-500 rounded-t-lg hover:from-red-500 hover:to-orange-400 transition-all relative group cursor-pointer"
                           style={{ height: `${height}%` }}
                         >
-                          {/* Tooltip on hover */}
+
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
                             <div className="bg-gray-900 text-white text-xs font-semibold px-3 py-2 rounded-lg whitespace-nowrap shadow-xl">
                               <div>Total: {point.total}</div>
@@ -343,9 +337,8 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* Top Contributors & Breakdowns */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Top Contributors */}
+
               <div className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl border-2 bg-gray-800/40 border-gray-700/50">
                 <h3 className="text-xl font-black text-white mb-4 flex items-center gap-2">
                   <svg className="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,7 +369,6 @@ export default function AnalyticsDashboard() {
                 </div>
               </div>
 
-              {/* Domain Breakdown */}
               <div className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl border-2 bg-gray-800/40 border-gray-700/50">
                 <h3 className="text-xl font-black text-white mb-4">Domain Breakdown</h3>
                 <div className="space-y-3">
@@ -400,7 +392,6 @@ export default function AnalyticsDashboard() {
                 </div>
               </div>
 
-              {/* Language Breakdown */}
               <div className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl border-2 bg-gray-800/40 border-gray-700/50">
                 <h3 className="text-xl font-black text-white mb-4">Language Breakdown</h3>
                 <div className="space-y-3">
@@ -425,7 +416,6 @@ export default function AnalyticsDashboard() {
               </div>
             </div>
 
-            {/* Recent Activity */}
             <div className="rounded-3xl shadow-xl p-6 backdrop-blur-2xl border-2 bg-gray-800/40 border-gray-700/50">
               <h3 className="text-xl font-black text-white mb-4">This Month</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

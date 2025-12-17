@@ -8,10 +8,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// AutoAssignSubmission automatically assigns a submission to the tester with the least tasks
 func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
-	// Get all approved testers with green light ON (active)
-	// Exclude admins - they must manually claim tasks
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -20,11 +18,10 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(testers) == 0 {
-		// No active testers available - task stays in PENDING status
+
 		return nil, nil
 	}
 
-	// Count tasks for each tester
 	type TesterTaskCount struct {
 		TesterID uuid.UUID
 		Count    int64
@@ -47,7 +44,6 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	// Find tester with least tasks
 	minCount := testerCounts[0].Count
 	selectedTesterID := testerCounts[0].TesterID
 
@@ -58,7 +54,6 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	// Assign the task
 	now := time.Now()
 	err = database.DB.Model(&models.Submission{}).
 		Where("id = ?", submissionID).
@@ -72,16 +67,13 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 		return nil, err
 	}
 
-	// Get submission details for logging
 	var submission models.Submission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	// Get tester details
 	var tester models.User
 	database.DB.First(&tester, selectedTesterID)
 
-	// Log the activity
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "submission"
@@ -104,10 +96,8 @@ func AutoAssignSubmission(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedTesterID, nil
 }
 
-// AssignQueuedTasks assigns all pending (queued) tasks to active testers
-// This is called when a tester's green light is turned ON
 func AssignQueuedTasks() (int, error) {
-	// Get all PENDING submissions (tasks waiting in queue)
+
 	var pendingSubmissions []models.Submission
 	err := database.DB.Where("status = ?", models.StatusPending).Order("created_at ASC").Find(&pendingSubmissions).Error
 	if err != nil {
@@ -115,11 +105,9 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	if len(pendingSubmissions) == 0 {
-		return 0, nil // No queued tasks
+		return 0, nil
 	}
 
-	// Get all active testers (approved + green light ON)
-	// Exclude admins - they must manually claim tasks
 	var testers []models.User
 	err = database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -128,10 +116,9 @@ func AssignQueuedTasks() (int, error) {
 	}
 
 	if len(testers) == 0 {
-		return 0, nil // No active testers - tasks stay queued
+		return 0, nil
 	}
 
-	// Build tester task count map for fair distribution
 	testerTaskCounts := make(map[uuid.UUID]int64)
 	for _, tester := range testers {
 		var count int64
@@ -147,9 +134,8 @@ func AssignQueuedTasks() (int, error) {
 
 	assignedCount := 0
 
-	// Assign each pending task to tester with least current workload
 	for _, submission := range pendingSubmissions {
-		// Find tester with minimum tasks
+
 		var selectedTesterID uuid.UUID
 		minCount := int64(-1)
 
@@ -161,7 +147,6 @@ func AssignQueuedTasks() (int, error) {
 			}
 		}
 
-		// Assign the task
 		now := time.Now()
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", submission.ID).
@@ -172,18 +157,15 @@ func AssignQueuedTasks() (int, error) {
 			}).Error
 
 		if err != nil {
-			continue // Skip this task and continue with others
+			continue
 		}
 
-		// Increment task count for this tester
 		testerTaskCounts[selectedTesterID]++
 		assignedCount++
 
-		// Get tester details for logging
 		var tester models.User
 		database.DB.First(&tester, selectedTesterID)
 
-		// Log the activity
 		userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 		userName := "System"
 		userRole := "SYSTEM"
@@ -208,11 +190,8 @@ func AssignQueuedTasks() (int, error) {
 	return assignedCount, nil
 }
 
-// RedistributeTasks redistributes all tasks fairly among all active testers
-// This is called when a tester is activated to ensure fair distribution
 func RedistributeTasks() (int, error) {
-	// Get all active testers (approved + green light ON)
-	// Exclude admins - they must manually claim tasks
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -221,11 +200,9 @@ func RedistributeTasks() (int, error) {
 	}
 
 	if len(testers) == 0 {
-		return 0, nil // No active testers
+		return 0, nil
 	}
 
-	// Get all tasks that need redistribution (PENDING, CLAIMED, ELIGIBLE)
-	// Exclude APPROVED tasks as they're already finalized
 	var allTasks []models.Submission
 	err = database.DB.Where("status IN ?", []string{
 		string(models.StatusPending),
@@ -237,14 +214,12 @@ func RedistributeTasks() (int, error) {
 	}
 
 	if len(allTasks) == 0 {
-		return 0, nil // No tasks to redistribute
+		return 0, nil
 	}
 
-	// Calculate how many tasks each tester should get
 	tasksPerTester := len(allTasks) / len(testers)
 	remainder := len(allTasks) % len(testers)
 
-	// Initialize task counts for each tester
 	testerTaskAssignments := make(map[uuid.UUID]int)
 	for _, tester := range testers {
 		testerTaskAssignments[tester.ID] = 0
@@ -252,12 +227,10 @@ func RedistributeTasks() (int, error) {
 
 	redistributedCount := 0
 
-	// Distribute tasks fairly
 	testerIndex := 0
 	for _, task := range allTasks {
 		tester := testers[testerIndex]
 
-		// Assign task to this tester
 		now := time.Now()
 		err = database.DB.Model(&models.Submission{}).
 			Where("id = ?", task.ID).
@@ -268,14 +241,12 @@ func RedistributeTasks() (int, error) {
 			}).Error
 
 		if err != nil {
-			continue // Skip this task and continue
+			continue
 		}
 
 		testerTaskAssignments[tester.ID]++
 		redistributedCount++
 
-		// Move to next tester in round-robin fashion
-		// Give extra tasks to first testers if there's a remainder
 		currentTesterQuota := tasksPerTester
 		if testerIndex < remainder {
 			currentTesterQuota++
@@ -289,7 +260,6 @@ func RedistributeTasks() (int, error) {
 		}
 	}
 
-	// Log the redistribution
 	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
@@ -301,17 +271,16 @@ func RedistributeTasks() (int, error) {
 		UserName:    &userName,
 		UserRole:    &userRole,
 		Metadata: map[string]interface{}{
-			"taskCount":    redistributedCount,
-			"testerCount":  len(testers),
+			"taskCount":   redistributedCount,
+			"testerCount": len(testers),
 		},
 	})
 
 	return redistributedCount, nil
 }
 
-// AutoAssignTester automatically assigns a Project V submission to the tester with the least tasks
 func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
-	// Get all approved testers with green light ON (active)
+
 	var testers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleTester, true, true).Find(&testers).Error
@@ -320,11 +289,10 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(testers) == 0 {
-		// No active testers available - task stays without tester
+
 		return nil, nil
 	}
 
-	// Count tasks for each tester across active Project V statuses
 	type TesterTaskCount struct {
 		TesterID uuid.UUID
 		Count    int64
@@ -349,7 +317,6 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	// Find tester with least tasks
 	minCount := testerCounts[0].Count
 	selectedTesterID := testerCounts[0].TesterID
 
@@ -360,16 +327,13 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	// Get submission details for logging
 	var submission models.ProjectVSubmission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	// Get tester details
 	var tester models.User
 	database.DB.First(&tester, selectedTesterID)
 
-	// Log the activity
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "projectv_submission"
@@ -392,9 +356,8 @@ func AutoAssignTester(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedTesterID, nil
 }
 
-// AutoAssignReviewer automatically assigns a Project V submission to the reviewer with the least tasks
 func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
-	// Get all approved reviewers with green light ON (active)
+
 	var reviewers []models.User
 	err := database.DB.Where("role = ? AND is_approved = ? AND is_green_light = ?",
 		models.RoleReviewer, true, true).Find(&reviewers).Error
@@ -403,11 +366,10 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 	}
 
 	if len(reviewers) == 0 {
-		// No active reviewers available - task stays without reviewer
+
 		return nil, nil
 	}
 
-	// Count tasks for each reviewer
 	type ReviewerTaskCount struct {
 		ReviewerID uuid.UUID
 		Count      int64
@@ -431,7 +393,6 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 		})
 	}
 
-	// Find reviewer with least tasks
 	minCount := reviewerCounts[0].Count
 	selectedReviewerID := reviewerCounts[0].ReviewerID
 
@@ -442,16 +403,13 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 		}
 	}
 
-	// Get submission details for logging
 	var submission models.ProjectVSubmission
 	database.DB.Preload("Contributor").First(&submission, submissionID)
 
-	// Get reviewer details
 	var reviewer models.User
 	database.DB.First(&reviewer, selectedReviewerID)
 
-	// Log the activity
-	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000") // System user
+	userID := uuid.MustParse("00000000-0000-0000-0000-000000000000")
 	userName := "System"
 	userRole := "SYSTEM"
 	targetType := "projectv_submission"
@@ -474,9 +432,8 @@ func AutoAssignReviewer(submissionID uuid.UUID) (*uuid.UUID, error) {
 	return &selectedReviewerID, nil
 }
 
-// ReassignPendingProjectVTasks reassigns all pending Project V tasks that don't have a tester
 func ReassignPendingProjectVTasks() (int, error) {
-	// Find all submissions with TASK_SUBMITTED status and no tester assigned
+
 	var pendingSubmissions []models.ProjectVSubmission
 	err := database.DB.Where("status = ? AND tester_id IS NULL", models.ProjectVStatusSubmitted).
 		Find(&pendingSubmissions).Error
@@ -488,7 +445,7 @@ func ReassignPendingProjectVTasks() (int, error) {
 	for _, submission := range pendingSubmissions {
 		testerID, err := AutoAssignTester(submission.ID)
 		if err == nil && testerID != nil {
-			// Update submission with tester and change status to IN_TESTING
+
 			submission.TesterID = testerID
 			submission.Status = models.ProjectVStatusInTesting
 			if err := database.DB.Save(&submission).Error; err == nil {

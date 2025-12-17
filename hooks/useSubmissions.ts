@@ -3,20 +3,20 @@ import { apiClient } from '@/lib/api-client';
 import { queryKeys } from '@/lib/query-client';
 import { useToast } from '@/components/ToastContainer';
 
-/**
- * Hook for fetching submissions with smart caching
- */
+
+
+
 export function useSubmissions(params?: { status?: string; search?: string }) {
   return useQuery({
     queryKey: queryKeys.submissions(params?.status, params?.search),
     queryFn: () => apiClient.getSubmissions(params),
-    staleTime: 30000, // 30 seconds
+    staleTime: 30000, 
   });
 }
 
-/**
- * Hook for fetching reviewed submissions
- */
+
+
+
 export function useReviewedSubmissions(search?: string) {
   return useQuery({
     queryKey: queryKeys.reviewedSubmissions(search),
@@ -25,9 +25,9 @@ export function useReviewedSubmissions(search?: string) {
   });
 }
 
-/**
- * Hook for fetching single submission
- */
+
+
+
 export function useSubmission(id: string) {
   return useQuery({
     queryKey: queryKeys.submission(id),
@@ -36,9 +36,9 @@ export function useSubmission(id: string) {
   });
 }
 
-/**
- * Hook for approving submission with optimistic update
- */
+
+
+
 export function useApproveSubmission() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -83,9 +83,9 @@ export function useApproveSubmission() {
   });
 }
 
-/**
- * Hook for submitting feedback with optimistic update
- */
+
+
+
 export function useSubmitFeedback() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -139,9 +139,9 @@ export function useSubmitFeedback() {
   });
 }
 
-/**
- * Hook for deleting submission with optimistic update and undo
- */
+
+
+
 export function useDeleteSubmission() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -156,7 +156,7 @@ export function useDeleteSubmission() {
         queryKeys.submissions()
       );
 
-      // Optimistically remove
+      
       queryClient.setQueryData(
         queryKeys.submissions(),
         (old: any) => {
@@ -201,9 +201,9 @@ export function useDeleteSubmission() {
   });
 }
 
-/**
- * Hook for uploading submission
- */
+
+
+
 export function useUploadSubmission() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();

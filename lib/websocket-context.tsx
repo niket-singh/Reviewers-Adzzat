@@ -46,7 +46,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const connect = useCallback(() => {
     if (!user || typeof window === 'undefined') return
 
-    // Hardcoded production WebSocket URL
+    
     const wsUrl = 'wss://reviewers-backend-app.victoriousfield-13acbce7.southeastasia.azurecontainerapps.io/api/ws'
 
     try {
@@ -58,7 +58,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         setIsConnected(true)
         reconnectAttempts.current = 0
 
-        // Send initial connection message
+        
         ws.send(JSON.stringify({
           type: 'CONNECT',
           userId: user.id,
@@ -72,13 +72,13 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
           console.log('WebSocket message received:', message)
           setLastMessage(message)
 
-          // Notify subscribers
+          
           const subscribers = subscribersRef.current.get(message.type)
           if (subscribers) {
             subscribers.forEach((callback) => callback(message.data))
           }
 
-          // Show toast notification for important events
+          
           if (message.type === 'NOTIFICATION') {
             showToast(message.data.message, message.data.type || 'info')
           }
@@ -97,7 +97,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         setIsConnected(false)
         wsRef.current = null
 
-        // Attempt to reconnect with exponential backoff
+        
         if (reconnectAttempts.current < maxReconnectAttempts) {
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000)
           console.log(`Reconnecting in ${delay}ms... (attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts})`)
@@ -140,7 +140,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
     }
     subscribersRef.current.get(eventType)!.add(callback)
 
-    // Return unsubscribe function
+    
     return () => {
       const subscribers = subscribersRef.current.get(eventType)
       if (subscribers) {
@@ -174,7 +174,6 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   )
 }
 
-// Custom hook for real-time submission updates
 export function useRealtimeSubmissions(onUpdate: (data: any) => void) {
   const { subscribe } = useWebSocket()
 
@@ -191,7 +190,6 @@ export function useRealtimeSubmissions(onUpdate: (data: any) => void) {
   }, [subscribe, onUpdate])
 }
 
-// Custom hook for notification events
 export function useRealtimeNotifications(onNotification: (data: any) => void) {
   const { subscribe } = useWebSocket()
 
@@ -201,7 +199,6 @@ export function useRealtimeNotifications(onNotification: (data: any) => void) {
   }, [subscribe, onNotification])
 }
 
-// Connection status indicator component
 export function WebSocketStatus() {
   const { isConnected } = useWebSocket()
 

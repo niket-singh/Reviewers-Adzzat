@@ -55,7 +55,7 @@ export default function ContributorDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not a contributor/admin
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
@@ -64,7 +64,7 @@ export default function ContributorDashboard() {
     }
   }, [user, authLoading, router])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchSubmissions()
     const interval = setInterval(() => {
@@ -105,7 +105,7 @@ export default function ContributorDashboard() {
 
   useEffect(() => {
     filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterSubmissions])
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -177,7 +177,7 @@ export default function ContributorDashboard() {
       link.click()
       document.body.removeChild(link)
 
-      // Clean up blob URL to prevent memory leaks
+      
       setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
       showToast('Download started!', 'success')
@@ -207,7 +207,7 @@ export default function ContributorDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
-  // Pagination calculations
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -227,14 +227,13 @@ export default function ContributorDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -252,7 +251,6 @@ export default function ContributorDashboard() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/profile')}
@@ -268,7 +266,6 @@ export default function ContributorDashboard() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
@@ -283,7 +280,6 @@ export default function ContributorDashboard() {
             </button>
           </div>
 
-          {/* Mobile Menu Dropdown */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button
@@ -310,10 +306,9 @@ export default function ContributorDashboard() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb Navigation */}
+
         <Breadcrumb />
 
-        {/* Search Bar */}
         <div className="mb-8 animate-slide-up">
           <div className="relative">
             <input
@@ -329,9 +324,8 @@ export default function ContributorDashboard() {
           </div>
         </div>
 
-        {/* Action Bar */}
         <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-          {/* Status Filters */}
+
           <div className="flex gap-2 bg-gray-800/40 backdrop-blur-sm rounded-2xl p-1.5 shadow-xl border border-gray-700/50 overflow-x-auto">
             {(['all', 'pending', 'claimed', 'eligible', 'approved'] as StatusFilter[]).map((tab) => (
               <button
@@ -348,7 +342,6 @@ export default function ContributorDashboard() {
             ))}
           </div>
 
-          {/* Upload Button */}
           <button
             onClick={() => setShowUpload(!showUpload)}
             className={`px-6 py-3 rounded-2xl font-black text-sm transition-all duration-300 shadow-xl hover:scale-105 whitespace-nowrap ${
@@ -361,7 +354,6 @@ export default function ContributorDashboard() {
           </button>
         </div>
 
-        {/* Upload Form */}
         {showUpload && (
           <div className="mb-8 bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in hover-lift">
             <h3 className="text-2xl font-black mb-6 bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
@@ -441,7 +433,7 @@ export default function ContributorDashboard() {
               <FileUpload
                 label="Upload ZIP File *"
                 accept=".zip"
-                maxSize={50 * 1024 * 1024} // 50MB
+                maxSize={50 * 1024 * 1024} 
                 onFileSelect={(selectedFile) => setFile(selectedFile)}
                 uploadProgress={uploadProgress}
                 isUploading={isUploading}
@@ -468,7 +460,6 @@ export default function ContributorDashboard() {
           </div>
         )}
 
-        {/* Submissions Grid */}
         <div className="space-y-6">
           {filteredSubmissions.length === 0 ? (
             <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-16 text-center border-2 border-gray-700/50 animate-scale-in">
@@ -558,7 +549,6 @@ export default function ContributorDashboard() {
                   </div>
                 </div>
 
-                {/* Reviews Section */}
                 {submission.reviews && submission.reviews.length > 0 && (
                   <div className="mt-6 pt-6 border-t-2 border-gray-700">
                     <h4 className="text-sm font-black text-gray-200 mb-4 flex items-center gap-2">
@@ -582,7 +572,6 @@ export default function ContributorDashboard() {
               </div>
             ))}
 
-              {/* Pagination */}
               <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}

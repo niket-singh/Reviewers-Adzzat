@@ -79,7 +79,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 }
 
-// Functional wrapper for easier use
 export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
   fallback?: React.ReactNode

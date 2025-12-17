@@ -23,10 +23,10 @@ export default function ForgotPassword() {
     setSubmitting(true)
 
     try {
-      // Validate email
+      
       emailSchema.parse({ email })
 
-      // Call API
+      
       await apiClient.requestPasswordReset(email)
 
       setEmailSent(true)
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
       if (error instanceof z.ZodError) {
         showToast(error.issues[0].message, 'error')
       } else {
-        // Don't reveal if email exists for security
+        
         setEmailSent(true)
         showToast('If an account exists, you will receive a reset link.', 'info')
       }
@@ -46,7 +46,7 @@ export default function ForgotPassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-blue-500"></div>
         <div
@@ -62,7 +62,7 @@ export default function ForgotPassword() {
       <div className="rounded-3xl shadow-2xl p-10 w-full max-w-md backdrop-blur-2xl transition-all duration-500 hover-lift animate-scale-in z-10 bg-gray-800/40 border-2 border-gray-700/50 glass-dark glow">
         {!emailSent ? (
           <>
-            {/* Header */}
+
             <div className="text-center mb-8 animate-slide-up">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 shadow-2xl animate-pulse-glow bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
                 <svg
@@ -87,7 +87,6 @@ export default function ForgotPassword() {
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="animate-slide-up">
                 <label className="block text-sm font-bold mb-2.5 text-gray-200">Email Address</label>
@@ -135,7 +134,6 @@ export default function ForgotPassword() {
               </button>
             </form>
 
-            {/* Back to Login */}
             <div className="mt-8 text-center text-sm text-gray-300">
               Remember your password?{' '}
               <Link
@@ -147,7 +145,7 @@ export default function ForgotPassword() {
             </div>
           </>
         ) : (
-          // Success State
+          
           <div className="text-center animate-scale-in">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 shadow-2xl bg-green-500/20 animate-pulse-glow">
               <svg className="w-12 h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

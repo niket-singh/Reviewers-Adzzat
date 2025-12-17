@@ -9,13 +9,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Message represents a WebSocket message
 type Message struct {
 	Type string      `json:"type"`
 	Data interface{} `json:"data"`
 }
 
-// Client represents a connected WebSocket client
 type Client struct {
 	ID     uuid.UUID
 	UserID uuid.UUID
@@ -24,25 +22,18 @@ type Client struct {
 	conn   *websocket.Conn
 }
 
-// Hub maintains the set of active clients and broadcasts messages
 type Hub struct {
-	// Registered clients
 	clients map[*Client]bool
 
-	// Inbound messages from clients
 	broadcast chan []byte
 
-	// Register requests from clients
 	register chan *Client
 
-	// Unregister requests from clients
 	unregister chan *Client
 
-	// Mutex for thread-safe operations
 	mu sync.RWMutex
 }
 
-// NewHub creates a new Hub instance
 func NewHub() *Hub {
 	return &Hub{
 		clients:    make(map[*Client]bool),
@@ -52,7 +43,6 @@ func NewHub() *Hub {
 	}
 }
 
-// Run starts the hub's main loop
 func (h *Hub) Run() {
 	for {
 		select {
@@ -77,7 +67,7 @@ func (h *Hub) Run() {
 				select {
 				case client.Send <- message:
 				default:
-					// Client's send buffer is full, close and remove
+
 					close(client.Send)
 					delete(h.clients, client)
 				}
@@ -87,7 +77,6 @@ func (h *Hub) Run() {
 	}
 }
 
-// BroadcastToAll sends a message to all connected clients
 func (h *Hub) BroadcastToAll(messageType string, data interface{}) error {
 	msg := Message{
 		Type: messageType,
@@ -103,7 +92,6 @@ func (h *Hub) BroadcastToAll(messageType string, data interface{}) error {
 	return nil
 }
 
-// BroadcastToUser sends a message to a specific user
 func (h *Hub) BroadcastToUser(userID uuid.UUID, messageType string, data interface{}) error {
 	msg := Message{
 		Type: messageType,
@@ -123,7 +111,7 @@ func (h *Hub) BroadcastToUser(userID uuid.UUID, messageType string, data interfa
 			select {
 			case client.Send <- jsonMsg:
 			default:
-				// Client's send buffer is full, skip
+
 			}
 		}
 	}
@@ -131,7 +119,6 @@ func (h *Hub) BroadcastToUser(userID uuid.UUID, messageType string, data interfa
 	return nil
 }
 
-// GetConnectedUsers returns the count of unique connected users
 func (h *Hub) GetConnectedUsers() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()

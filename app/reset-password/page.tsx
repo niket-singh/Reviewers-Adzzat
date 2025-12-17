@@ -36,15 +36,15 @@ function ResetPasswordForm() {
   const token = searchParams.get('token')
 
   useEffect(() => {
-    // Validate token on mount
+    
     if (!token) {
       setTokenValid(false)
       showToast('Invalid reset link', 'error')
       return
     }
 
-    // In a real app, you'd validate the token with the backend
-    // For now, we'll assume it's valid if it exists
+    
+    
     setTokenValid(true)
   }, [token, showToast])
 
@@ -53,20 +53,20 @@ function ResetPasswordForm() {
     setSubmitting(true)
 
     try {
-      // Validate passwords
+      
       passwordSchema.parse({ password, confirmPassword })
 
       if (!token) {
         throw new Error('Invalid reset token')
       }
 
-      // Call API
+      
       await apiClient.resetPassword(token, password)
 
       setResetSuccess(true)
       showToast('Password reset successful!', 'success')
 
-      // Redirect to login after 3 seconds
+      
       setTimeout(() => {
         router.push('/')
       }, 3000)
@@ -120,7 +120,7 @@ function ResetPasswordForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl opacity-20 floating bg-blue-500"></div>
         <div
@@ -136,7 +136,7 @@ function ResetPasswordForm() {
       <div className="rounded-3xl shadow-2xl p-10 w-full max-w-md backdrop-blur-2xl transition-all duration-500 hover-lift animate-scale-in z-10 bg-gray-800/40 border-2 border-gray-700/50 glass-dark glow">
         {!resetSuccess ? (
           <>
-            {/* Header */}
+
             <div className="text-center mb-8 animate-slide-up">
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl mb-6 shadow-2xl animate-pulse-glow bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500">
                 <svg
@@ -161,7 +161,6 @@ function ResetPasswordForm() {
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="animate-slide-up">
                 <label className="block text-sm font-bold mb-2.5 text-gray-200">New Password</label>
@@ -293,7 +292,7 @@ function ResetPasswordForm() {
             </form>
           </>
         ) : (
-          // Success State
+          
           <div className="text-center animate-scale-in">
             <div className="inline-flex items-center justify-center w-24 h-24 rounded-full mb-6 shadow-2xl bg-green-500/20 animate-pulse-glow">
               <svg className="w-12 h-12 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

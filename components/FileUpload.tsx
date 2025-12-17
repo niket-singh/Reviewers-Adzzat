@@ -5,16 +5,16 @@ import { useState, useRef, DragEvent } from 'react'
 interface FileUploadProps {
   onFileSelect: (file: File) => void
   accept?: string
-  maxSize?: number // in bytes
+  maxSize?: number 
   label?: string
-  uploadProgress?: number // 0-100
+  uploadProgress?: number 
   isUploading?: boolean
 }
 
 export default function FileUpload({
   onFileSelect,
   accept = '*',
-  maxSize = 10 * 1024 * 1024, // 10MB default
+  maxSize = 10 * 1024 * 1024, 
   label = 'Upload File',
   uploadProgress,
   isUploading = false,
@@ -134,7 +134,7 @@ export default function FileUpload({
         />
 
         <div className="flex flex-col items-center gap-4">
-          {/* Icon */}
+
           <div
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 ${
               isDragging
@@ -181,7 +181,6 @@ export default function FileUpload({
             )}
           </div>
 
-          {/* Text */}
           <div>
             {selectedFile && !isUploading ? (
               <div className="space-y-1">
@@ -202,7 +201,6 @@ export default function FileUpload({
           </div>
         </div>
 
-        {/* Progress Bar */}
         {isUploading && uploadProgress !== undefined && (
           <div className="mt-4">
             <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
@@ -216,7 +214,6 @@ export default function FileUpload({
         )}
       </div>
 
-      {/* Error Message */}
       {error && (
         <div className="mt-2 p-3 bg-red-500/10 border border-red-500/50 rounded-xl">
           <p className="text-red-400 text-sm font-medium flex items-center gap-2">

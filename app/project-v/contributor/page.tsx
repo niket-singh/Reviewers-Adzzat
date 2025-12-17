@@ -117,7 +117,7 @@ export default function ProjectVContributor() {
     }
   }, [user, loading, router, fetchSubmissions]);
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSubmissions();
@@ -319,14 +319,13 @@ export default function ProjectVContributor() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-72 h-72 bg-pink-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Header */}
       <nav className="backdrop-blur-xl bg-gray-800/40 border-b border-gray-700/50 shadow-lg sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
           <div className="flex justify-between items-center">
@@ -344,7 +343,6 @@ export default function ProjectVContributor() {
               </div>
             </div>
 
-            {/* Desktop Navigation */}
             <div className="hidden md:flex gap-3 animate-slide-in-right">
               <button
                 onClick={() => router.push('/select-project')}
@@ -366,7 +364,6 @@ export default function ProjectVContributor() {
               </button>
             </div>
 
-            {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="md:hidden p-2 text-gray-300 hover:text-white transition-colors"
@@ -381,7 +378,6 @@ export default function ProjectVContributor() {
             </button>
           </div>
 
-          {/* Mobile Menu */}
           {mobileMenuOpen && (
             <div className="md:hidden mt-4 space-y-2 pb-4 animate-slide-up">
               <button onClick={() => { router.push('/select-project'); setMobileMenuOpen(false); }}
@@ -402,10 +398,9 @@ export default function ProjectVContributor() {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 relative z-10">
-        {/* Breadcrumb */}
+
         <Breadcrumb />
 
-        {/* Search Bar */}
         <div className="mb-8 animate-slide-up">
           <div className="relative">
             <input
@@ -421,9 +416,8 @@ export default function ProjectVContributor() {
           </div>
         </div>
 
-        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Submission Form */}
+
           <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in hover-lift">
             <h2 className="text-2xl font-black mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
               ✨ New Submission
@@ -523,7 +517,6 @@ export default function ProjectVContributor() {
             </form>
           </div>
 
-          {/* Submissions List */}
           <div className="bg-gray-800/40 backdrop-blur-xl rounded-3xl shadow-2xl p-8 border-2 border-gray-700/50 animate-scale-in" style={{ animationDelay: '0.1s' }}>
             <h2 className="text-2xl font-black mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               📋 My Submissions ({filteredSubmissions.length})
@@ -577,7 +570,6 @@ export default function ProjectVContributor() {
           </div>
         </div>
 
-        {/* Submission Details Modal */}
         {selectedSubmission && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
@@ -594,7 +586,7 @@ export default function ProjectVContributor() {
               </div>
 
               <div className="space-y-6">
-                {/* Title & Status */}
+
                 <div>
                   <h4 className="text-lg font-bold text-white mb-3">{selectedSubmission.title}</h4>
                   <div className="flex flex-wrap gap-2 items-center">
@@ -609,7 +601,6 @@ export default function ProjectVContributor() {
                   </div>
                 </div>
 
-                {/* Metadata Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600/50">
                     <div className="text-xs text-gray-400 font-semibold mb-1">Language</div>
@@ -625,13 +616,11 @@ export default function ProjectVContributor() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-gray-200 mb-2">Description:</h4>
                   <p className="text-gray-300 leading-relaxed">{selectedSubmission.description}</p>
                 </div>
 
-                {/* GitHub Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                     <h4 className="font-bold text-gray-200 mb-2">Repository:</h4>
@@ -656,7 +645,6 @@ export default function ProjectVContributor() {
                   </code>
                 </div>
 
-                {/* Processing Status */}
                 <div className="bg-gray-700/50 rounded-xl p-5 border border-gray-600/50">
                   <h4 className="font-bold text-white mb-4 text-lg">🔄 Processing Pipeline:</h4>
                   <div className="space-y-2">
@@ -680,7 +668,6 @@ export default function ProjectVContributor() {
                   </div>
                 )}
 
-                {/* Tester Feedback */}
                 {selectedSubmission.testerFeedback && (
                   <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-yellow-300 mb-3 text-lg">🔄 Tester Feedback (Rework Required):</h4>
@@ -688,7 +675,6 @@ export default function ProjectVContributor() {
                   </div>
                 )}
 
-                {/* Reviewer Feedback */}
                 {selectedSubmission.reviewerFeedback && (
                   <div className="bg-orange-500/10 border-2 border-orange-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-orange-300 mb-3 text-lg">📢 Reviewer Feedback (Changes Requested):</h4>
@@ -696,7 +682,6 @@ export default function ProjectVContributor() {
                   </div>
                 )}
 
-                {/* Rejection Reason */}
                 {selectedSubmission.rejectionReason && (
                   <div className="bg-red-500/10 border-2 border-red-500/30 rounded-xl p-5">
                     <h4 className="font-bold text-red-300 mb-3 text-lg">❌ Rejection Reason:</h4>
@@ -704,7 +689,6 @@ export default function ProjectVContributor() {
                   </div>
                 )}
 
-                {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-700">
                   {(selectedSubmission.status === "REWORK" || selectedSubmission.status === "CHANGES_REQUESTED") && (
                     <button onClick={() => handleOpenResubmitModal(selectedSubmission)} disabled={processing}
@@ -724,7 +708,6 @@ export default function ProjectVContributor() {
           </div>
         )}
 
-        {/* Resubmit Modal */}
         {showResubmitModal && selectedSubmission && (
           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
             <div className="bg-gray-800/95 backdrop-blur-2xl border-2 border-gray-700/50 rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8 shadow-2xl custom-scrollbar">
