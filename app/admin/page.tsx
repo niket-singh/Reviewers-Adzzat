@@ -10,6 +10,7 @@ import Breadcrumb from '@/components/Breadcrumb'
 import Pagination from '@/components/Pagination'
 import CopyToClipboard from '@/components/CopyToClipboard'
 import Tooltip from '@/components/Tooltip'
+import { BarChart, DonutChart, StatCard } from '@/components/StatCharts'
 
 interface Submission {
   id: string
@@ -956,73 +957,150 @@ export default function AdminDashboard() {
         {activeTab === 'stats' && stats && (
           <div className="space-y-6">
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Users</h3>
-                <p className="text-3xl font-bold text-gray-800">{stats.overview.totalUsers}</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Total Submissions</h3>
-                <p className="text-3xl font-bold text-gray-800">{stats.overview.totalSubmissions}</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Pending Reviews</h3>
-                <p className="text-3xl font-bold text-gray-800">{stats.overview.pendingReviews}</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up">
+              <StatCard
+                title="Total Users"
+                value={stats.overview.totalUsers}
+                icon="👥"
+                color="blue"
+              />
+              <StatCard
+                title="Total Submissions"
+                value={stats.overview.totalSubmissions}
+                icon="📊"
+                color="purple"
+              />
+              <StatCard
+                title="Pending Reviews"
+                value={stats.overview.pendingReviews}
+                icon="⏳"
+                color="yellow"
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-4 h-4 rounded-full bg-green-500 animate-pulse"></div>
-                  <h3 className="text-sm font-medium text-gray-600">Active Reviewers</h3>
-                </div>
-                <p className="text-3xl font-bold text-green-600">{stats.overview.activeReviewers}</p>
-                <p className="text-xs text-gray-500 mt-1">Accepting new tasks</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-gray-400">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-4 h-4 rounded-full bg-gray-400"></div>
-                  <h3 className="text-sm font-medium text-gray-600">Inactive Reviewers</h3>
-                </div>
-                <p className="text-3xl font-bold text-gray-600">{stats.overview.inactiveReviewers}</p>
-                <p className="text-xs text-gray-500 mt-1">Not accepting tasks</p>
-              </div>
-              <div className="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500">
-                <h3 className="text-sm font-medium text-gray-600 mb-2">Queued Tasks</h3>
-                <p className="text-3xl font-bold text-orange-600">{stats.overview.queuedTasks}</p>
-                <p className="text-xs text-gray-500 mt-1">Waiting for active reviewers</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <StatCard
+                title="Active Reviewers"
+                value={stats.overview.activeReviewers}
+                icon="🟢"
+                color="green"
+              />
+              <StatCard
+                title="Inactive Reviewers"
+                value={stats.overview.inactiveReviewers}
+                icon="⚫"
+                color="red"
+              />
+              <StatCard
+                title="Queued Tasks"
+                value={stats.overview.queuedTasks}
+                icon="📋"
+                color="orange"
+              />
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Contributor Statistics</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <BarChart
+                title="Task Status Overview"
+                data={[
+                  {
+                    label: 'Uploaded Tasks',
+                    value: submissions.filter(s => s.status === 'PENDING').length,
+                    color: 'bg-gradient-to-r from-blue-500 to-blue-600'
+                  },
+                  {
+                    label: 'Claimed Tasks',
+                    value: submissions.filter(s => s.status === 'CLAIMED').length,
+                    color: 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                  },
+                  {
+                    label: 'Eligible for Review',
+                    value: submissions.filter(s => s.status === 'ELIGIBLE').length,
+                    color: 'bg-gradient-to-r from-cyan-500 to-cyan-600'
+                  },
+                  {
+                    label: 'Approved Tasks',
+                    value: submissions.filter(s => s.status === 'APPROVED').length,
+                    color: 'bg-gradient-to-r from-green-500 to-green-600'
+                  }
+                ]}
+              />
+
+              <DonutChart
+                title="Task Distribution"
+                data={[
+                  {
+                    label: 'Uploaded',
+                    value: submissions.filter(s => s.status === 'PENDING').length,
+                    color: 'fill-blue-500'
+                  },
+                  {
+                    label: 'Claimed',
+                    value: submissions.filter(s => s.status === 'CLAIMED').length,
+                    color: 'fill-yellow-500'
+                  },
+                  {
+                    label: 'Eligible',
+                    value: submissions.filter(s => s.status === 'ELIGIBLE').length,
+                    color: 'fill-cyan-500'
+                  },
+                  {
+                    label: 'Approved',
+                    value: submissions.filter(s => s.status === 'APPROVED').length,
+                    color: 'fill-green-500'
+                  }
+                ]}
+              />
+            </div>
+
+            <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-800">Contributor Statistics</h2>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">
+                  {stats.contributors?.length || 0} Contributors
+                </span>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Name</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Total</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Eligible</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Approved</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Approval Rate</th>
+                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Total</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Eligible</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Approved</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Approval Rate</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {stats.contributors && stats.contributors.length > 0 ? (
-                      stats.contributors.map((contributor) => (
-                        <tr key={contributor.userId}>
-                          <td className="px-4 py-3 text-sm text-gray-800">{contributor.name}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.totalSubmissions}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.eligibleCount}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvedCount}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{contributor.approvalRate.toFixed(1)}%</td>
+                      stats.contributors.map((contributor, index) => (
+                        <tr key={contributor.userId} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{contributor.name}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className="px-2 py-1 bg-gray-100 rounded font-semibold">{contributor.totalSubmissions}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className="px-2 py-1 bg-cyan-100 text-cyan-800 rounded font-semibold">{contributor.eligibleCount}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className="px-2 py-1 bg-green-100 text-green-800 rounded font-semibold">{contributor.approvedCount}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className={`px-2 py-1 rounded font-semibold ${
+                              contributor.approvalRate >= 75 ? 'bg-green-100 text-green-800' :
+                              contributor.approvalRate >= 50 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {contributor.approvalRate.toFixed(1)}%
+                            </span>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                          No contributors found
+                        <td colSpan={5} className="px-6 py-12 text-center">
+                          <div className="text-gray-400 text-4xl mb-2">📊</div>
+                          <p className="text-gray-500">No contributors found</p>
                         </td>
                       </tr>
                     )}
@@ -1031,36 +1109,52 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Reviewer Statistics</h2>
+            <div className="bg-white rounded-xl shadow-md p-6 animate-slide-up" style={{ animationDelay: '0.4s' }}>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-800">Reviewer Statistics</h2>
+                <div className="flex gap-2">
+                  <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                    {stats.overview.activeReviewers} Active
+                  </span>
+                  <span className="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-semibold">
+                    {stats.overview.inactiveReviewers} Inactive
+                  </span>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
                     <tr>
-                      <th className="px-4 py-2 text-left text-sm font-medium text-gray-600">Name</th>
-                      <th className="px-4 py-2 text-center text-sm font-medium text-gray-600">Status</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Tasks in Stack</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Reviewed</th>
-                      <th className="px-4 py-2 text-right text-sm font-medium text-gray-600">Current Workload</th>
+                      <th className="px-6 py-3 text-left text-sm font-bold text-gray-700">Name</th>
+                      <th className="px-6 py-3 text-center text-sm font-bold text-gray-700">Status</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Tasks in Stack</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Reviewed</th>
+                      <th className="px-6 py-3 text-right text-sm font-bold text-gray-700">Current Workload</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {stats.reviewers && stats.reviewers.length > 0 ? (
                       stats.reviewers.map((reviewer) => (
-                        <tr key={reviewer.userId} className={reviewer.isGreenLight ? '' : 'bg-gray-50'}>
-                          <td className="px-4 py-3 text-sm text-gray-800">{reviewer.name}</td>
-                          <td className="px-4 py-3">
+                        <tr key={reviewer.userId} className={`transition-colors ${reviewer.isGreenLight ? 'hover:bg-green-50' : 'hover:bg-gray-50'}`}>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{reviewer.name}</td>
+                          <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-2">
                               <div className={`w-3 h-3 rounded-full ${reviewer.isGreenLight ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`}></div>
-                              <span className={`text-xs font-semibold ${reviewer.isGreenLight ? 'text-green-700' : 'text-gray-600'}`}>
+                              <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                                reviewer.isGreenLight ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                              }`}>
                                 {reviewer.isGreenLight ? 'Active' : 'Inactive'}
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.tasksInStack}</td>
-                          <td className="px-4 py-3 text-sm text-gray-600 text-right">{reviewer.reviewedCount}</td>
-                          <td className="px-4 py-3 text-sm text-right">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">{reviewer.tasksInStack}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600 text-right">
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded font-semibold">{reviewer.reviewedCount}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-right">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                               reviewer.currentWorkload > 10 ? 'bg-red-100 text-red-800' :
                               reviewer.currentWorkload > 5 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-green-100 text-green-800'
@@ -1072,8 +1166,9 @@ export default function AdminDashboard() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500">
-                          No reviewers found
+                        <td colSpan={5} className="px-6 py-12 text-center">
+                          <div className="text-gray-400 text-4xl mb-2">👥</div>
+                          <p className="text-gray-500">No reviewers found</p>
                         </td>
                       </tr>
                     )}
@@ -1190,7 +1285,7 @@ export default function AdminDashboard() {
         {activeTab === 'feedback' && (
           <div className="space-y-4">
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl shadow-md p-6 text-white">
-              <h2 className="text-2xl font-bold mb-2">All Reviews & Feedback - God Mode</h2>
+              <h2 className="text-2xl font-bold mb-2">All Reviews & Feedback</h2>
               <p className="text-purple-100">Complete visibility of all feedback given by testers across all submissions</p>
               <div className="mt-4 text-sm">
                 <span className="font-semibold">Total Reviews:</span> {reviewsTotal}
