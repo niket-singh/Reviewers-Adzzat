@@ -178,19 +178,19 @@ func GetProjectVSubmissions(c *gin.Context) {
 		return
 	}
 
-	// Generate signed URLs for all file URLs
+	// Generate signed URLs for all file URLs with proper download filenames
 	for i := range submissions {
-		testPatchURL, err := storage.GetSignedURL(submissions[i].TestPatchURL, 3600)
+		testPatchURL, err := storage.GetSignedDownloadURL(submissions[i].TestPatchURL, "test.patch", 3600)
 		if err == nil {
 			submissions[i].TestPatchURL = testPatchURL
 		}
 
-		dockerfileURL, err := storage.GetSignedURL(submissions[i].DockerfileURL, 3600)
+		dockerfileURL, err := storage.GetSignedDownloadURL(submissions[i].DockerfileURL, "Dockerfile", 3600)
 		if err == nil {
 			submissions[i].DockerfileURL = dockerfileURL
 		}
 
-		solutionPatchURL, err := storage.GetSignedURL(submissions[i].SolutionPatchURL, 3600)
+		solutionPatchURL, err := storage.GetSignedDownloadURL(submissions[i].SolutionPatchURL, "solution.patch", 3600)
 		if err == nil {
 			submissions[i].SolutionPatchURL = solutionPatchURL
 		}
@@ -233,18 +233,18 @@ func GetProjectVSubmission(c *gin.Context) {
 		return
 	}
 
-	// Generate signed URLs for files
-	testPatchURL, err := storage.GetSignedURL(submission.TestPatchURL, 3600)
+	// Generate signed URLs for files with proper download filenames
+	testPatchURL, err := storage.GetSignedDownloadURL(submission.TestPatchURL, "test.patch", 3600)
 	if err == nil {
 		submission.TestPatchURL = testPatchURL
 	}
 
-	dockerfileURL, err := storage.GetSignedURL(submission.DockerfileURL, 3600)
+	dockerfileURL, err := storage.GetSignedDownloadURL(submission.DockerfileURL, "Dockerfile", 3600)
 	if err == nil {
 		submission.DockerfileURL = dockerfileURL
 	}
 
-	solutionPatchURL, err := storage.GetSignedURL(submission.SolutionPatchURL, 3600)
+	solutionPatchURL, err := storage.GetSignedDownloadURL(submission.SolutionPatchURL, "solution.patch", 3600)
 	if err == nil {
 		submission.SolutionPatchURL = solutionPatchURL
 	}
