@@ -53,14 +53,35 @@ func GetSignedURL(fileKey string, expiresIn int) (string, error) {
 		expiresIn = 3600
 	}
 
-	// Create signed URL with download parameter
+	// Create signed URL with download parameter - use transform options
 	resp, err := client.CreateSignedUrl("submissions", fileKey, expiresIn)
 	if err != nil {
 		return "", fmt.Errorf("failed to create signed URL: %w", err)
 	}
 
-	// Add download parameter to force download instead of display
-	downloadURL := resp.SignedURL + "&download="
+	// Return the signed URL - Supabase will handle content-disposition based on bucket settings
+	return resp.SignedURL, nil
+}
+
+// GetSignedDownloadURL generates a signed URL that forces download with original filename
+func GetSignedDownloadURL(fileKey string, filename string, expiresIn int) (string, error) {
+	if client == nil {
+		return "", fmt.Errorf("storage client not initialized")
+	}
+
+	// Longer expiration: 1 hour (3600 seconds)
+	if expiresIn == 0 {
+		expiresIn = 3600
+	}
+
+	// Create signed URL
+	resp, err := client.CreateSignedUrl("submissions", fileKey, expiresIn)
+	if err != nil {
+		return "", fmt.Errorf("failed to create signed URL: %w", err)
+	}
+
+	// Add download parameter with filename to force download with correct name
+	downloadURL := resp.SignedURL + "&download=" + filename
 
 	return downloadURL, nil
 }

@@ -619,16 +619,43 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 	submissionsResponse := make([]gin.H, 0, len(submissions))
 	for _, sub := range submissions {
 		submissionData := gin.H{
-			"id":                  sub.ID,
-			"title":               sub.Title,
-			"status":              sub.Status,
-			"createdAt":           sub.CreatedAt,
-			"updatedAt":           sub.UpdatedAt,
-			"testerFeedback":      sub.TesterFeedback,
-			"reviewerFeedback":    sub.ReviewerFeedback,
-			"hasChangesRequested": sub.HasChangesRequested,
-			"processingComplete":  sub.ProcessingComplete,
-			"processingLogs":      sub.ProcessingLogs,
+			"id":                   sub.ID,
+			"title":                sub.Title,
+			"language":             sub.Language,
+			"category":             sub.Category,
+			"difficulty":           sub.Difficulty,
+			"description":          sub.Description,
+			"githubRepo":           sub.GithubRepo,
+			"commitHash":           sub.CommitHash,
+			"issueUrl":             sub.IssueURL,
+			"testPatchUrl":         sub.TestPatchURL,
+			"dockerfileUrl":        sub.DockerfileURL,
+			"solutionPatchUrl":     sub.SolutionPatchURL,
+			"status":               sub.Status,
+			"createdAt":            sub.CreatedAt,
+			"updatedAt":            sub.UpdatedAt,
+			"testerFeedback":       sub.TesterFeedback,
+			"reviewerFeedback":     sub.ReviewerFeedback,
+			"hasChangesRequested":  sub.HasChangesRequested,
+			"changesDone":          sub.ChangesDone,
+			"processingComplete":   sub.ProcessingComplete,
+			"processingLogs":       sub.ProcessingLogs,
+			"cloneSuccess":         sub.CloneSuccess,
+			"cloneError":           sub.CloneError,
+			"testPatchSuccess":     sub.TestPatchSuccess,
+			"testPatchError":       sub.TestPatchError,
+			"dockerBuildSuccess":   sub.DockerBuildSuccess,
+			"dockerBuildError":     sub.DockerBuildError,
+			"baseTestSuccess":      sub.BaseTestSuccess,
+			"baseTestError":        sub.BaseTestError,
+			"newTestSuccess":       sub.NewTestSuccess,
+			"newTestError":         sub.NewTestError,
+			"solutionPatchSuccess": sub.SolutionPatchSuccess,
+			"solutionPatchError":   sub.SolutionPatchError,
+			"finalBaseTestSuccess": sub.FinalBaseTestSuccess,
+			"finalBaseTestError":   sub.FinalBaseTestError,
+			"finalNewTestSuccess":  sub.FinalNewTestSuccess,
+			"finalNewTestError":    sub.FinalNewTestError,
 		}
 
 		// Add optional fields
@@ -638,11 +665,14 @@ func GetAllProjectVSubmissions(c *gin.Context) {
 		if sub.TaskLink != nil {
 			submissionData["taskLink"] = *sub.TaskLink
 		}
+		if sub.TaskLinkSubmitted != nil {
+			submissionData["taskLinkSubmitted"] = *sub.TaskLinkSubmitted
+		}
 		if sub.RejectionReason != nil {
 			submissionData["rejectionReason"] = *sub.RejectionReason
 		}
-		if sub.IssueURL != "" {
-			submissionData["issueUrl"] = sub.IssueURL
+		if sub.AccountPostedIn != nil {
+			submissionData["accountPostedIn"] = *sub.AccountPostedIn
 		}
 
 		// Add contributor info
