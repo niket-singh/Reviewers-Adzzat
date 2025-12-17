@@ -12,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// GetUsers returns all users (admin only)
+
 func GetUsers(c *gin.Context) {
 	var users []models.User
 	if err := database.DB.Order("created_at DESC").Find(&users).Error; err != nil {
@@ -20,7 +20,7 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	// Remove password hashes
+	
 	var response []gin.H
 	for _, user := range users {
 		response = append(response, gin.H{
@@ -37,7 +37,7 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"users": response})
 }
 
-// ApproveTester approves a tester
+
 func ApproveTester(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
@@ -63,7 +63,7 @@ func ApproveTester(c *gin.Context) {
 		return
 	}
 
-	// Log activity
+	
 	currentUserID, _ := c.Get("userId")
 	currentUserName, _ := c.Get("userEmail")
 	currentUserRole, _ := c.Get("userRole")
@@ -85,7 +85,7 @@ func ApproveTester(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Tester approved successfully"})
 }
 
-// ToggleGreenLight toggles the green light status for a tester
+
 func ToggleGreenLight(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
@@ -105,14 +105,14 @@ func ToggleGreenLight(c *gin.Context) {
 		return
 	}
 
-	// Toggle the green light status
+	
 	user.IsGreenLight = !user.IsGreenLight
 	if err := database.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle green light"})
 		return
 	}
 
-	// If green light was turned ON, redistribute all tasks fairly among active testers
+	
 	var redistributedCount int
 	if user.IsGreenLight {
 		count, err := services.RedistributeTasks()
@@ -121,7 +121,7 @@ func ToggleGreenLight(c *gin.Context) {
 		}
 	}
 
-	// Log activity
+	
 	currentUserID, _ := c.Get("userId")
 	currentUserName, _ := c.Get("userEmail")
 	currentUserRole, _ := c.Get("userRole")
@@ -160,7 +160,7 @@ func ToggleGreenLight(c *gin.Context) {
 	})
 }
 
-// SwitchUserRole changes a user's role (NEW FEATURE)
+
 func SwitchUserRole(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
@@ -186,15 +186,15 @@ func SwitchUserRole(c *gin.Context) {
 	oldRole := string(user.Role)
 	newRole := req.NewRole
 
-	// Update role
+	
 	user.Role = models.UserRole(newRole)
 
-	// Auto-approve if switching to contributor
+	
 	if user.Role == models.RoleContributor {
 		user.IsApproved = true
 	}
 
-	// Reset approval if switching to tester
+	
 	if user.Role == models.RoleTester && oldRole != string(models.RoleTester) {
 		user.IsApproved = false
 	}
@@ -204,7 +204,7 @@ func SwitchUserRole(c *gin.Context) {
 		return
 	}
 
-	// Log activity
+	
 	currentUserID, _ := c.Get("userId")
 	currentUserName, _ := c.Get("userEmail")
 	currentUserRole, _ := c.Get("userRole")
@@ -239,7 +239,7 @@ func SwitchUserRole(c *gin.Context) {
 	})
 }
 
-// DeleteUser deletes a user account
+
 func DeleteUser(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)
@@ -275,7 +275,7 @@ func DeleteUser(c *gin.Context) {
 		"assignmentsUnassigned": 0,
 	}
 
-	// Handle contributor deletion
+	
 	if user.Role == models.RoleContributor {
 		for _, submission := range user.Submissions {
 			storage.DeleteFile(submission.FileURL)
@@ -285,9 +285,9 @@ func DeleteUser(c *gin.Context) {
 		deletionSummary["submissionsDeleted"] = len(user.Submissions)
 	}
 
-	// Handle tester deletion
+	
 	if user.Role == models.RoleTester {
-		// Unassign tasks
+		
 		database.DB.Model(&models.Submission{}).
 			Where("claimed_by_id = ?", uid).
 			Updates(map[string]interface{}{
@@ -297,18 +297,18 @@ func DeleteUser(c *gin.Context) {
 			})
 		deletionSummary["assignmentsUnassigned"] = len(user.ClaimedSubmissions)
 
-		// Delete reviews
+		
 		database.DB.Where("tester_id = ?", uid).Delete(&models.Review{})
 		deletionSummary["reviewsDeleted"] = len(user.Reviews)
 	}
 
-	// Delete user
+	
 	if err := database.DB.Delete(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
 		return
 	}
 
-	// Log activity
+	
 	currentUserName, _ := c.Get("userEmail")
 	currentUserRole, _ := c.Get("userRole")
 	uid2, _ := uuid.Parse(currentUserID.(string))
@@ -333,7 +333,7 @@ func DeleteUser(c *gin.Context) {
 	})
 }
 
-// UpdateProfile updates user profile
+
 func UpdateProfile(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := uuid.Parse(userID.(string))
@@ -353,12 +353,12 @@ func UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	// Update name if provided
+	
 	if req.Name != "" {
 		user.Name = req.Name
 	}
 
-	// Update password if provided
+	
 	if req.Password != "" {
 		if len(req.Password) < 6 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 6 characters"})
@@ -390,7 +390,7 @@ func UpdateProfile(c *gin.Context) {
 	})
 }
 
-// GetProfile returns user profile with stats
+
 func GetProfile(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := uuid.Parse(userID.(string))
@@ -444,7 +444,7 @@ func GetProfile(c *gin.Context) {
 	})
 }
 
-// DeleteMyAccount allows users to delete their own account
+
 func DeleteMyAccount(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	uid, _ := uuid.Parse(userID.(string))
@@ -463,13 +463,13 @@ func DeleteMyAccount(c *gin.Context) {
 		return
 	}
 
-	// Verify password
+	
 	if !utils.CheckPassword(req.Password, user.PasswordHash) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
 		return
 	}
 
-	// Admins cannot delete their own account
+	
 	if user.Role == models.RoleAdmin {
 		c.JSON(http.StatusForbidden, gin.H{"error": "Admins cannot delete their own account. Contact another admin."})
 		return
@@ -485,7 +485,7 @@ func DeleteMyAccount(c *gin.Context) {
 		"assignmentsUnassigned": 0,
 	}
 
-	// Handle contributor deletion
+	
 	if user.Role == models.RoleContributor {
 		for _, submission := range user.Submissions {
 			storage.DeleteFile(submission.FileURL)
@@ -494,7 +494,7 @@ func DeleteMyAccount(c *gin.Context) {
 		database.DB.Where("contributor_id = ?", uid).Delete(&models.Submission{})
 		deletionSummary["submissionsDeleted"] = len(user.Submissions)
 
-		// Delete ProjectV submissions
+		
 		var projectVSubmissions []models.ProjectVSubmission
 		database.DB.Where("contributor_id = ?", uid).Find(&projectVSubmissions)
 		for _, submission := range projectVSubmissions {
@@ -506,9 +506,9 @@ func DeleteMyAccount(c *gin.Context) {
 		database.DB.Where("contributor_id = ?", uid).Delete(&models.ProjectVSubmission{})
 	}
 
-	// Handle tester deletion
+	
 	if user.Role == models.RoleTester {
-		// Unassign tasks
+		
 		database.DB.Model(&models.Submission{}).
 			Where("claimed_by_id = ?", uid).
 			Updates(map[string]interface{}{
@@ -518,26 +518,26 @@ func DeleteMyAccount(c *gin.Context) {
 			})
 		deletionSummary["assignmentsUnassigned"] = len(user.ClaimedSubmissions)
 
-		// Delete reviews
+		
 		database.DB.Where("tester_id = ?", uid).Delete(&models.Review{})
 		deletionSummary["reviewsDeleted"] = len(user.Reviews)
 	}
 
-	// Handle reviewer deletion (for ProjectV)
+	
 	if user.Role == models.RoleReviewer {
-		// Unassign ProjectV submissions
+		
 		database.DB.Model(&models.ProjectVSubmission{}).
 			Where("reviewer_id = ?", uid).
 			Update("reviewer_id", nil)
 	}
 
-	// Delete user
+	
 	if err := database.DB.Delete(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete account"})
 		return
 	}
 
-	// Log activity
+	
 	targetType := "user"
 	services.LogActivity(services.LogActivityParams{
 		Action:      "DELETE_OWN_ACCOUNT",

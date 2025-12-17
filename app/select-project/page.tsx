@@ -27,7 +27,7 @@ export default function SelectProject() {
 
   const handleProjectSelect = (project: string) => {
     if (project === "V") {
-      // Navigate to Project V
+      
       if (user?.role === "CONTRIBUTOR") {
         router.push("/project-v/contributor");
       } else if (user?.role === "TESTER") {
@@ -38,7 +38,7 @@ export default function SelectProject() {
         router.push("/project-v/admin");
       }
     } else if (project === "X") {
-      // Navigate to existing Project X (current implementation)
+      
       if (user?.role === "CONTRIBUTOR") {
         router.push("/contributor");
       } else if (user?.role === "REVIEWER") {
@@ -47,7 +47,7 @@ export default function SelectProject() {
         router.push("/admin");
       }
     }
-    // Project Z is paused, no navigation
+    
   };
 
   const handleLogout = async () => {
@@ -58,7 +58,7 @@ export default function SelectProject() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
+        {}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-white mb-2">
             Welcome, {user?.name}!
@@ -191,7 +191,7 @@ export default function SelectProject() {
           </div>
         </div>
 
-        {/* Logout Button */}
+        {}
         <div className="mt-12 text-center">
           <button
             onClick={handleLogout}

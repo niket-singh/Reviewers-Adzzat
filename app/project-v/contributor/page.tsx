@@ -117,7 +117,7 @@ export default function ProjectVContributor() {
     }
   }, [user, loading, router, fetchSubmissions]);
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSubmissions();
@@ -319,7 +319,7 @@ export default function ProjectVContributor() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>
@@ -487,7 +487,7 @@ export default function ProjectVContributor() {
                 <input type="url" required value={formData.githubRepo}
                   onChange={(e) => setFormData({ ...formData, githubRepo: e.target.value })}
                   className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium font-mono text-sm"
-                  placeholder="https://github.com/username/repo" />
+                  placeholder="https:
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -503,7 +503,7 @@ export default function ProjectVContributor() {
                   <input type="url" value={formData.issueUrl}
                     onChange={(e) => setFormData({ ...formData, issueUrl: e.target.value })}
                     className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 font-medium text-sm"
-                    placeholder="https://github.com/.../issues/123" />
+                    placeholder="https:
                 </div>
               </div>
 
@@ -799,7 +799,7 @@ export default function ProjectVContributor() {
                   <input type="url" required value={resubmitData.githubRepo}
                     onChange={(e) => setResubmitData({ ...resubmitData, githubRepo: e.target.value })}
                     className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium font-mono text-sm"
-                    placeholder="https://github.com/username/repo" />
+                    placeholder="https:
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -815,7 +815,7 @@ export default function ProjectVContributor() {
                     <input type="url" value={resubmitData.issueUrl}
                       onChange={(e) => setResubmitData({ ...resubmitData, issueUrl: e.target.value })}
                       className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium text-sm"
-                      placeholder="https://github.com/.../issues/123" />
+                      placeholder="https:
                   </div>
                 </div>
 

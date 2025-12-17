@@ -89,10 +89,10 @@ export default function ProjectVTester() {
     } else if (user && user.isApproved) {
       fetchSubmissions();
     }
-    // Don't fetch if user is not approved - show pending message instead
+    
   }, [user, loading, router, fetchSubmissions]);
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     const interval = setInterval(() => {
       fetchSubmissions();
@@ -126,7 +126,7 @@ export default function ProjectVTester() {
   const getFilteredSubmissions = () => {
     let filtered = submissions;
 
-    // Testers can see all submissions to monitor testing pipeline
+    
     if (filterStatus !== "ALL") {
       filtered = filtered.filter((s) => s.status === filterStatus);
     }
@@ -232,7 +232,7 @@ export default function ProjectVTester() {
     );
   }
 
-  // Show pending approval message for unapproved testers
+  
   if (user && !user.isApproved) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
@@ -646,7 +646,7 @@ export default function ProjectVTester() {
                         <div>
                           <label className="block text-sm font-bold mb-2.5 text-gray-200">Task Link: *</label>
                           <input type="url" value={taskLinkSubmitted} onChange={(e) => setTaskLinkSubmitted(e.target.value)}
-                            placeholder="https://..." disabled={processing}
+                            placeholder="https:
                             className="w-full px-5 py-4 rounded-xl border-2 border-gray-700 transition-all duration-300 focus:scale-[1.02] bg-gray-900/50 text-white placeholder-gray-400 focus:border-green-500 focus:ring-4 focus:ring-green-500/20 font-medium" />
                           <p className="text-xs text-gray-400 mt-2">This will be visible to testers, reviewers, and admins</p>
                         </div>

@@ -23,7 +23,7 @@ export default function ConfirmDialog({
   variant = 'danger',
   loading = false,
 }: ConfirmDialogProps) {
-  // Handle Escape key
+  
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen && !loading) {
@@ -33,7 +33,7 @@ export default function ConfirmDialog({
 
     if (isOpen) {
       document.addEventListener('keydown', handleEscape);
-      // Prevent body scroll
+      
       document.body.style.overflow = 'hidden';
     }
 

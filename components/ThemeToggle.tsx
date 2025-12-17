@@ -3,15 +3,12 @@
 import { useTheme } from '@/lib/theme-context'
 import { useEffect, useState } from 'react'
 
-/**
- * Theme Toggle Button Component
- * Switches between light, dark, and system theme
- */
+
 export default function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
-  // Avoid hydration mismatch
+  
   useEffect(() => {
     setMounted(true)
   }, [])
@@ -77,10 +74,7 @@ export default function ThemeToggle() {
   )
 }
 
-/**
- * Compact Theme Toggle (Icon only)
- * For use in navigation bars or tight spaces
- */
+
 export function CompactThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)

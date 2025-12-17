@@ -39,13 +39,13 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      // Fetch Project X stats using apiClient
+      
       const projectXData = await apiClient.getSubmissions();
 
-      // Fetch Project V stats using apiClient
+      
       const projectVData = await apiClient.getProjectVSubmissions();
 
-      // Calculate stats
+      
       const statsData: Stats = {
         totalSubmissions: projectXData.length + projectVData.length,
         pendingSubmissions: projectXData.filter((s: any) => s.status === "PENDING").length +
@@ -93,7 +93,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {}
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white">Dashboard</h1>

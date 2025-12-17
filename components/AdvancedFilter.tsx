@@ -69,7 +69,7 @@ export default function AdvancedFilter({
 
   return (
     <div className="relative">
-      {/* Filter Toggle Button */}
+      {}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="px-6 py-3 rounded-xl bg-gray-800/60 text-white font-bold flex items-center gap-2 hover:bg-gray-700/60 transition-all duration-300 hover:scale-105 shadow-lg"
@@ -90,10 +90,10 @@ export default function AdvancedFilter({
         )}
       </button>
 
-      {/* Filter Panel */}
+      {}
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {}
           <div
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}

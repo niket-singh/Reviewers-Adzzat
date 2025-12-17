@@ -55,7 +55,7 @@ export default function ContributorDashboard() {
   const { user, loading: authLoading, logout } = useAuth()
   const { showToast } = useToast()
 
-  // Redirect if not authenticated or not a contributor/admin
+  
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/')
@@ -64,7 +64,7 @@ export default function ContributorDashboard() {
     }
   }, [user, authLoading, router])
 
-  // Auto-refresh every 30 seconds
+  
   useEffect(() => {
     fetchSubmissions()
     const interval = setInterval(() => {
@@ -105,7 +105,7 @@ export default function ContributorDashboard() {
 
   useEffect(() => {
     filterSubmissions()
-    setCurrentPage(1) // Reset to first page when filters change
+    setCurrentPage(1) 
   }, [filterSubmissions])
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -177,7 +177,7 @@ export default function ContributorDashboard() {
       link.click()
       document.body.removeChild(link)
 
-      // Clean up blob URL to prevent memory leaks
+      
       setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 100)
 
       showToast('Download started!', 'success')
@@ -207,7 +207,7 @@ export default function ContributorDashboard() {
     return submissions.filter(s => s.status.toLowerCase() === tab).length
   }
 
-  // Pagination calculations
+  
   const totalPages = Math.ceil(filteredSubmissions.length / itemsPerPage)
   const paginatedSubmissions = filteredSubmissions.slice(
     (currentPage - 1) * itemsPerPage,
@@ -227,7 +227,7 @@ export default function ContributorDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
-      {/* Animated Background Circles */}
+      {}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500 rounded-full blur-3xl opacity-20 floating"></div>
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500 rounded-full blur-3xl opacity-20 floating" style={{ animationDelay: '1s' }}></div>

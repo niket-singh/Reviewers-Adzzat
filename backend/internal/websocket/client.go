@@ -9,16 +9,16 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer
+	
 	writeWait = 10 * time.Second
 
-	// Time allowed to read the next pong message from the peer
+	
 	pongWait = 60 * time.Second
 
-	// Send pings to peer with this period (must be less than pongWait)
+	
 	pingPeriod = (pongWait * 9) / 10
 
-	// Maximum message size allowed from peer
+	
 	maxMessageSize = 512
 )
 
@@ -26,12 +26,12 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
-		// In production, implement proper origin checking
+		
 		return true
 	},
 }
 
-// readPump pumps messages from the WebSocket connection to the hub
+
 func (c *Client) readPump() {
 	defer func() {
 		c.Hub.unregister <- c
@@ -54,12 +54,12 @@ func (c *Client) readPump() {
 			break
 		}
 
-		// Echo message back (you can handle different message types here)
+		
 		log.Printf("Received message from client %s: %s", c.ID, message)
 	}
 }
 
-// writePump pumps messages from the hub to the WebSocket connection
+
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -72,7 +72,7 @@ func (c *Client) writePump() {
 		case message, ok := <-c.Send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The hub closed the channel
+				
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				return
 			}
@@ -83,7 +83,7 @@ func (c *Client) writePump() {
 			}
 			w.Write(message)
 
-			// Add queued messages to the current WebSocket message
+			
 			n := len(c.Send)
 			for i := 0; i < n; i++ {
 				w.Write([]byte{'\n'})
@@ -103,14 +103,14 @@ func (c *Client) writePump() {
 	}
 }
 
-// ServeWS handles WebSocket requests from clients
+
 func (c *Client) ServeWS(conn *websocket.Conn) {
 	c.conn = conn
 
-	// Register client with hub
+	
 	c.Hub.register <- c
 
-	// Start pumps
+	
 	go c.writePump()
 	go c.readPump()
 }

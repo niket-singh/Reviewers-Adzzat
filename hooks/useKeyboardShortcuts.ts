@@ -10,21 +10,18 @@ interface ShortcutHandler {
   description?: string;
 }
 
-/**
- * Global keyboard shortcuts hook
- * Power user features for 3x faster workflow
- */
+
 export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger shortcuts when user is typing in input/textarea
+      
       const target = e.target as HTMLElement;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true'
       ) {
-        // Allow Escape and some specific shortcuts even in inputs
+        
         if (e.key !== 'Escape' && !(e.metaKey || e.ctrlKey)) {
           return;
         }
@@ -37,7 +34,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]) {
         const shiftMatch = shortcut.shiftKey !== undefined ? shortcut.shiftKey === e.shiftKey : true;
         const altMatch = shortcut.altKey !== undefined ? shortcut.altKey === e.altKey : true;
 
-        // Check if it's Cmd/Ctrl + key shortcut
+        
         const modifierMatch = shortcut.ctrlKey || shortcut.metaKey
           ? (e.ctrlKey || e.metaKey)
           : true;
@@ -54,9 +51,7 @@ export function useKeyboardShortcuts(shortcuts: ShortcutHandler[]) {
   }, [shortcuts]);
 }
 
-/**
- * Common keyboard shortcuts
- */
+
 export const commonShortcuts = {
   search: { key: 'k', metaKey: true, description: 'Quick search' },
   escape: { key: 'Escape', description: 'Close modal/dialog' },

@@ -3,14 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from 'next-themes'
 import { ReactNode } from 'react'
 
-/**
- * Enhanced Theme Provider with next-themes
- * Features:
- * - System-aware dark mode detection
- * - Persistent theme preference
- * - Smooth transitions without flash
- * - SSR-safe
- */
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
   return (
     <NextThemesProvider
