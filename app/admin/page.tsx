@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth-context'
 import { apiClient } from '@/lib/api-client'
@@ -489,6 +489,69 @@ export default function UnifiedAdminDashboard() {
   const projectVEligibleTasks = projectVSubmissions.filter(s => s.status === 'ELIGIBLE_FOR_MANUAL_REVIEW')
   const projectVFinalChecksTasks = projectVSubmissions.filter(s => s.status === 'FINAL_CHECKS')
   const projectVApprovedTasks = projectVSubmissions.filter(s => s.status === 'APPROVED')
+
+  const detailedLeaderboard = React.useMemo(() => {
+    const contributorMap = new Map<string, {
+      userId: string
+      userName: string
+      email: string
+      uploaded: number
+      submitted: number
+      eligible: number
+      finalChecks: number
+      approved: number
+      total: number
+    }>()
+
+    projectXSubmissions.forEach(sub => {
+      const userId = sub.contributor.email
+      if (!contributorMap.has(userId)) {
+        contributorMap.set(userId, {
+          userId,
+          userName: sub.contributor.name,
+          email: sub.contributor.email,
+          uploaded: 0,
+          submitted: 0,
+          eligible: 0,
+          finalChecks: 0,
+          approved: 0,
+          total: 0
+        })
+      }
+      const entry = contributorMap.get(userId)!
+      entry.total++
+      if (sub.status === 'PENDING') entry.uploaded++
+      if (sub.status === 'ELIGIBLE') entry.eligible++
+      if (sub.status === 'APPROVED') entry.approved++
+    })
+
+    projectVSubmissions.forEach(sub => {
+      if (!sub.contributor) return
+      const userId = sub.contributor.email
+      if (!contributorMap.has(userId)) {
+        contributorMap.set(userId, {
+          userId,
+          userName: sub.contributor.name,
+          email: sub.contributor.email,
+          uploaded: 0,
+          submitted: 0,
+          eligible: 0,
+          finalChecks: 0,
+          approved: 0,
+          total: 0
+        })
+      }
+      const entry = contributorMap.get(userId)!
+      entry.total++
+      if (sub.status === 'TASK_SUBMITTED_TO_PLATFORM') entry.submitted++
+      if (sub.status === 'ELIGIBLE_FOR_MANUAL_REVIEW') entry.eligible++
+      if (sub.status === 'FINAL_CHECKS') entry.finalChecks++
+      if (sub.status === 'APPROVED') entry.approved++
+    })
+
+    return Array.from(contributorMap.values())
+      .sort((a, b) => b.approved - a.approved || b.total - a.total)
+  }, [projectXSubmissions, projectVSubmissions])
 
   if (authLoading || !user) {
     return (
@@ -1585,54 +1648,95 @@ export default function UnifiedAdminDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <div className="space-y-3">
-                {leaderboard.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-md overflow-hidden">
+              <div className="overflow-x-auto">
+                {detailedLeaderboard.length === 0 ? (
                   <div className="p-12 text-center">
                     <div className="text-gray-400 text-6xl mb-4">🏆</div>
                     <p className="text-gray-500 text-lg">No leaderboard data yet.</p>
                   </div>
                 ) : (
-                  leaderboard.map((entry, index) => (
-                    <div
-                      key={entry.userId}
-                      className={`flex items-center justify-between p-4 rounded-lg ${
-                        index === 0 ? 'bg-yellow-50 border-2 border-yellow-300' :
-                        index === 1 ? 'bg-gray-50 border-2 border-gray-300' :
-                        index === 2 ? 'bg-orange-50 border-2 border-orange-300' :
-                        'bg-white border border-gray-200'
-                      }`}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className={`text-2xl font-bold ${
-                          index === 0 ? 'text-yellow-600' :
-                          index === 1 ? 'text-gray-600' :
-                          index === 2 ? 'text-orange-600' :
-                          'text-gray-400'
-                        }`}>
-                          #{index + 1}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-800">{entry.userName}</p>
-                          <p className="text-sm text-gray-600">{entry.email}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-4 text-sm">
-                        <div className="text-center">
-                          <div className="font-bold text-gray-800">{entry.totalCount}</div>
-                          <div className="text-xs text-gray-500">Total</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-bold text-blue-600">{entry.eligibleCount}</div>
-                          <div className="text-xs text-gray-500">Eligible</div>
-                        </div>
-                        <div className="text-center">
-                          <div className="font-bold text-green-600">{entry.approvedCount}</div>
-                          <div className="text-xs text-gray-500">Approved</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                  <table className="w-full">
+                    <thead className="bg-gradient-to-r from-yellow-50 to-amber-50 border-b-2 border-yellow-200">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Rank</th>
+                        <th className="px-6 py-4 text-left text-sm font-bold text-gray-700">Contributor</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">📤 Uploaded</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">📥 Submitted</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">🔍 Eligible</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">🔧 Final Checks</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">✅ Approved</th>
+                        <th className="px-6 py-4 text-center text-sm font-bold text-gray-700">📊 Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {detailedLeaderboard.map((entry, index) => (
+                        <tr
+                          key={entry.userId}
+                          className={`transition-colors ${
+                            index === 0 ? 'bg-yellow-50 hover:bg-yellow-100' :
+                            index === 1 ? 'bg-gray-50 hover:bg-gray-100' :
+                            index === 2 ? 'bg-orange-50 hover:bg-orange-100' :
+                            'hover:bg-gray-50'
+                          }`}
+                        >
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <div className={`text-xl font-bold ${
+                                index === 0 ? 'text-yellow-600' :
+                                index === 1 ? 'text-gray-600' :
+                                index === 2 ? 'text-orange-600' :
+                                'text-gray-400'
+                              }`}>
+                                #{index + 1}
+                              </div>
+                              {index < 3 && (
+                                <span className="text-xl">
+                                  {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-semibold text-gray-800">{entry.userName}</p>
+                              <p className="text-sm text-gray-600">{entry.email}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-bold">
+                              {entry.uploaded}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-cyan-100 text-cyan-800 rounded-full text-sm font-bold">
+                              {entry.submitted}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-bold">
+                              {entry.eligible}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-bold">
+                              {entry.finalChecks}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-bold">
+                              {entry.approved}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-bold">
+                              {entry.total}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </div>
