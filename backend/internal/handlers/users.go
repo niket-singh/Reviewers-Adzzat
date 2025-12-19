@@ -152,6 +152,74 @@ func ToggleGreenLight(c *gin.Context) {
 	})
 }
 
+func ToggleMyGreenLight(c *gin.Context) {
+	currentUserID, _ := c.Get("userId")
+	uid, _ := uuid.Parse(currentUserID.(string))
+
+	var user models.User
+	if err := database.DB.First(&user, uid).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+		return
+	}
+
+	if user.Role != models.RoleTester && user.Role != models.RoleReviewer {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Only testers and reviewers can toggle availability"})
+		return
+	}
+
+	if !user.IsApproved {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Your account must be approved before you can toggle availability"})
+		return
+	}
+
+	user.IsGreenLight = !user.IsGreenLight
+	if err := database.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to toggle availability"})
+		return
+	}
+
+	var queuedTasksAssigned int
+	if user.IsGreenLight {
+		count, err := services.RedistributeTasks()
+		if err == nil {
+			queuedTasksAssigned = count
+		}
+	}
+
+	status := "OFF"
+	if user.IsGreenLight {
+		status = "ON"
+	}
+
+	metadata := map[string]interface{}{
+		"status": status,
+	}
+	if queuedTasksAssigned > 0 {
+		metadata["queuedTasksAssigned"] = queuedTasksAssigned
+	}
+
+	userName := user.Email
+	userRole := string(user.Role)
+	targetType := "user"
+
+	services.LogActivity(services.LogActivityParams{
+		Action:      "TOGGLE_OWN_GREEN_LIGHT",
+		Description: user.Name + " turned " + status + " their availability",
+		UserID:      &uid,
+		UserName:    &userName,
+		UserRole:    &userRole,
+		TargetID:    &uid,
+		TargetType:  &targetType,
+		Metadata:    metadata,
+	})
+
+	c.JSON(http.StatusOK, gin.H{
+		"message":             "Availability toggled successfully",
+		"isGreenLight":        user.IsGreenLight,
+		"queuedTasksAssigned": queuedTasksAssigned,
+	})
+}
+
 func SwitchUserRole(c *gin.Context) {
 	userID := c.Param("id")
 	uid, err := uuid.Parse(userID)

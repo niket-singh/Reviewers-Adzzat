@@ -184,7 +184,7 @@ export default function TesterDashboard() {
 
     setTogglingGreenLight(true)
     try {
-      const response = await apiClient.toggleGreenLight(user.id)
+      const response = await apiClient.toggleMyGreenLight()
       if (response.queuedTasksAssigned > 0) {
         showToast(`Availability ${user.isGreenLight ? 'deactivated' : 'activated'}! ${response.queuedTasksAssigned} queued tasks were assigned to you.`, 'success')
       } else {
