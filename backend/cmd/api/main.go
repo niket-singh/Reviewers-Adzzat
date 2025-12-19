@@ -111,6 +111,8 @@ func setupRouter() *gin.Engine {
 			protected.PUT("/profile", handlers.UpdateProfile)
 			protected.DELETE("/profile", handlers.DeleteMyAccount)
 
+			protected.PUT("/greenlight/toggle", handlers.ToggleMyGreenLight)
+
 			submissions := protected.Group("/submissions")
 			{
 				submissions.POST("", handlers.UploadSubmission)
